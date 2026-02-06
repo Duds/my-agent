@@ -1,0 +1,32 @@
+{
+  "id": "PBI-024",
+  "title": "IDE Workspace Configuration",
+  "priority": "C",
+  "phase": "Quick Wins",
+  "status": "done",
+  "detailed_design": {
+    "module": "tooling",
+    "description": "Optimise Cursor/VS Code workspace for better performance and developer experience. Exclude virtual environments and node_modules from indexing and search.",
+    "affected_files": [".vscode/settings.json", ".cursorignore"],
+    "solution": "1. Add my-agent-venv to explorer.excludeFromDelete and files.exclude. 2. Add search.exclude for node_modules, .next, venv, my-agent-venv, __pycache__, .git. 3. Set python.analysis.indexing: false. 4. Add python.analysis.exclude for venvs and node_modules."
+  },
+  "acceptance_criteria": [
+    "my-agent-venv excluded from explorer and file operations",
+    "search excludes large directories (node_modules, venvs)",
+    "Python analysis excludes venvs for faster startup",
+    "No functional impact on application"
+  ],
+  "user_stories": [
+    {
+      "story": "As a developer, I want the IDE to perform well without indexing 770MB+ of dependencies."
+    }
+  ],
+  "technical_notes": {
+    "current_issue": "Cursor/VS Code was indexing venv and node_modules causing slowdowns",
+    "risk": "LOW - Tooling only",
+    "estimated_effort": "Low (30 minutes)",
+    "dependencies": [],
+    "completed": "2026-02-07",
+    "commit": "5b60a9e"
+  }
+}

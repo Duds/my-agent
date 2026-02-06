@@ -7,6 +7,14 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 ---
 
+## ✅ Recently Completed
+| Date | Item | Notes |
+| :--- | :--- | :--- |
+| 07/02/2026 | **IDE Workspace Configuration** (PBI-024) | Updated `.vscode/settings.json` and `.cursorignore`: excluded `my-agent-venv` from explorer/files/search, disabled Python analysis indexing, excluded venvs/node_modules from analysis for better Cursor/VS Code performance. |
+| 07/02/2026 | **README Startup Instructions** | Added clear backend (port 8001) and frontend (port 3000) startup instructions. |
+
+---
+
 ## 🏗 MoSCoW Prioritization
 **M**: Must Have | **S**: Should Have | **C**: Could Have | **W**: Won't Have
 

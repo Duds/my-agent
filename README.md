@@ -24,10 +24,36 @@ This platform is purpose-built to act as a secure extension of the user. It take
 - **Database**: Local Markdown / JSON (Memory System)
 
 ## 🏃 Quick Start
-1. **Prerequisites**: Install [Ollama](https://ollama.com/) and pull `llama3` and `mistral`.
-2. **Install**: `pip install -r requirements.txt`
-3. **Run Controller**: `source ../my-agent-venv/bin/activate && PYTHONPATH=. python3 core/main.py`
-4. **Run Dashboard**: `cd frontend && npm run dev`
+
+### Prerequisites
+- [Ollama](https://ollama.com/) — install and run `ollama serve`
+- Python 3.10+ with virtual environment
+- Node.js 18+ and npm
+
+### One-time setup
+```bash
+./setup.sh
+# Or manually: create venv, pip install -r requirements.txt, cd frontend && npm install
+```
+
+### Running the Application
+
+**Backend** (FastAPI on port 8001):
+```bash
+source ../my-agent-venv/bin/activate
+PYTHONPATH=. python3 core/main.py
+```
+API available at `http://localhost:8001` · Docs at `/docs` and `/redoc`.
+
+**Frontend** (Next.js on port 3000):
+```bash
+cd frontend && npm run dev
+```
+Dashboard at `http://localhost:3000`. Ensure the backend is running for full functionality.
+
+### Optional
+- Pull Ollama models: `ollama pull llama3` and `ollama pull mistral`
+- Copy `.env.example` to `.env` and add API keys for Anthropic/Moonshot
 
 ---
 *Created and maintained by the user in partnership with Google Antigravity.*

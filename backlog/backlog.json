@@ -184,6 +184,14 @@
             "priority": "C",
             "phase": "Advanced Features",
             "file": "pbi-023-context-display-ui.json"
+        },
+        {
+            "id": "PBI-024",
+            "title": "IDE Workspace Configuration",
+            "status": "done",
+            "priority": "C",
+            "phase": "Quick Wins",
+            "file": "pbi-024-ide-workspace-configuration.json"
         }
     ]
 }
