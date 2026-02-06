@@ -1,0 +1,42 @@
+{
+    "id": "PBI-014",
+    "title": "Comprehensive Testing",
+    "priority": "S",
+    "phase": "Feature Completion",
+    "status": "ready",
+    "detailed_design": {
+        "module": "tests",
+        "description": "Add comprehensive test coverage including adapter tests, integration tests, E2E tests, and frontend tests. Currently only router and security have minimal tests. Achieve >80% coverage across all modules.",
+        "affected_files": [
+            "tests/adapters/ (new)",
+            "tests/integration/ (new)",
+            "tests/e2e/ (new)",
+            "frontend/src/__tests__/ (new)"
+        ],
+        "solution": "1. Add unit tests for all adapters. 2. Add integration tests for router+adapters. 3. Add E2E tests for API endpoints. 4. Add frontend component tests. 5. Add frontend integration tests. 6. Achieve >80% coverage."
+    },
+    "acceptance_criteria": [
+        "Unit tests for all adapter classes",
+        "Integration tests for router with real adapters",
+        "E2E tests for all API endpoints",
+        "Frontend component tests (Jest/React Testing Library)",
+        "Frontend integration tests",
+        "Overall coverage >80%",
+        "All tests pass in CI/CD",
+        "Tests run in <2 minutes"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want comprehensive tests to catch regressions."
+        },
+        {
+            "story": "As a contributor, I want confidence that my changes don't break existing functionality."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Minimal test coverage, no adapter/integration/E2E/frontend tests",
+        "risk": "MEDIUM - Regressions, low confidence",
+        "estimated_effort": "High (5-6 days)",
+        "dependencies": ["Testing infrastructure (PBI-009)"]
+    }
+}

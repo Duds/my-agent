@@ -1,0 +1,72 @@
+{
+    "id": "PBI-010",
+    "title": "UI Scaffold Integration",
+    "priority": "M",
+    "phase": "Production Readiness",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Integrate comprehensive UI scaffold from .temp/scaffold_unzipped/ into the main frontend. The scaffold provides a complete 'Command Center' UI with AppSidebar, PersonaSelector, ModelSelector, ChatInterface, StatusBar, SettingsPanel, and 40+ shadcn/ui components. Replace mock data with real backend API calls.",
+        "affected_files": [
+            "frontend/src/components/ (new directory)",
+            "frontend/src/lib/ (new directory)",
+            "frontend/src/hooks/ (new directory)",
+            "frontend/src/app/layout.tsx",
+            "frontend/src/app/page.tsx",
+            "frontend/package.json"
+        ],
+        "solution": "Phase 1: Copy components, lib, hooks from scaffold. Phase 2: Merge layout.tsx and integrate AppSidebar. Phase 3: Replace mock data in lib/store.ts with API calls. Phase 4: Connect components to backend. Phase 5: Verify all features work."
+    },
+    "acceptance_criteria": [
+        "All scaffold components copied to frontend/src/components/",
+        "AppSidebar integrated into main layout",
+        "PersonaSelector connected to backend",
+        "ModelSelector connected to backend",
+        "ChatInterface replaces simple page.tsx",
+        "StatusBar shows real agent process data",
+        "SettingsPanel reads/updates backend config",
+        "Theme switching works (dark/light)",
+        "All sidebars render correctly (Processes, Automations, Cron Jobs)",
+        "No mock data remains in production code",
+        "npm run lint passes",
+        "npm run build succeeds",
+        "All TypeScript errors resolved"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want a rich dashboard UI to manage my agent."
+        },
+        {
+            "story": "As a user, I want to switch between agent personas easily."
+        },
+        {
+            "story": "As a user, I want to monitor agent processes in real-time."
+        },
+        {
+            "story": "As a user, I want to manage automations and cron jobs through the UI."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Monolithic single-page frontend, no component structure",
+        "risk": "MEDIUM - UI complexity, integration challenges",
+        "estimated_effort": "High (4-5 days)",
+        "dependencies": ["API Documentation (PBI-015)", "Frontend Type Safety (PBI-011)"],
+        "scaffold_components": [
+            "AppSidebar - Navigation",
+            "PersonaSelector - Agent personas",
+            "ModelSelector - Model selection",
+            "ChatInterface - Conversations",
+            "StatusBar - Process monitoring",
+            "SettingsPanel - Configuration",
+            "ThemeProvider - Dark/light mode",
+            "40+ shadcn/ui components"
+        ],
+        "integration_phases": [
+            "Phase 1: Component migration",
+            "Phase 2: Layout integration",
+            "Phase 3: Data integration",
+            "Phase 4: Feature connection",
+            "Phase 5: Verification"
+        ]
+    }
+}

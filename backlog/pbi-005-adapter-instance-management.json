@@ -1,0 +1,50 @@
+{
+    "id": "PBI-005",
+    "title": "Adapter Instance Management",
+    "priority": "M",
+    "phase": "Critical Fixes",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.router",
+        "description": "Fix adapter instantiation pattern. Currently, new OllamaAdapter instances are created for every request (lines 56, 62, 72, 77 in router.py), causing performance degradation and resource waste. Implement singleton pattern or connection pooling to reuse adapter instances.",
+        "affected_files": [
+            "core/router.py",
+            "core/adapters_base.py",
+            "core/adapters_local.py",
+            "core/adapters_remote.py"
+        ],
+        "solution": "Create an AdapterFactory or AdapterPool that maintains singleton instances of each adapter type. Initialize adapters once during application startup and reuse them for all requests. Ensure thread-safety for async operations."
+    },
+    "acceptance_criteria": [
+        "Adapters instantiated once during startup",
+        "All requests reuse existing adapter instances",
+        "No memory leaks from adapter accumulation",
+        "Performance improvement measurable (response time)",
+        "Thread-safe for concurrent requests",
+        "Proper cleanup on application shutdown"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want fast response times without unnecessary overhead."
+        },
+        {
+            "story": "As a developer, I want efficient resource utilization to support more concurrent requests."
+        },
+        {
+            "story": "As a system administrator, I want predictable memory usage."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "New adapter instances created per request in router.py lines 56, 62, 72, 77",
+        "risk": "HIGH - Performance degradation, memory waste",
+        "estimated_effort": "Medium (1 day)",
+        "dependencies": [],
+        "implementation_approach": [
+            "Create AdapterFactory class",
+            "Initialize adapters in FastAPI lifespan",
+            "Pass adapter instances to router constructor",
+            "Add adapter health checks",
+            "Implement graceful shutdown"
+        ]
+    }
+}

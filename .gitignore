@@ -21,4 +21,4 @@ frontend/build/
 Thumbs.db
 
 # Misc
-.agent/
+.temp/

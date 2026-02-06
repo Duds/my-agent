@@ -1,0 +1,47 @@
+{
+    "id": "PBI-013",
+    "title": "Enhanced Intent Classification",
+    "priority": "S",
+    "phase": "Feature Completion",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.router",
+        "description": "Replace brittle keyword-based intent classification with ML-based approach. Currently uses simple keyword matching which is easy to bypass and inflexible. Implement ML-based classification with confidence scores, fallback strategies, and support for multiple intents.",
+        "affected_files": [
+            "core/router.py",
+            "core/intent_classifier.py (new)",
+            "models/intent_classifier.pkl (new)",
+            "requirements.txt"
+        ],
+        "solution": "Option 1: Use local LLM for classification. Option 2: Train lightweight ML model (scikit-learn). Option 3: Use sentence transformers for semantic matching. Implement confidence scores, multi-label classification, and fallback to keyword matching."
+    },
+    "acceptance_criteria": [
+        "ML-based intent classification implemented",
+        "Confidence scores returned for each classification",
+        "Supports multiple intents per query",
+        "Fallback to keyword matching if confidence low",
+        "Classification accuracy >90% on test set",
+        "Classification time <100ms",
+        "Model can be retrained with new examples",
+        "Tests for classification accuracy"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want accurate intent detection so my queries are routed correctly."
+        },
+        {
+            "story": "As a user, I want the system to handle complex queries with multiple intents."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Simple keyword matching, easy to bypass, inflexible",
+        "risk": "MEDIUM - Misrouting, poor user experience",
+        "estimated_effort": "High (4-5 days)",
+        "dependencies": ["Testing infrastructure (PBI-009)"],
+        "implementation_options": [
+            "Local LLM (Ollama) - Most accurate, slower",
+            "Scikit-learn classifier - Fast, needs training data",
+            "Sentence transformers - Good balance, semantic matching"
+        ]
+    }
+}

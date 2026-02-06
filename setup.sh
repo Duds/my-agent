@@ -3,10 +3,10 @@
 
 echo "🚀 Setting up Secure Personal Agentic Platform..."
 
-# 1. Create Python virtual environment
+# 1. Create Python virtual environment (outside project to avoid Cursor indexing issues)
 echo "📦 Creating Python virtual environment..."
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv ../my-agent-venv
+source ../my-agent-venv/bin/activate
 
 # 2. Install Python dependencies
 echo "📚 Installing Python dependencies..."
@@ -33,5 +33,5 @@ echo "Next steps:"
 echo "1. Edit .env file with your API keys"
 echo "2. In Terminal Tab 1: ollama serve"
 echo "3. In Terminal Tab 2: ollama pull llama3 && ollama pull mistral"
-echo "4. In Terminal Tab 3: source venv/bin/activate && PYTHONPATH=. python3 core/main.py"
+echo "4. In Terminal Tab 3: source ../my-agent-venv/bin/activate && PYTHONPATH=. python3 core/main.py"
 echo "5. In Terminal Tab 4: cd frontend && npm run dev"

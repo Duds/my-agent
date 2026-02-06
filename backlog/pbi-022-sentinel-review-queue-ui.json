@@ -1,0 +1,43 @@
+{
+    "id": "PBI-022",
+    "title": "Sentinel Review Queue UI",
+    "priority": "C",
+    "phase": "Advanced Features",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Design and implement 'Tinder for Files' interface for reviewing agent file organization suggestions. Users can approve/reject file moves with swipe gestures or buttons. Supports capability.sentinel from roadmap.",
+        "affected_files": [
+            "frontend/src/components/sentinel/ (new)",
+            "frontend/src/components/file-review-queue.tsx (new)"
+        ],
+        "solution": "1. Design swipe-based review interface. 2. Implement file preview. 3. Add approve/reject actions. 4. Implement undo functionality. 5. Connect to sentinel backend API."
+    },
+    "acceptance_criteria": [
+        "Swipe interface for file review",
+        "File preview shows content/metadata",
+        "Approve/reject buttons and keyboard shortcuts",
+        "Undo last action",
+        "Batch operations (approve/reject all)",
+        "Shows suggested destination",
+        "Connected to sentinel backend",
+        "Responsive design (works on mobile)"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want to quickly review file organization suggestions."
+        },
+        {
+            "story": "As a user, I want to see file previews before approving moves."
+        },
+        {
+            "story": "As a user, I want to undo accidental approvals."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "No UI for sentinel review queue",
+        "risk": "LOW - Feature gap",
+        "estimated_effort": "Medium (3-4 days)",
+        "dependencies": ["Sentinel backend", "UI scaffold integration (PBI-010)"]
+    }
+}

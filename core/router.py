@@ -1,8 +1,13 @@
 import enum
-from typing import List, Dict, Any
+import logging
+from typing import Any, Dict, List
+
 from .adapters_base import ModelAdapter
 from .adapters_local import OllamaAdapter
 from .security import SecurityValidator
+
+logger = logging.getLogger(__name__)
+
 
 class Intent(enum.Enum):
     SPEED = "speed"
@@ -13,10 +18,22 @@ class Intent(enum.Enum):
     FINANCE = "finance"
 
 class ModelRouter:
-    def __init__(self, local_client, remote_clients: Dict[str, Any], security_validator: SecurityValidator = None):
+    """Routes requests to appropriate adapters. Reuses adapter instances from pool."""
+
+    def __init__(
+        self,
+        local_client: ModelAdapter,
+        remote_clients: Dict[str, ModelAdapter],
+        security_validator: SecurityValidator | None = None,
+        available_models: List[str] | None = None,
+    ):
         self.local_client = local_client
         self.remote_clients = remote_clients
         self.security_validator = security_validator
+        self.available_models = available_models or []
+        # Adapter pool: reuse OllamaAdapter instances by model_name
+        self._local_adapter_pool: Dict[str, OllamaAdapter] = {}
+        logger.info("ModelRouter initialized with %d local models", len(self.available_models))
 
     async def classify_intent(self, user_input: str) -> Intent:
         # Initial implementation uses simple keyword matching or a cheap local model
@@ -32,31 +49,57 @@ class ModelRouter:
             return Intent.FINANCE
         return Intent.QUALITY if len(user_input) > 100 else Intent.SPEED
 
-    async def get_adapter(self, intent: Intent) -> str:
-        if intent in [Intent.PRIVATE, Intent.NSFW]:
-            return "local_ollama"
-        if intent == Intent.SPEED:
-            return "moonshot"
-        if intent in [Intent.CODING, Intent.QUALITY, Intent.FINANCE]:
-            return "anthropic"
-        return "local_ollama"
+    def _find_best_local_model(self, keywords: List[str], default: str) -> str:
+        """Finds the first available model matching any keyword, or returns default."""
+        for kw in keywords:
+            for model in self.available_models:
+                if kw in model.lower():
+                    return model
+        return default
+
+    def _get_local_adapter(self, model_name: str) -> OllamaAdapter:
+        """Get or create cached OllamaAdapter for model_name."""
+        if model_name not in self._local_adapter_pool:
+            self._local_adapter_pool[model_name] = OllamaAdapter(model_name=model_name)
+        return self._local_adapter_pool[model_name]
 
     async def route_request(self, user_input: str) -> Dict[str, Any]:
         intent = await self.classify_intent(user_input)
-        
-        # Route based on intent with specialized models
+
+        # Route based on intent with specialized models (reuse adapters from pool)
         if intent in [Intent.PRIVATE, Intent.NSFW]:
-            adapter_name = "hermes-roleplay:latest"
-            adapter = OllamaAdapter(model_name="hermes-roleplay:latest")
+            model_name = self._find_best_local_model(
+                ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
+            )
+            adapter_name = model_name
+            adapter = self._get_local_adapter(model_name)
+
         elif intent == Intent.CODING:
-            adapter_name = "codellama:7b-instruct"
-            adapter = OllamaAdapter(model_name="codellama:7b-instruct")
+            model_name = self._find_best_local_model(
+                ["deepseek-coder", "codellama", "qwen-coder", "code"],
+                default="codellama:7b-instruct",
+            )
+            adapter_name = model_name
+            adapter = self._get_local_adapter(model_name)
+
         elif intent == Intent.QUALITY:
-            adapter_name = "anthropic"
-            adapter = self.remote_clients.get("anthropic", self.local_client)
+            if "anthropic" in self.remote_clients:
+                adapter_name = "anthropic"
+                adapter = self.remote_clients["anthropic"]
+            else:
+                model_name = self._find_best_local_model(
+                    ["llama3", "mistral", "mixtral", "gemma"], default="llama3:latest"
+                )
+                adapter_name = model_name
+                adapter = self._get_local_adapter(model_name)
+
         elif intent == Intent.SPEED:
-            adapter_name = "mistral:latest"
-            adapter = OllamaAdapter(model_name="mistral:latest")
+            model_name = self._find_best_local_model(
+                ["mistral", "gemma", "phi", "tiny", "llama3"], default="mistral:latest"
+            )
+            adapter_name = model_name
+            adapter = self._get_local_adapter(model_name)
+
         else:
             adapter_name = "llama3:latest"
             adapter = self.local_client

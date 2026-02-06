@@ -1,0 +1,52 @@
+{
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/.next/**": true,
+        "**/__pycache__/**": true,
+        "**/.git/**": true,
+        "**/venv/**": true,
+        "**/.temp/**": true
+    },
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/__pycache__": true,
+        "**/.temp": true
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/../my-agent-venv/bin/python",
+    "python.analysis.extraPaths": [
+        "./core"
+    ],
+    // Formatting & Linting (Python)
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    // Formatting (Frontend)
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[javascriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "cursorpyright.analysis.extraPaths": [
+        "./core"
+    ]
+}

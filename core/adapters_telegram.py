@@ -8,9 +8,7 @@ Implements real Telegram bot integration with:
 - Session management
 """
 
-import asyncio
 import logging
-from typing import Dict, Any
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ChatAction
@@ -73,7 +71,7 @@ class TelegramAdapter:
         This implements the "killer feature": fast UI presence while slow models work.
         """
         user_message = update.message.text
-        chat_id = update.effective_chat.id
+        # chat_id = update.effective_chat.id
         
         # Step 1: Instant acknowledgment with fast presence model
         await update.message.chat.send_action(ChatAction.TYPING)
@@ -96,19 +94,14 @@ class TelegramAdapter:
             await update.message.reply_text(routing_msg)
             
             # Step 3: Get full response from routed model
-            # (This is where slow processing happens)
-            await update.message.chat.send_action(ChatAction.TYPING)
-            
-            # For now, return routing info
-            # TODO: Actually call the routed model and get response
-            response = f"✅ Processed with {adapter_name}\n\n(Full model integration coming next)"
+            # This is already handled by route_request in our current architecture
+            response = routing_info['answer']
             await update.message.reply_text(response)
             
         except Exception as e:
             logger.error(f"Error handling message: {e}")
             await update.message.reply_text(
-                "❌ Sorry, I encountered an error processing your request. "
-                "Please try again or contact support."
+                f"❌ Sorry, I encountered an error: {str(e)}"
             )
     
     def run(self):

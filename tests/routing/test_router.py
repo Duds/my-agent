@@ -1,36 +1,95 @@
-import asyncio
-import sys
-import os
+"""Tests for ModelRouter."""
 
-# Add the project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import pytest
 
-from core.router import ModelRouter, Intent
+from core.router import Intent, ModelRouter
 
-class MockClient:
-    def __init__(self, name):
+
+class MockAdapter:
+    """Minimal mock adapter for testing."""
+
+    def __init__(self, name: str = "mock"):
         self.name = name
 
-async def test_router():
-    router = ModelRouter(local_client=MockClient("Ollama"), remote_clients={
-        "anthropic": MockClient("Anthropic"),
-        "moonshot": MockClient("Moonshot")
-    })
+    async def generate(self, prompt: str, context=None):
+        return f"Mock response for: {prompt[:50]}"
 
-    test_cases = [
-        ("What is the capital of France?", "speed", "moonshot"),
-        ("Write a complex python script to parse logs", "coding", "anthropic"),
-        ("This is my private password", "private", "local_ollama"),
-        ("Let's do some erotic roleplay", "nsfw", "local_ollama"),
-        ("Explain the best investment strategy for wealth", "finance", "anthropic"),
-    ]
+    def get_model_info(self):
+        return {"model": self.name, "type": "mock"}
 
-    for text, expected_intent, expected_adapter in test_cases:
-        routing = await router.route_request(text)
-        print(f"Testing: '{text[:30]}...'")
-        assert routing['intent'] == expected_intent, f"Expected {expected_intent}, got {routing['intent']}"
-        assert routing['adapter'] == expected_adapter, f"Expected {expected_adapter}, got {routing['adapter']}"
-        print(f"✅ Success: {routing['intent']} -> {routing['adapter']}")
 
-if __name__ == "__main__":
-    asyncio.run(test_router())
+@pytest.mark.asyncio
+async def test_classify_intent_private():
+    """Private keywords route to PRIVATE intent."""
+    router = ModelRouter(
+        local_client=MockAdapter(),
+        remote_clients={},
+        available_models=["llama3:latest"],
+    )
+    intent = await router.classify_intent("This is my private password")
+    assert intent == Intent.PRIVATE
+
+
+@pytest.mark.asyncio
+async def test_classify_intent_nsfw():
+    """NSFW keywords route to NSFW intent."""
+    router = ModelRouter(
+        local_client=MockAdapter(),
+        remote_clients={},
+        available_models=["llama3:latest"],
+    )
+    intent = await router.classify_intent("Let's do some erotic roleplay")
+    assert intent == Intent.NSFW
+
+
+@pytest.mark.asyncio
+async def test_classify_intent_coding():
+    """Coding keywords route to CODING intent."""
+    router = ModelRouter(
+        local_client=MockAdapter(),
+        remote_clients={},
+        available_models=["llama3:latest"],
+    )
+    intent = await router.classify_intent("Write a Python script")
+    assert intent == Intent.CODING
+
+
+@pytest.mark.asyncio
+async def test_classify_intent_finance():
+    """Finance keywords route to FINANCE intent."""
+    router = ModelRouter(
+        local_client=MockAdapter(),
+        remote_clients={},
+        available_models=["llama3:latest"],
+    )
+    intent = await router.classify_intent("Best investment strategy for wealth")
+    assert intent == Intent.FINANCE
+
+
+@pytest.mark.asyncio
+async def test_route_request_returns_all_fields(router):
+    """Route request returns intent, adapter, answer, security."""
+    # Use long prompt to trigger QUALITY -> anthropic (mock)
+    long_prompt = "Explain the theory of relativity in detail " * 5
+    result = await router.route_request(long_prompt)
+    assert "intent" in result
+    assert "adapter" in result
+    assert "answer" in result
+    assert "security" in result
+    assert "requires_privacy" in result
+    assert result["answer"]
+
+
+@pytest.mark.asyncio
+async def test_route_request_finance_uses_local():
+    """Finance intent uses local client (fallback)."""
+    mock = MockAdapter("local")
+    router = ModelRouter(
+        local_client=mock,
+        remote_clients={},
+        available_models=[],
+        security_validator=None,
+    )
+    result = await router.route_request("Best investment strategy for wealth")
+    assert result["intent"] == "finance"
+    assert result["answer"] == "Mock response for: Best investment strategy for wealth"

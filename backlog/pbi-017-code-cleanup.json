@@ -1,0 +1,36 @@
+{
+    "id": "PBI-017",
+    "title": "Code Cleanup",
+    "priority": "S",
+    "phase": "Quick Wins",
+    "status": "ready",
+    "detailed_design": {
+        "module": "all",
+        "description": "Quick wins for code cleanup: remove duplicate Telegram adapter, add .temp/ to .gitignore, remove unused code, fix indentation issues.",
+        "affected_files": [
+            "adapters/telegram_adapter.py (delete)",
+            ".gitignore",
+            "core/security.py"
+        ],
+        "solution": "1. Delete adapters/telegram_adapter.py (keep core/adapters_telegram.py). 2. Add .temp/ to .gitignore. 3. Fix regex indentation in security.py. 4. Remove unused get_adapter() method from router.py."
+    },
+    "acceptance_criteria": [
+        "Duplicate Telegram adapter removed",
+        ".temp/ added to .gitignore",
+        "Regex indentation fixed in security.py",
+        "Unused code removed",
+        "No linter warnings",
+        "All imports still work"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want clean code without duplication."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Code duplication, .temp/ committed, indentation errors",
+        "risk": "LOW - Code quality",
+        "estimated_effort": "Low (1 hour)",
+        "dependencies": []
+    }
+}

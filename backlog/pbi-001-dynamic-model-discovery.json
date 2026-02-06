@@ -1,0 +1,16 @@
+{
+    "id": "PBI-001",
+    "title": "Dynamic Model Discovery",
+    "detailed_design": {
+        "module": "core.router",
+        "description": "Refactor ModelRouter to query Ollama API (/api/tags) for available models. Map detected models to intents based on capabilities (e.g., 'coding' -> codellama, 'roleplay' -> hermes). Fallback to safe defaults if preferred models are missing."
+    },
+    "user_stories": [
+        {
+            "story": "As a user, I want the system to automatically detect which LLMs I have installed so that I don't have to manually configure string names."
+        },
+        {
+            "story": "As a developer, I want the system to gracefully handle missing models by falling back to a standard default (like llama3) so the system doesn't crash."
+        }
+    ]
+}

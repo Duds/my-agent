@@ -1,0 +1,68 @@
+{
+    "id": "PBI-011",
+    "title": "Frontend Type Safety",
+    "priority": "M",
+    "phase": "Production Readiness",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Implement comprehensive TypeScript type safety throughout the frontend. Currently, API responses are typed as 'any', there are no interface definitions, and type safety is minimal. Define TypeScript interfaces for all API responses, remove 'any' types, add proper error handling, and fix the port mismatch (8000 vs 8001).",
+        "affected_files": [
+            "frontend/src/types/ (new directory)",
+            "frontend/src/types/api.ts (new)",
+            "frontend/src/types/models.ts (new)",
+            "frontend/src/lib/api-client.ts (new)",
+            "frontend/src/app/page.tsx",
+            "frontend/next.config.ts"
+        ],
+        "solution": "1. Create types/ directory with interface definitions. 2. Define API response types matching backend. 3. Create API client service with typed methods. 4. Replace 'any' types throughout. 5. Add proper error handling. 6. Fix port mismatch. 7. Add environment variables for API URL."
+    },
+    "acceptance_criteria": [
+        "No 'any' types in production code",
+        "All API responses have TypeScript interfaces",
+        "API client service with typed methods",
+        "Environment variables for API configuration",
+        "Port mismatch resolved (consistent 8000 or 8001)",
+        "Proper error handling with typed errors",
+        "Type guards for runtime validation",
+        "TSConfig strict mode enabled",
+        "No TypeScript errors in build",
+        "IDE autocomplete works for all API types"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want type safety to catch errors at compile time."
+        },
+        {
+            "story": "As a developer, I want IDE autocomplete for API responses."
+        },
+        {
+            "story": "As a user, I want proper error messages when API calls fail."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Response typed as 'any', no interfaces, hardcoded URLs, port mismatch",
+        "risk": "MEDIUM - Type errors, runtime failures",
+        "estimated_effort": "Medium (2-3 days)",
+        "dependencies": ["API Documentation (PBI-015)"],
+        "type_definitions_needed": [
+            "QueryRequest",
+            "QueryResponse",
+            "RoutingInfo",
+            "SecurityInfo",
+            "ModelInfo",
+            "ErrorResponse",
+            "Persona",
+            "ModelConfig",
+            "AgentProcess",
+            "Automation"
+        ],
+        "api_client_methods": [
+            "query(prompt: string): Promise<QueryResponse>",
+            "getModels(): Promise<ModelInfo[]>",
+            "getPersonas(): Promise<Persona[]>",
+            "getProcesses(): Promise<AgentProcess[]>",
+            "getAutomations(): Promise<Automation[]>"
+        ]
+    }
+}

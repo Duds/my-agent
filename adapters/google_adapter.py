@@ -1,7 +1,6 @@
-import os
-from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import datetime
 
 # Scopes required for the personal agent
 SCOPES = [
@@ -29,6 +28,6 @@ class GoogleWorkspaceAdapter:
         return events_result.get('items', [])
 
     def get_unread_emails(self, limit=5):
-        service = build('gmail', 'v1', credentials=self.creds)
+        # service = build('gmail', 'v1', credentials=self.creds)
         # To be implemented
         pass

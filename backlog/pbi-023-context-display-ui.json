@@ -1,0 +1,43 @@
+{
+    "id": "PBI-023",
+    "title": "Context Display UI",
+    "priority": "C",
+    "phase": "Advanced Features",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Design and implement UI for displaying current user context (active window, current activity, mode). Shows real-time context that drives the context awareness engine. Supports capability.context_awareness from roadmap.",
+        "affected_files": [
+            "frontend/src/components/context-display.tsx (new)",
+            "frontend/src/components/mode-indicator.tsx (new)"
+        ],
+        "solution": "1. Design context display component. 2. Add active window indicator. 3. Add current activity display. 4. Add mode indicator (Deep Work, Relax, etc.). 5. Connect to context awareness backend."
+    },
+    "acceptance_criteria": [
+        "Shows active window/application",
+        "Shows current activity classification",
+        "Mode indicator (Deep Work, Relax, etc.)",
+        "Real-time updates (WebSocket or polling)",
+        "Compact display (status bar or header)",
+        "Click to see detailed context",
+        "Connected to context awareness backend",
+        "Responsive design"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want to see what context the agent is aware of."
+        },
+        {
+            "story": "As a user, I want to know which mode I'm currently in."
+        },
+        {
+            "story": "As a user, I want to quickly switch modes."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "No UI for context awareness display",
+        "risk": "LOW - Feature gap",
+        "estimated_effort": "Medium (2-3 days)",
+        "dependencies": ["Context awareness backend", "UI scaffold integration (PBI-010)"]
+    }
+}

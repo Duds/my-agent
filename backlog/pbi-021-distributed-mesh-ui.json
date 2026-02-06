@@ -1,0 +1,43 @@
+{
+    "id": "PBI-021",
+    "title": "Distributed Mesh UI",
+    "priority": "C",
+    "phase": "Advanced Features",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Design and implement UI for visualizing and managing the distributed mesh network. Shows mesh health, node status, resource discovery, and connection management. Supports capability.distributed_mesh from roadmap.",
+        "affected_files": [
+            "frontend/src/components/mesh/ (new)",
+            "frontend/src/components/mesh-health.tsx (new)",
+            "frontend/src/components/node-manager.tsx (new)"
+        ],
+        "solution": "1. Design mesh health dashboard. 2. Create node manager interface. 3. Add resource discovery visualization. 4. Implement connection status monitoring. 5. Connect to mesh backend API."
+    },
+    "acceptance_criteria": [
+        "Mesh health dashboard shows all nodes",
+        "Node manager allows node configuration",
+        "Resource discovery shows available GPUs/tools",
+        "Connection status real-time updates",
+        "Node performance metrics displayed",
+        "Can trigger remote operations",
+        "Responsive design"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want to see the health of my mesh network."
+        },
+        {
+            "story": "As a user, I want to know which resources are available on each node."
+        },
+        {
+            "story": "As a power user, I want to manually route tasks to specific nodes."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "No UI for distributed mesh capability",
+        "risk": "LOW - Feature gap",
+        "estimated_effort": "High (4-5 days)",
+        "dependencies": ["Distributed mesh backend", "UI scaffold integration (PBI-010)"]
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "id": "PBI-003",
+    "title": "Security Validator Implementation",
+    "priority": "M",
+    "phase": "Critical Fixes",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.security",
+        "description": "Implement actual security validation logic or remove placeholder code. Currently, security checks are commented out (lines 13-27), leaving the system vulnerable. Need to either implement LLM-based validation using the judge adapter or implement robust heuristic-based validation.",
+        "affected_files": [
+            "core/security.py",
+            "core/router.py"
+        ],
+        "solution": "Option 1: Implement LLM-based validation using judge adapter to inspect outputs for PII, malicious code, and prompt injections. Option 2: Implement comprehensive regex and heuristic-based validation. Option 3: Remove placeholder and document security as user responsibility."
+    },
+    "acceptance_criteria": [
+        "Security validator either fully implemented or cleanly removed",
+        "If implemented: detects common attack vectors (SQL injection, XSS, path traversal)",
+        "If implemented: detects PII in outputs",
+        "If implemented: has test coverage for security scenarios",
+        "Documentation updated to reflect security approach"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want my sensitive data to be protected from leaking to external APIs."
+        },
+        {
+            "story": "As a user, I want protection from malicious code execution through prompt injection."
+        },
+        {
+            "story": "As a developer, I want clear security boundaries so I know what is and isn't protected."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Security validation code commented out, no actual validation occurring",
+        "risk": "CRITICAL - Data leakage, prompt injection vulnerabilities",
+        "estimated_effort": "High (2-3 days for full implementation)",
+        "dependencies": ["Judge adapter integration", "Test infrastructure"],
+        "security_concerns": [
+            "PII detection",
+            "Prompt injection prevention",
+            "Output sanitization",
+            "Shell command detection"
+        ]
+    }
+}

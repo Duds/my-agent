@@ -1,0 +1,35 @@
+{
+    "id": "PBI-002",
+    "title": "Router Initialization Bug Fix",
+    "priority": "M",
+    "phase": "Critical Fixes",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.main",
+        "description": "Fix router initialization order bug where `router` variable is used before assignment. The router is referenced on line 25 but not created until line 56, causing the application to crash on startup.",
+        "affected_files": [
+            "core/main.py"
+        ],
+        "solution": "Move router initialization to occur before the lifespan context manager. Create router instance at module level or within a proper initialization function that runs before the FastAPI app uses it."
+    },
+    "acceptance_criteria": [
+        "Application starts without NameError",
+        "Router is properly initialized before first use",
+        "All endpoints can access router instance",
+        "No regression in existing functionality"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want the application to start successfully so that I can test and develop features."
+        },
+        {
+            "story": "As a user, I want the system to be stable and not crash on startup."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "router variable used on line 25, created on line 56",
+        "risk": "HIGH - Application cannot start",
+        "estimated_effort": "Low (30 minutes)",
+        "dependencies": []
+    }
+}

@@ -1,0 +1,60 @@
+{
+    "id": "PBI-009",
+    "title": "Testing Infrastructure",
+    "priority": "M",
+    "phase": "Production Readiness",
+    "status": "ready",
+    "detailed_design": {
+        "module": "tests",
+        "description": "Convert existing tests to pytest framework and establish proper testing infrastructure. Currently, tests use manual execution with asyncio.run(), don't use pytest, and have no configuration. Implement pytest-based testing with fixtures, parametrization, coverage measurement, and proper test organization.",
+        "affected_files": [
+            "tests/routing/test_router.py",
+            "tests/security/test_security.py",
+            "pytest.ini (new)",
+            "tests/conftest.py (new)",
+            ".github/workflows/test.yml (new)"
+        ],
+        "solution": "1. Convert tests to pytest format with @pytest.mark.asyncio. 2. Create pytest.ini configuration. 3. Create conftest.py with fixtures for common setup. 4. Add pytest-cov for coverage measurement. 5. Organize tests by module. 6. Add CI/CD workflow for automated testing."
+    },
+    "acceptance_criteria": [
+        "All tests use pytest framework",
+        "Tests can be run with 'pytest' command",
+        "pytest.ini configured with async settings",
+        "conftest.py provides common fixtures",
+        "Test coverage measured and reported",
+        "Coverage target: >80% for core modules",
+        "Tests organized by module (tests/core/, tests/adapters/)",
+        "CI/CD pipeline runs tests automatically",
+        "All tests pass consistently",
+        "Test execution time < 30 seconds"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want a proper testing framework so I can write and run tests easily."
+        },
+        {
+            "story": "As a contributor, I want automated tests to catch regressions."
+        },
+        {
+            "story": "As a maintainer, I want test coverage reports to identify gaps."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Manual test execution, no pytest, no coverage, incomplete mocks",
+        "risk": "MEDIUM - Regressions, low confidence in changes",
+        "estimated_effort": "Medium (2-3 days)",
+        "dependencies": [],
+        "test_structure": {
+            "unit_tests": "tests/core/, tests/adapters/",
+            "integration_tests": "tests/integration/",
+            "e2e_tests": "tests/e2e/",
+            "fixtures": "tests/conftest.py",
+            "mocks": "tests/mocks/"
+        },
+        "coverage_targets": {
+            "core": "90%",
+            "adapters": "80%",
+            "overall": "80%"
+        }
+    }
+}

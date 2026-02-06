@@ -1,0 +1,37 @@
+{
+    "id": "PBI-018",
+    "title": "Port Mismatch Fix",
+    "priority": "S",
+    "phase": "Quick Wins",
+    "status": "ready",
+    "detailed_design": {
+        "module": "frontend",
+        "description": "Fix port mismatch between frontend code (8001) and documentation (8000). Standardize on one port and update all references.",
+        "affected_files": [
+            "frontend/src/app/page.tsx",
+            "core/main.py",
+            "README.md",
+            "USER_GUIDE.md",
+            ".env.example"
+        ],
+        "solution": "1. Decide on standard port (recommend 8000). 2. Update frontend API URL. 3. Update documentation. 4. Add environment variable for API URL. 5. Update .env.example."
+    },
+    "acceptance_criteria": [
+        "All references use consistent port",
+        "Frontend connects to backend successfully",
+        "Documentation updated",
+        "Environment variable for API URL",
+        "No hardcoded ports in code"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want the frontend to connect to the backend without configuration."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Frontend uses 8001, docs mention 8000",
+        "risk": "LOW - Connection issues",
+        "estimated_effort": "Low (30 minutes)",
+        "dependencies": []
+    }
+}

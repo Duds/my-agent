@@ -1,0 +1,49 @@
+{
+    "id": "PBI-004",
+    "title": "API Authentication",
+    "priority": "M",
+    "phase": "Critical Fixes",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.main",
+        "description": "Add authentication and authorization to API endpoints. Currently, CORS allows all origins and there is no authentication, meaning anyone with network access can use the agent. Implement API key authentication, secure CORS configuration, and rate limiting.",
+        "affected_files": [
+            "core/main.py",
+            "core/security.py",
+            ".env.example"
+        ],
+        "solution": "1. Add API key authentication middleware. 2. Restrict CORS to specific origins (localhost:3000 for frontend). 3. Implement rate limiting to prevent abuse. 4. Add request validation middleware. 5. Consider session-based auth for web dashboard."
+    },
+    "acceptance_criteria": [
+        "API endpoints require valid API key",
+        "CORS restricted to configured origins only",
+        "Rate limiting prevents abuse (e.g., 100 requests/minute)",
+        "Unauthorized requests return 401 with clear error message",
+        "Frontend can authenticate successfully",
+        "Telegram bot has separate authentication mechanism",
+        "Documentation updated with authentication setup"
+    ],
+    "user_stories": [
+        {
+            "story": "As a user, I want my agent to be protected from unauthorized access."
+        },
+        {
+            "story": "As a developer, I want to prevent abuse of the API through rate limiting."
+        },
+        {
+            "story": "As a security-conscious user, I want CORS properly configured to prevent CSRF attacks."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "No authentication, CORS allows all origins (*)",
+        "risk": "CRITICAL - Unauthorized access, API abuse",
+        "estimated_effort": "Medium (1-2 days)",
+        "dependencies": ["Configuration management (PBI-007)"],
+        "implementation_options": [
+            "API Key in headers (X-API-Key)",
+            "Bearer token authentication",
+            "Session-based for web dashboard",
+            "Rate limiting with Redis or in-memory store"
+        ]
+    }
+}

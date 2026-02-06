@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.adapters_telegram import TelegramAdapter
+from core.adapters_remote import AnthropicAdapter, MoonshotAdapter
 from core.router import ModelRouter
 from core.adapters_local import OllamaAdapter
 from core.security import SecurityValidator
@@ -30,7 +31,7 @@ def main():
     load_dotenv()
     
     telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not telegram_token:
+    if not telegram_token or telegram_token == "your_telegram_bot_token_here":
         logger.error("TELEGRAM_BOT_TOKEN not found in .env file!")
         logger.error("Please get a token from @BotFather and add it to .env")
         sys.exit(1)
@@ -40,16 +41,15 @@ def main():
     local_model = OllamaAdapter(model_name="llama3")
     security_validator = SecurityValidator(judge_adapter=local_model)
     
-    # Mock for now until we have API keys
-    class MockClient:
-        def __init__(self, name):
-            self.name = name
+    # Remote Adapters
+    anthropic_adapter = AnthropicAdapter()
+    moonshot_adapter = MoonshotAdapter()
     
     router = ModelRouter(
         local_client=local_model,
         remote_clients={
-            "anthropic": MockClient("Anthropic"),
-            "moonshot": MockClient("Moonshot")
+            "anthropic": anthropic_adapter,
+            "moonshot": moonshot_adapter
         },
         security_validator=security_validator
     )

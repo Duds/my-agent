@@ -1,6 +1,12 @@
+import logging
+from typing import Any, Dict, List
+
 import httpx
+
 from .adapters_base import ModelAdapter
-from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
+
 
 class OllamaAdapter(ModelAdapter):
     def __init__(self, model_name: str, base_url: str = "http://localhost:11434"):
@@ -34,3 +40,18 @@ class OllamaAdapter(ModelAdapter):
 
     def get_model_info(self) -> Dict[str, Any]:
         return {"model": self.model_name, "type": "local"}
+
+    @staticmethod
+    async def get_available_models(base_url: str = "http://localhost:11434") -> List[str]:
+        """Fetch list of available local models from Ollama."""
+        url = f"{base_url}/api/tags"
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Extract model names (e.g., 'llama3:latest')
+                    return [model['name'] for model in data.get('models', [])]
+        except Exception as e:
+            logger.warning("Could not fetch available models: %s", e)
+        return []

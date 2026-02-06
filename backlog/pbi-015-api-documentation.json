@@ -1,0 +1,42 @@
+{
+    "id": "PBI-015",
+    "title": "API Documentation",
+    "priority": "S",
+    "phase": "Feature Completion",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.main",
+        "description": "Add comprehensive API documentation using OpenAPI/Swagger. Currently no API documentation exists. Generate interactive API docs, document all endpoints, add example requests/responses, and include authentication details.",
+        "affected_files": [
+            "core/main.py",
+            "docs/api/ (new)",
+            "docs/api/openapi.json (generated)"
+        ],
+        "solution": "1. Add FastAPI automatic OpenAPI generation. 2. Add detailed docstrings to all endpoints. 3. Add request/response models with examples. 4. Configure Swagger UI and ReDoc. 5. Document authentication. 6. Add API usage guide."
+    },
+    "acceptance_criteria": [
+        "OpenAPI spec generated automatically",
+        "Swagger UI accessible at /docs",
+        "ReDoc accessible at /redoc",
+        "All endpoints documented with descriptions",
+        "Request/response schemas defined",
+        "Example requests/responses included",
+        "Authentication documented",
+        "Error responses documented",
+        "API usage guide written"
+    ],
+    "user_stories": [
+        {
+            "story": "As a frontend developer, I want API documentation to understand available endpoints."
+        },
+        {
+            "story": "As an integrator, I want example requests/responses to test the API."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "No API documentation",
+        "risk": "LOW - Poor developer experience",
+        "estimated_effort": "Medium (2-3 days)",
+        "dependencies": []
+    }
+}

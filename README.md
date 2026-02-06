@@ -26,7 +26,7 @@ This platform is purpose-built to act as a secure extension of the user. It take
 ## 🏃 Quick Start
 1. **Prerequisites**: Install [Ollama](https://ollama.com/) and pull `llama3` and `mistral`.
 2. **Install**: `pip install -r requirements.txt`
-3. **Run Controller**: `PYTHONPATH=. python3 core/main.py`
+3. **Run Controller**: `source ../my-agent-venv/bin/activate && PYTHONPATH=. python3 core/main.py`
 4. **Run Dashboard**: `cd frontend && npm run dev`
 
 ---

@@ -1,0 +1,35 @@
+# Style Guide
+
+## "The Machine is the Arbiter"
+We do not argue about style in code reviews. We let the tools enforce it.
+
+## Python
+*   **Linter**: [Ruff](https://docs.astral.sh/ruff/)
+*   **Formatter**: Ruff (configured in `.vscode/settings.json`)
+*   **Type Checking**: [Mypy](https://mypy.readthedocs.io/) (Strict mode preferred)
+*   **Command**:
+    ```bash
+    ruff check --fix .
+    ruff format .
+    mypy .
+    ```
+
+### Key Python Conventions
+*   **Type Hints**: REQUIRED for all function arguments and return values.
+*   **Docstrings**: REQUIRED for all public modules, classes, and functions (Google style).
+*   **Imports**: Sorted automatically by Ruff.
+*   **Async**: Use `async/await` for all I/O bound operations (LLM calls, database, network).
+
+## Frontend (TypeScript/React)
+*   **Formatter**: [Prettier](https://prettier.io/)
+*   **Linter**: ESLint (Next.js config)
+*   **Command**:
+    ```bash
+    npm run lint
+    npx prettier --write .
+    ```
+
+### Key Frontend Conventions
+*   **Functional Components**: Use React Functional Components with Hooks. Avoid Class components.
+*   **Tailwind**: Use utility classes. Extract complex patterns to components, not `@apply`.
+*   **Strict Mode**: No `any`. Define interfaces for all props.

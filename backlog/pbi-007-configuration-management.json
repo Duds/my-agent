@@ -1,0 +1,56 @@
+{
+    "id": "PBI-007",
+    "title": "Configuration Management",
+    "priority": "M",
+    "phase": "Production Readiness",
+    "status": "ready",
+    "detailed_design": {
+        "module": "core.config",
+        "description": "Create centralized configuration management system using Pydantic settings. Currently, configuration is scattered across files with hardcoded values, inconsistent defaults, and no validation. Implement a config.py module with Pydantic BaseSettings for type-safe, validated configuration from environment variables and files.",
+        "affected_files": [
+            "core/config.py (new)",
+            "core/main.py",
+            "core/router.py",
+            "core/adapters_local.py",
+            "core/adapters_remote.py",
+            ".env.example"
+        ],
+        "solution": "1. Create core/config.py with Pydantic BaseSettings. 2. Define configuration classes for each module (OllamaConfig, AnthropicConfig, etc.). 3. Load from environment variables with validation. 4. Support multiple environments (dev, prod). 5. Document all configuration options."
+    },
+    "acceptance_criteria": [
+        "All configuration centralized in core/config.py",
+        "Pydantic models validate all config values",
+        "Environment variables properly loaded and validated",
+        "No hardcoded values in code (models, URLs, timeouts)",
+        "Configuration documented in .env.example",
+        "Support for dev/prod environments",
+        "Startup fails fast with clear errors for invalid config",
+        "Configuration can be overridden for testing"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want centralized configuration so I can easily understand and modify system behavior."
+        },
+        {
+            "story": "As a user, I want clear documentation of all configuration options."
+        },
+        {
+            "story": "As a system administrator, I want validated configuration that fails fast on errors."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Hardcoded values throughout, no validation, inconsistent defaults",
+        "risk": "MEDIUM - Configuration errors, difficult maintenance",
+        "estimated_effort": "Medium (2 days)",
+        "dependencies": [],
+        "configuration_sections": [
+            "Ollama (base_url, timeout, default_models)",
+            "Anthropic (api_key, model, max_tokens)",
+            "Moonshot (api_key, base_url, model, temperature)",
+            "Telegram (bot_token, allowed_users)",
+            "Security (cors_origins, api_keys, rate_limits)",
+            "Logging (level, format, rotation)",
+            "Memory (vault_path, encryption_key)"
+        ]
+    }
+}

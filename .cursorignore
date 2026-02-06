@@ -1,0 +1,36 @@
+# Python virtual environment - thousands of files, causes indexing and resource exhaustion
+venv/
+**/venv/
+ENV/
+env/
+
+# Frontend dependencies and build - 770MB+ of files
+node_modules/
+**/node_modules/
+frontend/node_modules/
+.next/
+**/.next/
+frontend/.next/
+out/
+frontend/out/
+build/
+
+# Python caches and generated
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.egg/
+
+# Temporary and generated
+.temp/
+**/.temp/
+*.log
+
+# Git - large history can cause indexing issues
+.git/

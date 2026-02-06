@@ -1,0 +1,56 @@
+{
+    "id": "PBI-006",
+    "title": "Logging Framework",
+    "priority": "M",
+    "phase": "Critical Fixes",
+    "status": "ready",
+    "detailed_design": {
+        "module": "all",
+        "description": "Replace all print() statements with proper logging framework. Currently, the codebase uses print() for debugging and error messages, which is not production-ready. Implement structured logging with levels (DEBUG, INFO, WARNING, ERROR, CRITICAL), log rotation, and proper formatting.",
+        "affected_files": [
+            "core/main.py",
+            "core/router.py",
+            "core/security.py",
+            "core/adapters_local.py",
+            "core/adapters_remote.py",
+            "core/adapters_telegram.py",
+            "core/telegram_bot.py"
+        ],
+        "solution": "1. Configure Python logging module with proper handlers. 2. Create logging configuration file. 3. Replace all print() with appropriate log levels. 4. Add structured logging with context (request_id, user_id, etc.). 5. Implement log rotation. 6. Ensure sensitive data is not logged."
+    },
+    "acceptance_criteria": [
+        "No print() statements remain in production code",
+        "All modules use Python logging module",
+        "Log levels properly configured (DEBUG for dev, INFO for prod)",
+        "Structured logging includes context (timestamps, module, function)",
+        "Log rotation configured (daily or by size)",
+        "Sensitive data (API keys, passwords) not logged",
+        "Logs written to both console and file",
+        "Log format is consistent and parseable"
+    ],
+    "user_stories": [
+        {
+            "story": "As a developer, I want proper logging so I can debug issues in production."
+        },
+        {
+            "story": "As a system administrator, I want structured logs that I can parse and analyze."
+        },
+        {
+            "story": "As a security-conscious user, I want to ensure sensitive data is never logged."
+        }
+    ],
+    "technical_notes": {
+        "current_issue": "Using print() instead of logging framework throughout codebase",
+        "risk": "MEDIUM - Difficult debugging, no log management",
+        "estimated_effort": "Medium (1-2 days)",
+        "dependencies": ["Configuration management (PBI-007)"],
+        "logging_strategy": {
+            "library": "Python standard logging",
+            "format": "JSON structured logging",
+            "levels": "DEBUG (dev), INFO (prod), WARNING, ERROR, CRITICAL",
+            "rotation": "Daily or 100MB per file",
+            "retention": "30 days",
+            "sensitive_data_handling": "Redact API keys, passwords, PII"
+        }
+    }
+}
