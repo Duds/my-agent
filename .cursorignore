@@ -4,7 +4,7 @@ venv/
 ENV/
 env/
 
-# Frontend dependencies and build - 770MB+ of files
+# Frontend dependencies and build - 771MB+ of files
 node_modules/
 **/node_modules/
 frontend/node_modules/

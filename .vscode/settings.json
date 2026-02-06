@@ -5,17 +5,33 @@
         "**/__pycache__/**": true,
         "**/.git/**": true,
         "**/venv/**": true,
+        "**/my-agent-venv/**": true,
         "**/.temp/**": true
     },
     "files.exclude": {
         "**/node_modules": true,
         "**/.next": true,
         "**/__pycache__": true,
+        "**/my-agent-venv": true,
         "**/.temp": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/venv": true,
+        "**/my-agent-venv": true,
+        "**/__pycache__": true,
+        "**/.git": true
     },
     "python.defaultInterpreterPath": "${workspaceFolder}/../my-agent-venv/bin/python",
     "python.analysis.extraPaths": [
         "./core"
+    ],
+    "python.analysis.indexing": false,
+    "python.analysis.exclude": [
+        "**/my-agent-venv/**",
+        "**/venv/**",
+        "**/node_modules/**"
     ],
     // Formatting & Linting (Python)
     "[python]": {
