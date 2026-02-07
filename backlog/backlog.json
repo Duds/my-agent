@@ -1,261 +1,261 @@
 {
-    "project": "Secure Personal Agentic Platform",
-    "backlog": [
-        {
-            "id": "PBI-001",
-            "title": "Dynamic Model Discovery",
-            "status": "done",
-            "priority": "M",
-            "phase": "Feature Completion",
-            "file": "pbi-001-dynamic-model-discovery.json"
-        },
-        {
-            "id": "PBI-002",
-            "title": "Router Initialization Bug Fix",
-            "status": "done",
-            "priority": "M",
-            "phase": "Critical Fixes",
-            "file": "pbi-002-router-initialization-bug.json"
-        },
-        {
-            "id": "PBI-003",
-            "title": "Security Validator Implementation",
-            "status": "done",
-            "priority": "M",
-            "phase": "Critical Fixes",
-            "file": "pbi-003-security-validator.json"
-        },
-        {
-            "id": "PBI-004",
-            "title": "API Authentication",
-            "status": "done",
-            "priority": "M",
-            "phase": "Critical Fixes",
-            "file": "pbi-004-api-authentication.json"
-        },
-        {
-            "id": "PBI-005",
-            "title": "Adapter Instance Management",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Critical Fixes",
-            "file": "pbi-005-adapter-instance-management.json"
-        },
-        {
-            "id": "PBI-006",
-            "title": "Logging Framework",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Critical Fixes",
-            "file": "pbi-006-logging-framework.json"
-        },
-        {
-            "id": "PBI-007",
-            "title": "Configuration Management",
-            "status": "done",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-007-configuration-management.json"
-        },
-        {
-            "id": "PBI-008",
-            "title": "Error Handling",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-008-error-handling.json"
-        },
-        {
-            "id": "PBI-009",
-            "title": "Testing Infrastructure",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-009-testing-infrastructure.json"
-        },
-        {
-            "id": "PBI-010",
-            "title": "UI Scaffold Integration",
-            "status": "done",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-010-ui-scaffold-integration.json"
-        },
-        {
-            "id": "PBI-011",
-            "title": "Frontend Type Safety",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-011-frontend-type-safety.json"
-        },
-        {
-            "id": "PBI-012",
-            "title": "Memory System Integration",
-            "status": "ready",
-            "priority": "M",
-            "phase": "Production Readiness",
-            "file": "pbi-012-memory-system-integration.json"
-        },
-        {
-            "id": "PBI-013",
-            "title": "Enhanced Intent Classification",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Feature Completion",
-            "file": "pbi-013-enhanced-intent-classification.json"
-        },
-        {
-            "id": "PBI-014",
-            "title": "Comprehensive Testing",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Feature Completion",
-            "file": "pbi-014-comprehensive-testing.json"
-        },
-        {
-            "id": "PBI-015",
-            "title": "API Documentation",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Feature Completion",
-            "file": "pbi-015-api-documentation.json"
-        },
-        {
-            "id": "PBI-016",
-            "title": "Monitoring & Observability",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Feature Completion",
-            "file": "pbi-016-monitoring-observability.json"
-        },
-        {
-            "id": "PBI-017",
-            "title": "Code Cleanup",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Quick Wins",
-            "file": "pbi-017-code-cleanup.json"
-        },
-        {
-            "id": "PBI-018",
-            "title": "Port Mismatch Fix",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Quick Wins",
-            "file": "pbi-018-port-mismatch-fix.json"
-        },
-        {
-            "id": "PBI-019",
-            "title": "Frontend Metadata Update",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Quick Wins",
-            "file": "pbi-019-frontend-metadata.json"
-        },
-        {
-            "id": "PBI-020",
-            "title": "Knowledge Graph UI",
-            "status": "ready",
-            "priority": "C",
-            "phase": "Advanced Features",
-            "file": "pbi-020-knowledge-graph-ui.json"
-        },
-        {
-            "id": "PBI-021",
-            "title": "Distributed Mesh UI",
-            "status": "ready",
-            "priority": "C",
-            "phase": "Advanced Features",
-            "file": "pbi-021-distributed-mesh-ui.json"
-        },
-        {
-            "id": "PBI-022",
-            "title": "Sentinel Review Queue UI",
-            "status": "ready",
-            "priority": "C",
-            "phase": "Advanced Features",
-            "file": "pbi-022-sentinel-review-queue-ui.json"
-        },
-        {
-            "id": "PBI-023",
-            "title": "Mode & Context Controls UI",
-            "status": "done",
-            "priority": "C",
-            "phase": "Advanced Features",
-            "file": "pbi-023-context-display-ui.json"
-        },
-        {
-            "id": "PBI-024",
-            "title": "IDE Workspace Configuration",
-            "status": "done",
-            "priority": "C",
-            "phase": "Quick Wins",
-            "file": "pbi-024-ide-workspace-configuration.json"
-        },
-        {
-            "id": "PBI-025",
-            "title": "Modes from Config",
-            "status": "done",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-025-modes-from-config.json"
-        },
-        {
-            "id": "PBI-026",
-            "title": "Skills Registry",
-            "status": "done",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-026-skills-registry.json"
-        },
-        {
-            "id": "PBI-027",
-            "title": "MCP Server Discovery and Config",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-027-mcp-server-discovery.json"
-        },
-        {
-            "id": "PBI-028",
-            "title": "Integrations API",
-            "status": "done",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-028-integrations-api.json"
-        },
-        {
-            "id": "PBI-029",
-            "title": "Projects Persistence",
-            "status": "done",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-029-projects-persistence.json"
-        },
-        {
-            "id": "PBI-030",
-            "title": "Privacy Vault UI",
-            "status": "ready",
-            "priority": "S",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-030-privacy-vault-ui.json"
-        },
-        {
-            "id": "PBI-031",
-            "title": "Approval UX Design System",
-            "status": "ready",
-            "priority": "C",
-            "phase": "Reconciled Scaffold Features",
-            "file": "pbi-031-approval-ux-design-system.json"
-        },
-        {
-            "id": "PBI-032",
-            "title": "Automation Hub UI",
-            "status": "done",
-            "priority": "C",
-            "phase": "Advanced Features",
-            "file": "pbi-032-automation-hub-ui.json"
-        }
-    ]
+  "project": "Secure Personal Agentic Platform",
+  "backlog": [
+    {
+      "id": "PBI-001",
+      "title": "Dynamic Model Discovery",
+      "status": "done",
+      "priority": "M",
+      "phase": "Feature Completion",
+      "file": "pbi-001-dynamic-model-discovery.json"
+    },
+    {
+      "id": "PBI-002",
+      "title": "Router Initialization Bug Fix",
+      "status": "done",
+      "priority": "M",
+      "phase": "Critical Fixes",
+      "file": "pbi-002-router-initialization-bug.json"
+    },
+    {
+      "id": "PBI-003",
+      "title": "Security Validator Implementation",
+      "status": "done",
+      "priority": "M",
+      "phase": "Critical Fixes",
+      "file": "pbi-003-security-validator.json"
+    },
+    {
+      "id": "PBI-004",
+      "title": "API Authentication",
+      "status": "done",
+      "priority": "M",
+      "phase": "Critical Fixes",
+      "file": "pbi-004-api-authentication.json"
+    },
+    {
+      "id": "PBI-005",
+      "title": "Adapter Instance Management",
+      "status": "done",
+      "priority": "M",
+      "phase": "Critical Fixes",
+      "file": "pbi-005-adapter-instance-management.json"
+    },
+    {
+      "id": "PBI-006",
+      "title": "Logging Framework",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Critical Fixes",
+      "file": "pbi-006-logging-framework.json"
+    },
+    {
+      "id": "PBI-007",
+      "title": "Configuration Management",
+      "status": "done",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-007-configuration-management.json"
+    },
+    {
+      "id": "PBI-008",
+      "title": "Error Handling",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-008-error-handling.json"
+    },
+    {
+      "id": "PBI-009",
+      "title": "Testing Infrastructure",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-009-testing-infrastructure.json"
+    },
+    {
+      "id": "PBI-010",
+      "title": "UI Scaffold Integration",
+      "status": "done",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-010-ui-scaffold-integration.json"
+    },
+    {
+      "id": "PBI-011",
+      "title": "Frontend Type Safety",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-011-frontend-type-safety.json"
+    },
+    {
+      "id": "PBI-012",
+      "title": "Memory System Integration",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Production Readiness",
+      "file": "pbi-012-memory-system-integration.json"
+    },
+    {
+      "id": "PBI-013",
+      "title": "Enhanced Intent Classification",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-013-enhanced-intent-classification.json"
+    },
+    {
+      "id": "PBI-014",
+      "title": "Comprehensive Testing",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-014-comprehensive-testing.json"
+    },
+    {
+      "id": "PBI-015",
+      "title": "API Documentation",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-015-api-documentation.json"
+    },
+    {
+      "id": "PBI-016",
+      "title": "Monitoring & Observability",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-016-monitoring-observability.json"
+    },
+    {
+      "id": "PBI-017",
+      "title": "Code Cleanup",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Quick Wins",
+      "file": "pbi-017-code-cleanup.json"
+    },
+    {
+      "id": "PBI-018",
+      "title": "Port Mismatch Fix",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Quick Wins",
+      "file": "pbi-018-port-mismatch-fix.json"
+    },
+    {
+      "id": "PBI-019",
+      "title": "Frontend Metadata Update",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Quick Wins",
+      "file": "pbi-019-frontend-metadata.json"
+    },
+    {
+      "id": "PBI-020",
+      "title": "Knowledge Graph UI",
+      "status": "ready",
+      "priority": "C",
+      "phase": "Advanced Features",
+      "file": "pbi-020-knowledge-graph-ui.json"
+    },
+    {
+      "id": "PBI-021",
+      "title": "Distributed Mesh UI",
+      "status": "ready",
+      "priority": "C",
+      "phase": "Advanced Features",
+      "file": "pbi-021-distributed-mesh-ui.json"
+    },
+    {
+      "id": "PBI-022",
+      "title": "Sentinel Review Queue UI",
+      "status": "ready",
+      "priority": "C",
+      "phase": "Advanced Features",
+      "file": "pbi-022-sentinel-review-queue-ui.json"
+    },
+    {
+      "id": "PBI-023",
+      "title": "Mode & Context Controls UI",
+      "status": "done",
+      "priority": "C",
+      "phase": "Advanced Features",
+      "file": "pbi-023-context-display-ui.json"
+    },
+    {
+      "id": "PBI-024",
+      "title": "IDE Workspace Configuration",
+      "status": "done",
+      "priority": "C",
+      "phase": "Quick Wins",
+      "file": "pbi-024-ide-workspace-configuration.json"
+    },
+    {
+      "id": "PBI-025",
+      "title": "Modes from Config",
+      "status": "done",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-025-modes-from-config.json"
+    },
+    {
+      "id": "PBI-026",
+      "title": "Skills Registry",
+      "status": "done",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-026-skills-registry.json"
+    },
+    {
+      "id": "PBI-027",
+      "title": "MCP Server Discovery and Config",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-027-mcp-server-discovery.json"
+    },
+    {
+      "id": "PBI-028",
+      "title": "Integrations API",
+      "status": "done",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-028-integrations-api.json"
+    },
+    {
+      "id": "PBI-029",
+      "title": "Projects Persistence",
+      "status": "done",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-029-projects-persistence.json"
+    },
+    {
+      "id": "PBI-030",
+      "title": "Privacy Vault UI",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-030-privacy-vault-ui.json"
+    },
+    {
+      "id": "PBI-031",
+      "title": "Approval UX Design System",
+      "status": "ready",
+      "priority": "C",
+      "phase": "Reconciled Scaffold Features",
+      "file": "pbi-031-approval-ux-design-system.json"
+    },
+    {
+      "id": "PBI-032",
+      "title": "Automation Hub UI",
+      "status": "done",
+      "priority": "C",
+      "phase": "Advanced Features",
+      "file": "pbi-032-automation-hub-ui.json"
+    }
+  ]
 }

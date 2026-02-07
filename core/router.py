@@ -3,7 +3,7 @@ import logging
 from typing import Any, AsyncIterator, Dict, List, Tuple
 
 from .adapters_base import ModelAdapter
-from .adapters_local import OllamaAdapter
+from .factory import AdapterFactory
 from .security import SecurityValidator
 
 logger = logging.getLogger(__name__)
@@ -18,26 +18,23 @@ class Intent(enum.Enum):
     FINANCE = "finance"
 
 class ModelRouter:
-    """Routes requests to appropriate adapters. Reuses adapter instances from pool."""
+    """Routes requests to appropriate adapters. Reuses adapter instances from factory."""
 
     def __init__(
         self,
         local_client: ModelAdapter,
-        remote_clients: Dict[str, ModelAdapter],
+        adapter_factory: AdapterFactory,
         security_validator: SecurityValidator | None = None,
         available_models: List[str] | None = None,
     ):
         self.local_client = local_client
-        self.remote_clients = remote_clients
+        self.adapter_factory = adapter_factory
         self.security_validator = security_validator
         self.available_models = available_models or []
-        # Adapter pool: reuse OllamaAdapter instances by model_name
-        self._local_adapter_pool: Dict[str, OllamaAdapter] = {}
         logger.info("ModelRouter initialized with %d local models", len(self.available_models))
 
     async def classify_intent(self, user_input: str) -> Intent:
         # Initial implementation uses simple keyword matching or a cheap local model
-        # In a full implementation, this would be a separate (local) call
         input_lower = user_input.lower()
         if any(w in input_lower for w in ["secret", "private", "personal", "password"]):
             return Intent.PRIVATE
@@ -61,22 +58,23 @@ class ModelRouter:
                     return model
         return default
 
-    def _get_local_adapter(self, model_name: str) -> OllamaAdapter:
-        """Get or create cached OllamaAdapter for model_name."""
-        if model_name not in self._local_adapter_pool:
-            self._local_adapter_pool[model_name] = OllamaAdapter(model_name=model_name)
-        return self._local_adapter_pool[model_name]
-
     def _resolve_model_to_adapter(self, model_id: str) -> "ModelAdapter | None":
         """Resolve model_id to adapter (Ollama or remote)."""
-        if model_id in ("claude-sonnet", "anthropic") and "anthropic" in self.remote_clients:
-            return self.remote_clients["anthropic"]
-        if model_id in ("moonshot-v1", "moonshot") and "moonshot" in self.remote_clients:
-            return self.remote_clients["moonshot"]
-        # Ollama model
-        if model_id in (self.available_models or []):
-            return self._get_local_adapter(model_id)
-        return self._get_local_adapter(model_id)
+        # Try remote first
+        remote_adapter = self.adapter_factory.get_remote_adapter(model_id)
+        if remote_adapter:
+            return remote_adapter
+        
+        # Legacy mapping for Sonnet/Moonshot explicitly
+        if model_id in ("claude-sonnet", "anthropic"):
+            return self.adapter_factory.get_remote_adapter("anthropic")
+        if model_id in ("moonshot-v1", "moonshot"):
+            return self.adapter_factory.get_remote_adapter("moonshot")
+        if model_id in ("mistral-small", "mistral"):
+            return self.adapter_factory.get_remote_adapter("mistral")
+
+        # Fallback to local
+        return self.adapter_factory.get_local_adapter(model_id)
 
     async def route_request(
         self,
@@ -93,33 +91,35 @@ class ModelRouter:
                 ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
             )
             adapter_name = model_name
-            adapter = self._get_local_adapter(model_name)
+            adapter = self.adapter_factory.get_local_adapter(model_name)
             answer = await adapter.generate(user_input)
             return {
                 "intent": intent.value,
                 "adapter": adapter_name,
                 "answer": answer,
-                "model_info": adapter.get_model_info() if hasattr(adapter, "get_model_info") else {"type": "unknown"},
+                "model_info": adapter.get_model_info(),
                 "requires_privacy": True,
                 "security": {"is_safe": True},
             }
 
-        # Manual override: when model_id provided, bypass intent routing (for non-sensitive intents)
         if model_id:
             adapter = self._resolve_model_to_adapter(model_id)
             if adapter:
                 answer = await adapter.generate(user_input)
                 security_verdict = {"is_safe": True}
-                remote_model_ids = ("claude-sonnet", "anthropic", "mistral-small", "mistral", "moonshot-v1", "moonshot")
-                if self.security_validator and model_id not in remote_model_ids:
+                
+                all_remotes = self.adapter_factory.get_all_remote_adapters()
+                is_remote = any(provider in model_id.lower() for provider in all_remotes.keys())
+                
+                if self.security_validator and not is_remote:
                     security_verdict = await self.security_validator.check_output(user_input, answer)
-                    if not security_verdict["is_safe"]:
-                        answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
+                if not security_verdict["is_safe"]:
+                    answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
                 return {
                     "intent": "manual",
                     "adapter": model_id,
                     "answer": answer,
-                    "model_info": adapter.get_model_info() if hasattr(adapter, "get_model_info") else {"type": "unknown"},
+                    "model_info": adapter.get_model_info(),
                     "requires_privacy": False,
                     "security": security_verdict,
                 }
@@ -130,28 +130,34 @@ class ModelRouter:
                 default="codellama:7b-instruct",
             )
             adapter_name = model_name
-            adapter = self._get_local_adapter(model_name)
+            adapter = self.adapter_factory.get_local_adapter(model_name)
 
         elif intent == Intent.QUALITY:
-            if "anthropic" in self.remote_clients and mode_id != "private":
+            anthropic_adapter = self.adapter_factory.get_remote_adapter("anthropic")
+            if anthropic_adapter and mode_id != "private":
                 adapter_name = "anthropic"
-                adapter = self.remote_clients["anthropic"]
+                adapter = anthropic_adapter
             else:
                 model_name = self._find_best_local_model(
                     ["hermes", "llama3", "mistral", "mixtral", "gemma"], default="hermes-roleplay:latest"
                 )
                 adapter_name = model_name
-                adapter = self._get_local_adapter(model_name)
+                adapter = self.adapter_factory.get_local_adapter(model_name)
 
         elif intent == Intent.SPEED:
-            model_name = self._find_best_local_model(
-                ["mistral", "gemma", "phi", "tiny", "llama3"], default="mistral:latest"
-            )
-            adapter_name = model_name
-            adapter = self._get_local_adapter(model_name)
+            mistral_adapter = self.adapter_factory.get_remote_adapter("mistral")
+            if mistral_adapter and mode_id != "private":
+                adapter_name = "mistral"
+                adapter = mistral_adapter
+            else:
+                model_name = self._find_best_local_model(
+                    ["mistral", "gemma", "phi", "tiny", "llama3"], default="mistral:latest"
+                )
+                adapter_name = model_name
+                adapter = self.adapter_factory.get_local_adapter(model_name)
 
         else:
-            adapter_name = "llama3:latest"
+            adapter_name = "local-default"
             adapter = self.local_client
         
         # Actually generate the response
@@ -168,7 +174,7 @@ class ModelRouter:
             "intent": intent.value,
             "adapter": adapter_name,
             "answer": answer,
-            "model_info": adapter.get_model_info() if hasattr(adapter, 'get_model_info') else {"type": "unknown"},
+            "model_info": adapter.get_model_info(),
             "requires_privacy": intent in [Intent.PRIVATE, Intent.NSFW],
             "security": security_verdict
         }
@@ -181,7 +187,6 @@ class ModelRouter:
     ) -> AsyncIterator[Tuple[str, Dict[str, Any]]]:
         """
         Stream response chunks for Ollama models. Yields (chunk, metadata).
-        Use non-streaming route_request for remote adapters.
         """
         adapter: ModelAdapter | None = None
         adapter_name: str = ""
@@ -195,7 +200,7 @@ class ModelRouter:
                 ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
             )
             adapter_name = model_name
-            adapter = self._get_local_adapter(model_name)
+            adapter = self.adapter_factory.get_local_adapter(model_name)
             routing_meta = {
                 "intent": intent.value,
                 "adapter": adapter_name,
@@ -216,32 +221,35 @@ class ModelRouter:
                     default="codellama:7b-instruct",
                 )
                 adapter_name = model_name
-                adapter = self._get_local_adapter(model_name)
+                adapter = self.adapter_factory.get_local_adapter(model_name)
             elif intent == Intent.QUALITY:
-                if "anthropic" in self.remote_clients and mode_id != "private":
+                anthropic_adapter = self.adapter_factory.get_remote_adapter("anthropic")
+                mistral_adapter = self.adapter_factory.get_remote_adapter("mistral")
+                if anthropic_adapter and mode_id != "private":
                     adapter_name = "anthropic"
-                    adapter = self.remote_clients["anthropic"]
-                elif "mistral" in self.remote_clients and mode_id != "private":
+                    adapter = anthropic_adapter
+                elif mistral_adapter and mode_id != "private":
                     adapter_name = "mistral"
-                    adapter = self.remote_clients["mistral"]
+                    adapter = mistral_adapter
                 else:
                     model_name = self._find_best_local_model(
                         ["hermes", "llama3", "mistral", "mixtral", "gemma"], default="hermes-roleplay:latest"
                     )
                     adapter_name = model_name
-                    adapter = self._get_local_adapter(model_name)
+                    adapter = self.adapter_factory.get_local_adapter(model_name)
             elif intent == Intent.SPEED:
-                if "mistral" in self.remote_clients and mode_id != "private":
+                mistral_adapter = self.adapter_factory.get_remote_adapter("mistral")
+                if mistral_adapter and mode_id != "private":
                     adapter_name = "mistral"
-                    adapter = self.remote_clients["mistral"]
+                    adapter = mistral_adapter
                 else:
                     model_name = self._find_best_local_model(
                         ["mistral", "gemma", "phi", "tiny", "llama3"], default="mistral:latest"
                     )
                     adapter_name = model_name
-                    adapter = self._get_local_adapter(model_name)
+                    adapter = self.adapter_factory.get_local_adapter(model_name)
             else:
-                adapter_name = "llama3:latest"
+                adapter_name = "local-default"
                 adapter = self.local_client
 
             routing_meta = {
@@ -254,6 +262,7 @@ class ModelRouter:
             yield ("[ERROR] No adapter available", routing_meta)
             return
 
+        from .adapters_local import OllamaAdapter
         if isinstance(adapter, OllamaAdapter) and hasattr(adapter, "generate_stream"):
             async for chunk in adapter.generate_stream(user_input):
                 yield (chunk, routing_meta)

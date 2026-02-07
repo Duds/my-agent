@@ -39,31 +39,23 @@ async def get_api_key(
     )
 
 from core.adapters_local import OllamaAdapter
-from core.adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
+from core.factory import AdapterFactory
 from core.router import ModelRouter
 from core.security import SecurityValidator
 
 logger = logging.getLogger(__name__)
 
-# Initialize adapters and router using settings
-local_model = OllamaAdapter(model_name=settings.ollama_default_model)
+# Initialize adapters using factory
+adapter_factory = AdapterFactory()
+adapter_factory.initialize_remotes()
+
+# Initialize core services
+local_model = adapter_factory.get_local_adapter(settings.ollama_default_model)
 security_validator = SecurityValidator(judge_adapter=local_model)
-
-anthropic_client = AnthropicAdapter() if settings.anthropic_api_key else None
-moonshot_client = MoonshotAdapter() if settings.moonshot_api_key else None
-mistral_client = MistralAdapter() if settings.mistral_api_key else None
-
-remote_clients = {}
-if anthropic_client and anthropic_client.client:
-    remote_clients["anthropic"] = anthropic_client
-if moonshot_client and moonshot_client.client:
-    remote_clients["moonshot"] = moonshot_client
-if mistral_client and mistral_client.client:
-    remote_clients["mistral"] = mistral_client
 
 router = ModelRouter(
     local_client=local_model,
-    remote_clients=remote_clients,
+    adapter_factory=adapter_factory,
     security_validator=security_validator,
 )
 
@@ -184,48 +176,34 @@ async def readiness_check():
 # --- UI API endpoints (for Command Center frontend) ---
 
 
-@app.get("/api/models", summary="List available models", dependencies=[Depends(get_api_key)])
-async def list_models():
-    """Return available models from router (Ollama + remote)."""
-    models = []
-    for m in router.available_models or []:
-        models.append({
-            "id": m,
-            "name": m.replace(":", " ").title(),
-            "provider": "ollama",
-            "type": "ollama",
-            "contextWindow": "32k",
-            "status": "online",
-        })
-    # Add remote models if configured
-    if "anthropic" in router.remote_clients:
-        models.append({
-            "id": "claude-sonnet",
-            "name": "Claude Sonnet",
-            "provider": "anthropic",
-            "type": "commercial",
-            "contextWindow": "200k",
-            "status": "online",
-        })
-    if "mistral" in router.remote_clients:
-        models.append({
-            "id": "mistral-small",
-            "name": "Mistral Small",
-            "provider": "mistral",
-            "type": "commercial",
-            "contextWindow": "32k",
-            "status": "online",
-        })
-    if "moonshot" in router.remote_clients:
-        models.append({
-            "id": "moonshot-v1",
-            "name": "Moonshot v1",
-            "provider": "moonshot",
-            "type": "commercial",
-            "contextWindow": "8k",
-            "status": "online",
-        })
-    return models
+@app.get("/api/models", summary="List all available models")
+async def list_models(
+    api_key: str = Depends(get_api_key),
+):
+    """Returns a list of all models (local and remote) available to the user."""
+    all_remote_adapters = adapter_factory.get_all_remote_adapters()
+    
+    remote_models = [
+        {"id": "claude-sonnet", "name": "Anthropic Claude 3.5 Sonnet", "provider": "Anthropic"}
+        if "anthropic" in all_remote_adapters else None,
+        {"id": "mistral-small", "name": "Mistral Small", "provider": "Mistral"}
+        if "mistral" in all_remote_adapters else None,
+        {"id": "moonshot-v1", "name": "Moonshot V1", "provider": "Moonshot"}
+        if "moonshot" in all_remote_adapters else None
+    ]
+    # Filter out None values
+    remote_models = [m for m in remote_models if m is not None]
+    
+    local_models_list = [
+        {"id": name, "name": name, "provider": "Ollama (Local)"}
+        for name in (router.available_models or [])
+    ]
+    
+    return {
+        "remote": remote_models,
+        "local": local_models_list,
+        "active_local_default": settings.ollama_default_model
+    }
 
 
 # Modes (replaces personas per research). Load from config or default.

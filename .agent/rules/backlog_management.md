@@ -5,7 +5,7 @@ To ensure a clean alignment between high-level vision and technical execution, *
 ### 1. Hierarchy of Truth
 1. **[VISION.md](../../VISION.md)**: The ultimate "Why".
 2. **[TODO.md](../../TODO.md)**: The high-level Roadmap with MoSCoW priorities.
-3. **[.agent/backlog/](./)**: Granular Product Backlog Items (PBIs) for technical breakdown.
+3. **[backlog/](../../backlog/)**: Granular Product Backlog Items (PBIs) for technical breakdown.
 
 ### 2. PBI Lifecycle
 - **Creation**: When a "Must Have" item in `TODO.md` is ready for technical design, a PBI file is created in `backlog/`.

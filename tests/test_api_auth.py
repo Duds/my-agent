@@ -69,10 +69,16 @@ def test_api_models_unauthorized(api_key):
     assert response.status_code == 401
 
 def test_api_models_authorized(api_key):
-    """UI API endpoints should succeed with correct key."""
-    response = client.get("/api/models", headers={"X-API-Key": api_key})
+    """Models list should succeed with correct API key."""
+    response = client.get(
+        "/api/models",
+        headers={"X-API-Key": api_key}
+    )
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    data = response.json()
+    assert "remote" in data
+    assert "local" in data
+    assert "active_local_default" in data
 
 def test_auth_not_required_when_key_not_set():
     """Authentication should not be enforced if no API_KEY is configured."""
