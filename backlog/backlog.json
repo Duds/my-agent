@@ -44,7 +44,7 @@
     {
       "id": "PBI-006",
       "title": "Logging Framework",
-      "status": "ready",
+      "status": "done",
       "priority": "M",
       "phase": "Critical Fixes",
       "file": "pbi-006-logging-framework.json"

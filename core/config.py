@@ -55,6 +55,10 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+    log_file: str = "logs/my_agent.log"
+    log_rotation: str = "midnight"
+    log_backup_count: int = 30
+    log_format: str = "text" # "text" or "json"
 
     # Integrations & Storage
     google_credentials_path: str | None = None

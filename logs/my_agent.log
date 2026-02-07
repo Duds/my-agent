@@ -1,0 +1,2 @@
+2026-02-07 14:59:46 [INFO] root: Logging initialized (Level: INFO, Format: text, File: logs/my_agent.log)
+2026-02-07 14:59:46 [INFO] core.router: ModelRouter initialized with 0 local models
