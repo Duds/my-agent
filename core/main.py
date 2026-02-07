@@ -4,47 +4,62 @@ import sys
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Configure logging before other imports
-logging.basicConfig(
-    level=logging.INFO if os.getenv("LOG_LEVEL", "INFO") != "DEBUG" else logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.adapters_local import OllamaAdapter
-from core.adapters_remote import AnthropicAdapter, MoonshotAdapter
 from core.config import settings
+
+# Configure logging before other imports
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+from fastapi import FastAPI, Header, HTTPException, Security, Depends
+from fastapi.security.api_key import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+import uvicorn
+
+# Security scheme
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+async def get_api_key(
+    api_key_header: str = Security(api_key_header),
+):
+    if not settings.api_key:
+        return None # No auth required
+    if api_key_header == settings.api_key:
+        return api_key_header
+    raise HTTPException(
+        status_code=401,
+        detail="Missing or invalid API Key",
+    )
+
+from core.adapters_local import OllamaAdapter
+from core.adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
 from core.router import ModelRouter
 from core.security import SecurityValidator
 
 logger = logging.getLogger(__name__)
 
-# Initialize adapters and router BEFORE lifespan (router used in lifespan)
-local_model = OllamaAdapter(model_name="llama3:latest")
+# Initialize adapters and router using settings
+local_model = OllamaAdapter(model_name=settings.ollama_default_model)
 security_validator = SecurityValidator(judge_adapter=local_model)
 
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-anthropic_client = AnthropicAdapter(api_key=anthropic_api_key) if anthropic_api_key else None
-
-moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
-moonshot_client = MoonshotAdapter(api_key=moonshot_api_key) if moonshot_api_key else None
+anthropic_client = AnthropicAdapter() if settings.anthropic_api_key else None
+moonshot_client = MoonshotAdapter() if settings.moonshot_api_key else None
+mistral_client = MistralAdapter() if settings.mistral_api_key else None
 
 remote_clients = {}
 if anthropic_client and anthropic_client.client:
     remote_clients["anthropic"] = anthropic_client
 if moonshot_client and moonshot_client.client:
     remote_clients["moonshot"] = moonshot_client
+if mistral_client and mistral_client.client:
+    remote_clients["mistral"] = mistral_client
 
 router = ModelRouter(
     local_client=local_model,
@@ -88,25 +103,15 @@ class UserQuery(BaseModel):
     session_id: str | None = None
 
 
-def _verify_api_key(api_key: str | None) -> bool:
-    """Verify API key if API_KEY env is set."""
-    expected = settings.api_key
-    if not expected:
-        return True  # No auth required when API_KEY not set
-    return api_key == expected and bool(api_key)
-
-
 @app.post(
     "/query",
     summary="Submit a query",
     response_description="Routing info and AI response",
+    dependencies=[Depends(get_api_key)],
 )
 async def handle_query(
     query: UserQuery,
-    x_api_key: str | None = Header(None, alias="X-API-Key"),
 ):
-    if not _verify_api_key(x_api_key):
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
     try:
         routing_info = await router.route_request(
             query.text,
@@ -128,6 +133,42 @@ async def handle_query(
         "security": routing_info["security"]
     }
 
+
+async def _stream_query_generator(query: UserQuery):
+    """Yield SSE events for streaming query endpoint."""
+    try:
+        async for chunk, routing_meta in router.route_request_stream(
+            query.text,
+            model_id=query.model_id,
+            mode_id=query.mode_id,
+        ):
+            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'routing': routing_meta})}\n\n"
+    except Exception as e:
+        logger.exception("Stream query failed: %s", e)
+        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+
+@app.post(
+    "/query/stream",
+    summary="Submit a query (streaming)",
+    response_description="Server-Sent Events stream of response chunks",
+    dependencies=[Depends(get_api_key)],
+)
+async def handle_query_stream(
+    query: UserQuery,
+):
+    """Stream response tokens for lower perceived latency (Ollama models)."""
+    return StreamingResponse(
+        _stream_query_generator(query),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
 @app.get("/health", summary="Health check")
 async def health_check():
     """Liveness probe - returns 200 if service is running."""
@@ -143,7 +184,7 @@ async def readiness_check():
 # --- UI API endpoints (for Command Center frontend) ---
 
 
-@app.get("/api/models", summary="List available models")
+@app.get("/api/models", summary="List available models", dependencies=[Depends(get_api_key)])
 async def list_models():
     """Return available models from router (Ollama + remote)."""
     models = []
@@ -164,6 +205,15 @@ async def list_models():
             "provider": "anthropic",
             "type": "commercial",
             "contextWindow": "200k",
+            "status": "online",
+        })
+    if "mistral" in router.remote_clients:
+        models.append({
+            "id": "mistral-small",
+            "name": "Mistral Small",
+            "provider": "mistral",
+            "type": "commercial",
+            "contextWindow": "32k",
             "status": "online",
         })
     if "moonshot" in router.remote_clients:
@@ -187,13 +237,13 @@ DEFAULT_MODES = [
 ]
 
 
-@app.get("/api/modes", summary="List modes")
+@app.get("/api/modes", summary="List modes", dependencies=[Depends(get_api_key)])
 async def list_modes():
     """Return available modes (General, Private, Focus, Relax). Per research: Mode replaces Persona."""
     return DEFAULT_MODES.copy()
 
 
-@app.get("/api/personas", summary="List agent personas (deprecated)")
+@app.get("/api/personas", summary="List agent personas (deprecated)", dependencies=[Depends(get_api_key)])
 async def list_personas():
     """Deprecated: use /api/modes. Kept for backward compatibility."""
     return [
@@ -213,7 +263,7 @@ _skills_store = [
 ]
 
 
-@app.get("/api/skills", summary="List platform skills")
+@app.get("/api/skills", summary="List platform skills", dependencies=[Depends(get_api_key)])
 async def list_skills():
     """Return available skills (tools/capabilities)."""
     return _skills_store.copy()
@@ -225,7 +275,7 @@ class SkillPatch(BaseModel):
     enabled: bool
 
 
-@app.patch("/api/skills/{skill_id}", summary="Update skill enabled state")
+@app.patch("/api/skills/{skill_id}", summary="Update skill enabled state", dependencies=[Depends(get_api_key)])
 async def patch_skill(skill_id: str, body: SkillPatch):
     """Toggle skill enabled state. Persists in-memory (config persistence in PBI-026)."""
     for s in _skills_store:
@@ -235,7 +285,7 @@ async def patch_skill(skill_id: str, body: SkillPatch):
     raise HTTPException(status_code=404, detail="Skill not found")
 
 
-@app.get("/api/mcps", summary="List MCP servers")
+@app.get("/api/mcps", summary="List MCP servers", dependencies=[Depends(get_api_key)])
 async def list_mcps():
     """Return MCP (Model Context Protocol) server connections."""
     return [
@@ -244,7 +294,7 @@ async def list_mcps():
     ]
 
 
-@app.get("/api/integrations", summary="List integrations")
+@app.get("/api/integrations", summary="List integrations", dependencies=[Depends(get_api_key)])
 async def list_integrations():
     """Return third-party integrations. Includes Google when credentials available."""
     integrations = [
@@ -272,7 +322,7 @@ def _next_conv_id() -> str:
     return f"conv-{_conversation_counter}"
 
 
-@app.get("/api/projects", summary="List projects")
+@app.get("/api/projects", summary="List projects", dependencies=[Depends(get_api_key)])
 async def list_projects():
     """Return projects from in-memory store."""
     return [dict(p) for p in _projects_store]
@@ -292,7 +342,7 @@ class ProjectPatch(BaseModel):
     color: str | None = None
 
 
-@app.post("/api/projects", summary="Create project")
+@app.post("/api/projects", summary="Create project", dependencies=[Depends(get_api_key)])
 async def create_project(body: ProjectCreate):
     """Create a new project."""
     pid = f"proj-{len(_projects_store) + 1}"
@@ -301,7 +351,7 @@ async def create_project(body: ProjectCreate):
     return proj
 
 
-@app.patch("/api/projects/{project_id}", summary="Update project")
+@app.patch("/api/projects/{project_id}", summary="Update project", dependencies=[Depends(get_api_key)])
 async def patch_project(project_id: str, body: ProjectPatch):
     """Update a project."""
     for p in _projects_store:
@@ -314,7 +364,7 @@ async def patch_project(project_id: str, body: ProjectPatch):
     raise HTTPException(status_code=404, detail="Project not found")
 
 
-@app.get("/api/conversations", summary="List conversations")
+@app.get("/api/conversations", summary="List conversations", dependencies=[Depends(get_api_key)])
 async def list_conversations():
     """Return conversations from in-memory store."""
     return [dict(c) for c in _conversations_store]
@@ -328,7 +378,7 @@ class ConversationCreate(BaseModel):
     modeId: str | None = None
 
 
-@app.post("/api/conversations", summary="Create conversation")
+@app.post("/api/conversations", summary="Create conversation", dependencies=[Depends(get_api_key)])
 async def create_conversation(body: ConversationCreate):
     """Create a new conversation and optionally attach to project."""
     cid = _next_conv_id()
@@ -357,7 +407,7 @@ class ConversationPatch(BaseModel):
     messages: list | None = None
 
 
-@app.patch("/api/conversations/{conversation_id}", summary="Update conversation")
+@app.patch("/api/conversations/{conversation_id}", summary="Update conversation", dependencies=[Depends(get_api_key)])
 async def patch_conversation(conversation_id: str, body: ConversationPatch):
     """Update conversation (e.g. append messages)."""
     for c in _conversations_store:
@@ -371,19 +421,19 @@ async def patch_conversation(conversation_id: str, body: ConversationPatch):
     raise HTTPException(status_code=404, detail="Conversation not found")
 
 
-@app.get("/api/agent-processes", summary="List agent processes")
+@app.get("/api/agent-processes", summary="List agent processes", dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
     """Return background agent processes. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032
 
 
-@app.get("/api/cron-jobs", summary="List cron jobs")
+@app.get("/api/cron-jobs", summary="List cron jobs", dependencies=[Depends(get_api_key)])
 async def list_cron_jobs():
     """Return cron jobs. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032
 
 
-@app.get("/api/automations", summary="List automations")
+@app.get("/api/automations", summary="List automations", dependencies=[Depends(get_api_key)])
 async def list_automations():
     """Return automations. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032

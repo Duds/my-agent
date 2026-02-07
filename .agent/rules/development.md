@@ -4,6 +4,7 @@
 
 - **Branching**: Use feature branches (`feat/`, `fix/`, `docs/`).
 - **Commits**: Follow Conventional Commits format (`type(scope): message`).
+- **PBI Completion**: Commit and push to remote after completing each PBI. This ensures progress is saved and visible.
 - **PRs**: Keep PRs small and focused.
 
 ## Backend Development (Python/FastAPI)

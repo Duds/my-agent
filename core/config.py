@@ -25,16 +25,29 @@ class Settings(BaseSettings):
     ollama_default_model: str = "llama3:latest"
     ollama_judge_model: str = "llama3"
 
-    # Anthropic
+    # Remote Models
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-3-5-sonnet-20241022"
     anthropic_max_tokens: int = 1024
 
-    # Moonshot
     moonshot_api_key: str | None = None
     moonshot_base_url: str = "https://api.moonshot.ai/v1"
     moonshot_model: str = "moonshot-v1-8k"
     moonshot_temperature: float = 0.3
+
+    mistral_api_key: str | None = None
+    mistral_base_url: str = "https://api.mistral.ai/v1"
+    mistral_model: str = "mistral-small-latest"
+    mistral_temperature: float = 0.3
+
+    # Local Model Role Mappings
+    local_judge_model: str = "llama3"
+    local_privacy_model: str = "hermes-roleplay"
+    local_presence_model: str = "mistral"
+
+    # Telegram
+    telegram_bot_token: str | None = None
+    telegram_allowed_users: List[str] = []
 
     # Security
     api_key: str | None = None
@@ -42,6 +55,11 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+
+    # Integrations & Storage
+    google_credentials_path: str | None = None
+    vault_path: str = "memory/vault.json"
+    encryption_key: str | None = None
 
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""

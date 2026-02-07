@@ -128,6 +128,8 @@ export default function Page() {
         timestamp: new Date(),
       };
 
+      const assistantMsgId = `m-${Date.now() + 1}`;
+
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeConversationId
@@ -138,22 +140,95 @@ export default function Page() {
       setIsStreaming(true);
 
       try {
-        const res = await api.postQuery(content, {
+        const opts = {
           modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
           modeId: selectedModeId || undefined,
           sessionId: activeConversationId || undefined,
-        });
-        const assistantMessage: Message = {
-          id: `m-${Date.now() + 1}`,
-          role: "assistant",
-          content: res.answer,
-          timestamp: new Date(),
-          model: res.routing?.adapter,
         };
+
+        let res: { routing?: { adapter: string } };
+        try {
+          res = await api.postQueryStream(
+            content,
+            (chunk) => {
+              setConversations((prev) =>
+                prev.map((c) => {
+                  if (c.id !== activeConversationId) return c;
+                  const messages = [...c.messages];
+                  const last = messages[messages.length - 1];
+                  if (last?.role === "assistant" && last.id === assistantMsgId) {
+                    messages[messages.length - 1] = {
+                      ...last,
+                      content: last.content + chunk,
+                    };
+                  } else {
+                    messages.push({
+                      id: assistantMsgId,
+                      role: "assistant",
+                      content: chunk,
+                      timestamp: new Date(),
+                    });
+                  }
+                  return { ...c, messages, updatedAt: new Date() };
+                })
+              );
+            },
+            opts
+          );
+        } catch (streamErr) {
+          if (streamErr instanceof Error && streamErr.message.includes("Not Found")) {
+            const fallback = await api.postQuery(content, opts);
+            setConversations((prev) => {
+              const updated = prev.map((c) =>
+                c.id === activeConversationId
+                  ? {
+                      ...c,
+                      messages: [
+                        ...c.messages,
+                        {
+                          id: assistantMsgId,
+                          role: "assistant" as const,
+                          content: fallback.answer,
+                          timestamp: new Date(),
+                          model: fallback.routing?.adapter,
+                        },
+                      ],
+                      updatedAt: new Date(),
+                    }
+                  : c
+              );
+              const conv = updated.find((c) => c.id === activeConversationId);
+              if (conv) {
+                api.patchConversation(activeConversationId, {
+                  messages: conv.messages.map((m) => ({
+                    id: m.id,
+                    role: m.role,
+                    content: m.content,
+                    timestamp: m.timestamp.toISOString(),
+                    model: m.model,
+                    toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
+                  })),
+                }).catch(() => {});
+              }
+              return updated;
+            });
+            return;
+          }
+          throw streamErr;
+        }
+
         setConversations((prev) => {
           const updated = prev.map((c) =>
             c.id === activeConversationId
-              ? { ...c, messages: [...c.messages, assistantMessage], updatedAt: new Date() }
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantMsgId
+                      ? { ...m, model: res.routing?.adapter }
+                      : m
+                  ),
+                  updatedAt: new Date(),
+                }
               : c
           );
           const conv = updated.find((c) => c.id === activeConversationId);
@@ -165,7 +240,7 @@ export default function Page() {
                 content: m.content,
                 timestamp: m.timestamp.toISOString(),
                 model: m.model,
-                toolCalls: m.toolCalls,
+                toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
               })),
             }).catch(() => {});
           }
@@ -174,7 +249,7 @@ export default function Page() {
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "Request failed";
         const errorMessage: Message = {
-          id: `m-${Date.now() + 1}`,
+          id: assistantMsgId,
           role: "assistant",
           content: `Error: ${errMsg}`,
           timestamp: new Date(),
@@ -191,6 +266,189 @@ export default function Page() {
       }
     },
     [activeConversationId, selectedModelId, selectedModeId]
+  );
+
+  const handleEditAndResend = useCallback(
+    async (messageId: string, newContent: string) => {
+      if (!activeConversationId) return;
+
+      const idx = activeConversation?.messages.findIndex((m) => m.id === messageId);
+      if (idx === undefined || idx < 0) return;
+
+      const trimmed = newContent.trim();
+      if (!trimmed) return;
+
+      const assistantMsgId = `m-${Date.now() + 1}`;
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConversationId) return c;
+          const messages = c.messages.slice(0, idx + 1).map((m) =>
+            m.id === messageId ? { ...m, content: trimmed, timestamp: new Date() } : m
+          );
+          return { ...c, messages, updatedAt: new Date() };
+        })
+      );
+
+      api
+        .patchConversation(activeConversationId, {
+          messages: activeConversation!.messages
+            .slice(0, idx + 1)
+            .map((m) =>
+              m.id === messageId
+                ? { ...m, content: trimmed, timestamp: new Date() }
+                : m
+            )
+            .map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+              model: m.model,
+              toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
+            })),
+        })
+        .catch(() => {});
+
+      setIsStreaming(true);
+
+      try {
+        const opts = {
+          modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
+          modeId: selectedModeId || undefined,
+          sessionId: activeConversationId || undefined,
+        };
+
+        let res: { routing?: { adapter: string } };
+        try {
+          res = await api.postQueryStream(
+            trimmed,
+            (chunk) => {
+              setConversations((prev) =>
+                prev.map((c) => {
+                  if (c.id !== activeConversationId) return c;
+                  const messages = [...c.messages];
+                  const last = messages[messages.length - 1];
+                  if (last?.role === "assistant" && last.id === assistantMsgId) {
+                    messages[messages.length - 1] = {
+                      ...last,
+                      content: last.content + chunk,
+                    };
+                  } else {
+                    messages.push({
+                      id: assistantMsgId,
+                      role: "assistant",
+                      content: chunk,
+                      timestamp: new Date(),
+                    });
+                  }
+                  return { ...c, messages, updatedAt: new Date() };
+                })
+              );
+            },
+            opts
+          );
+        } catch (streamErr) {
+          if (streamErr instanceof Error && streamErr.message.includes("Not Found")) {
+            const fallback = await api.postQuery(trimmed, opts);
+            setConversations((prev) => {
+              const updated = prev.map((c) =>
+                c.id === activeConversationId
+                  ? {
+                      ...c,
+                      messages: [
+                        ...c.messages,
+                        {
+                          id: assistantMsgId,
+                          role: "assistant" as const,
+                          content: fallback.answer,
+                          timestamp: new Date(),
+                          model: fallback.routing?.adapter,
+                        },
+                      ],
+                      updatedAt: new Date(),
+                    }
+                  : c
+              );
+              const finalConv = updated.find((c) => c.id === activeConversationId);
+              if (finalConv) {
+                api.patchConversation(activeConversationId, {
+                  messages: finalConv.messages.map((m) => ({
+                    id: m.id,
+                    role: m.role,
+                    content: m.content,
+                    timestamp: m.timestamp.toISOString(),
+                    model: m.model,
+                    toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
+                  })),
+                }).catch(() => {});
+              }
+              return updated;
+            });
+            return;
+          }
+          throw streamErr;
+        }
+
+        setConversations((prev) => {
+          const updated = prev.map((c) =>
+            c.id === activeConversationId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantMsgId
+                      ? { ...m, model: res.routing?.adapter }
+                      : m
+                  ),
+                  updatedAt: new Date(),
+                }
+              : c
+          );
+          const conv = updated.find((c) => c.id === activeConversationId);
+          if (conv) {
+            api.patchConversation(activeConversationId, {
+              messages: conv.messages.map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp.toISOString(),
+                model: m.model,
+                toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
+              })),
+            }).catch(() => {});
+          }
+          return updated;
+        });
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : "Request failed";
+        const errorMessage: Message = {
+          id: assistantMsgId,
+          role: "assistant",
+          content: `Error: ${errMsg}`,
+          timestamp: new Date(),
+        };
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConversationId
+              ? {
+                  ...c,
+                  messages: (() => {
+                    const truncated = c.messages.slice(0, idx + 1);
+                    const updated = truncated.map((m) =>
+                      m.id === messageId ? { ...m, content: trimmed } : m
+                    );
+                    return [...updated, errorMessage];
+                  })(),
+                  updatedAt: new Date(),
+                }
+              : c
+          )
+        );
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    [activeConversationId, activeConversation, selectedModelId, selectedModeId]
   );
 
   const handleNewConversation = useCallback(async () => {
@@ -338,6 +596,7 @@ export default function Page() {
               <ChatInterface
                 conversation={activeConversation}
                 onSendMessage={handleSendMessage}
+                onEditAndResend={handleEditAndResend}
                 isStreaming={isStreaming}
                 modes={modes}
                 models={models}

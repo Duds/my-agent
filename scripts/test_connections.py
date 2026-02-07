@@ -12,7 +12,7 @@ sys.path.insert(0, os.getcwd())
 print(f"DEBUG: 3. sys.path updated: {os.getcwd()}")
 
 print("DEBUG: 4. Custom adapter import start")
-from core.adapters_remote import AnthropicAdapter, MoonshotAdapter
+from core.adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
 print("DEBUG: 5. Custom adapter import end")
 
 async def main():

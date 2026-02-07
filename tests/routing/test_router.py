@@ -1,5 +1,7 @@
 """Tests for ModelRouter."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 from core.router import Intent, ModelRouter
@@ -40,6 +42,9 @@ async def test_classify_intent_nsfw():
     )
     intent = await router.classify_intent("Let's do some erotic roleplay")
     assert intent == Intent.NSFW
+    # Erotic-only (no "roleplay" keyword) should also route to NSFW
+    intent2 = await router.classify_intent("Help me write an erotic sms message to my girlfriend")
+    assert intent2 == Intent.NSFW
 
 
 @pytest.mark.asyncio
@@ -93,3 +98,25 @@ async def test_route_request_finance_uses_local():
     result = await router.route_request("Best investment strategy for wealth")
     assert result["intent"] == "finance"
     assert result["answer"] == "Mock response for: Best investment strategy for wealth"
+
+
+@pytest.mark.asyncio
+async def test_nsfw_ignores_model_override():
+    """NSFW/erotic prompts route to hermes even when model_id is passed (privacy override)."""
+    mock_hermes = MockAdapter("hermes-roleplay:latest")
+    mock_hermes.generate = AsyncMock(return_value="Mock NSFW response")
+
+    with patch.object(ModelRouter, "_get_local_adapter", return_value=mock_hermes):
+        router = ModelRouter(
+            local_client=MockAdapter(),
+            remote_clients={},
+            available_models=["mistral:latest", "llama3:latest"],
+            security_validator=None,
+        )
+        result = await router.route_request(
+            "Help me write an erotic sms message to my girlfriend",
+            model_id="mistral:latest",
+        )
+    assert result["intent"] == "nsfw"
+    assert "hermes" in result["adapter"].lower() or "roleplay" in result["adapter"].lower()
+    assert result["requires_privacy"] is True

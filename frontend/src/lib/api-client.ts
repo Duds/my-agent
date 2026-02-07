@@ -165,6 +165,69 @@ export const api = {
     }
     return res.json();
   },
+
+  /**
+   * Stream query response (SSE). Use for lower perceived latency with Ollama.
+   * Calls onChunk for each token and onDone with final routing info.
+   */
+  postQueryStream: async (
+    text: string,
+    onChunk: (chunk: string) => void,
+    options?: {
+      apiKey?: string;
+      modelId?: string;
+      modeId?: string;
+      sessionId?: string;
+    }
+  ): Promise<{ routing?: { intent: string; adapter: string } }> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (options?.apiKey) headers["X-API-Key"] = options.apiKey;
+    const body: Record<string, string> = { text };
+    if (options?.modelId) body.model_id = options.modelId;
+    if (options?.modeId) body.mode_id = options.modeId;
+    if (options?.sessionId) body.session_id = options.sessionId;
+    const res = await fetch(`${API_BASE}/query/stream`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Query failed: ${res.statusText}`);
+    }
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("No response body");
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let routing: { intent: string; adapter: string } | undefined;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6)) as {
+              chunk?: string;
+              done?: boolean;
+              routing?: { intent: string; adapter: string };
+              error?: string;
+            };
+            if (data.chunk) onChunk(data.chunk);
+            if (data.done && data.routing) routing = data.routing;
+            if (data.error) throw new Error(data.error);
+          } catch (e) {
+            if (e instanceof Error && e.message !== "Unexpected end of JSON input") throw e;
+          }
+        }
+      }
+    }
+    return { routing };
+  },
   getHealth: () => fetchApi<{ status: string; service: string }>("/health"),
   patchSkill: async (skillId: string, enabled: boolean) => {
     const res = await fetch(`${API_BASE}/api/skills/${skillId}`, {

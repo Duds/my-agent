@@ -10,7 +10,8 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 ## ✅ Recently Completed
 | Date | Item | Notes |
 | :--- | :--- | :--- |
-| 07/02/2026 | **Codebase Review Plan Implementation** | Mode-only UX: integrated Mode/Model controls in chat input, StatusBar model only when overridden, /api/modes, query params (model_id, mode_id, session_id), skills PATCH, projects/conversations CRUD (in-memory), Automation Hub section, context-display, automation placeholders. PBIs 023, 025, 026, 028, 029, 032 addressed. |
+| 07/02/2026 | **Router Initialization Bug Fix** (PBI-002) | Fixed router initialization order bug in `core/main.py`. |
+ | 07/02/2026 | **Codebase Review Plan Implementation** | Mode-only UX: integrated Mode/Model controls in chat input, StatusBar model only when overridden, /api/modes, query params (model_id, mode_id, session_id), skills PATCH, projects/conversations CRUD (in-memory), Automation Hub section, context-display, automation placeholders. PBIs 023, 025, 026, 028, 029, 032 addressed. |
 | 07/02/2026 | **IDE Workspace Configuration** (PBI-024) | Updated `.vscode/settings.json` and `.cursorignore`: excluded `my-agent-venv` from explorer/files/search, disabled Python analysis indexing, excluded venvs/node_modules from analysis for better Cursor/VS Code performance. |
 | 07/02/2026 | **README Startup Instructions** | Added clear backend (port 8001) and frontend (port 3000) startup instructions. |
 
@@ -87,9 +88,9 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 | Priority | Feature | Description | Backlog ID |
 | :--- | :--- | :--- | :--- |
-| **M** | **Router Initialization Bug Fix** | Fix router initialization order in `core/main.py` - system won't start otherwise. | PBI-002 |
-| **M** | **Security Validator Implementation** | Implement or remove security validator placeholder in `core/security.py`. | PBI-003 |
-| **M** | **API Authentication** | Add API key authentication, secure CORS, and rate limiting. | PBI-004 |
+| ✅ | **Router Initialization Bug Fix** | Fix router initialization order in `core/main.py` - system won't start otherwise. | PBI-002 |
+| ✅ | **Security Validator Implementation** | Implement or remove security validator placeholder in `core/security.py`. | PBI-003 |
+| ✅ | **API Authentication** | Add API key authentication, secure CORS, and rate limiting. | PBI-004 |
 | **M** | **Adapter Instance Management** | Fix adapter instantiation pattern - use singleton or factory. | PBI-005 |
 | **M** | **Logging Framework** | Replace `print()` with proper logging framework throughout codebase. | PBI-006 |
 
@@ -98,7 +99,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 | Priority | Feature | Description | Backlog ID |
 | :--- | :--- | :--- | :--- |
-| **M** | **Configuration Management** | Create `config.py` with Pydantic settings, centralize all configuration. | PBI-007 |
+| ✅ | **Configuration Management** | Create `config.py` with Pydantic settings, centralize all configuration. | PBI-007 |
 | **M** | **Error Handling** | Add comprehensive try/except blocks, retry logic, and fallback mechanisms. | PBI-008 |
 | **M** | **Testing Infrastructure** | Convert tests to pytest, add pytest.ini, conftest.py, and coverage. | PBI-009 |
 | **M** | **UI Scaffold Integration** | Merge UI scaffold from `.temp/scaffold_unzipped/` into frontend. | PBI-010 |

@@ -12,7 +12,7 @@
         {
             "id": "PBI-002",
             "title": "Router Initialization Bug Fix",
-            "status": "ready",
+            "status": "done",
             "priority": "M",
             "phase": "Critical Fixes",
             "file": "pbi-002-router-initialization-bug.json"
@@ -20,7 +20,7 @@
         {
             "id": "PBI-003",
             "title": "Security Validator Implementation",
-            "status": "ready",
+            "status": "done",
             "priority": "M",
             "phase": "Critical Fixes",
             "file": "pbi-003-security-validator.json"
@@ -28,7 +28,7 @@
         {
             "id": "PBI-004",
             "title": "API Authentication",
-            "status": "ready",
+            "status": "done",
             "priority": "M",
             "phase": "Critical Fixes",
             "file": "pbi-004-api-authentication.json"
@@ -52,7 +52,7 @@
         {
             "id": "PBI-007",
             "title": "Configuration Management",
-            "status": "ready",
+            "status": "done",
             "priority": "M",
             "phase": "Production Readiness",
             "file": "pbi-007-configuration-management.json"

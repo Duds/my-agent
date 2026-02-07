@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Copy,
+  RotateCcw,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -30,6 +32,7 @@ import type { Mode } from "@/lib/api-client"
 interface ChatInterfaceProps {
   conversation: Conversation | null
   onSendMessage: (content: string) => void
+  onEditAndResend?: (messageId: string, newContent: string) => void
   isStreaming: boolean
   modes?: Mode[]
   models?: Model[]
@@ -42,6 +45,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({
   conversation,
   onSendMessage,
+  onEditAndResend,
   isStreaming,
   modes = [],
   models = [],
@@ -107,7 +111,12 @@ export function ChatInterface({
           ) : (
             <>
           {conversation!.messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              onEditAndResend={message.role === "user" ? onEditAndResend : undefined}
+              isStreaming={isStreaming}
+            />
           ))}
           {hasConversation && isStreaming && (
             <div className="flex items-start gap-3">
@@ -192,15 +201,53 @@ export function ChatInterface({
   )
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({
+  message,
+  onEditAndResend,
+  isStreaming,
+}: {
+  message: Message
+  onEditAndResend?: (messageId: string, newContent: string) => void
+  isStreaming: boolean
+}) {
   const [copied, setCopied] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(message.content)
+  const editTextareaRef = React.useRef<HTMLTextAreaElement>(null)
   const isAssistant = message.role === "assistant"
+  const canEdit = !!onEditAndResend && !isStreaming
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const handleStartEdit = () => {
+    if (!canEdit) return
+    setEditContent(message.content)
+    setIsEditing(true)
+    setTimeout(() => editTextareaRef.current?.focus(), 0)
+  }
+
+  const handleResend = () => {
+    const trimmed = editContent.trim()
+    if (!trimmed || !onEditAndResend) return
+    onEditAndResend(message.id, trimmed)
+    setIsEditing(false)
+  }
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content)
+    setIsEditing(false)
+  }
+
+  React.useEffect(() => {
+    if (isEditing && editTextareaRef.current) {
+      editTextareaRef.current.style.height = "auto"
+      editTextareaRef.current.style.height = `${Math.min(editTextareaRef.current.scrollHeight, 200)}px`
+    }
+  }, [isEditing, editContent])
 
   return (
     <TooltipProvider>
@@ -223,13 +270,118 @@ function MessageBubble({ message }: { message: Message }) {
             </span>
           )}
 
-          {/* Message content */}
+          {/* Message content or edit UI */}
+          {isEditing ? (
+            <div className="flex flex-col gap-2 w-full max-w-[85%] items-end">
+              <textarea
+                ref={editTextareaRef}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    handleResend()
+                  }
+                  if (e.key === "Escape") handleCancelEdit()
+                }}
+                className="w-full min-h-[60px] rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
+                placeholder="Edit message..."
+              />
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-xs"
+                  onClick={handleCancelEdit}
+                >
+                  <X className="h-3 w-3" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  onClick={handleResend}
+                  disabled={!editContent.trim()}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Resend
+                </Button>
+              </div>
+            </div>
+          ) : canEdit ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+          <div
+            className={cn(
+              "text-sm leading-relaxed inline-block rounded-lg bg-primary/10 px-4 py-2.5 text-foreground max-w-[85%] cursor-pointer hover:bg-primary/15 hover:ring-1 hover:ring-primary/20 transition-all"
+            )}
+            onClick={handleStartEdit}
+          >
+            {message.content.split("```").map((block, i) => {
+              if (i % 2 === 1) {
+                const lines = block.split("\n")
+                const lang = lines[0]
+                const code = lines.slice(1).join("\n")
+                return (
+                  <div key={i} className="my-3 rounded-lg border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-muted border-b border-border">
+                      <span className="text-[10px] font-mono font-medium text-muted-foreground">
+                        {lang || "code"}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleCopy}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{copied ? "Copied!" : "Copy code"}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <pre className="p-3 text-xs overflow-x-auto bg-muted/50">
+                      <code className="font-mono">{code}</code>
+                    </pre>
+                  </div>
+                )
+              }
+              return (
+                <span key={i} className="whitespace-pre-wrap">
+                  {block.split("\n").map((line, j) => {
+                    if (line.startsWith("**") && line.endsWith("**")) {
+                      return (
+                        <strong key={j} className="block font-semibold mt-2">
+                          {line.replace(/\*\*/g, "")}
+                        </strong>
+                      )
+                    }
+                    if (line.startsWith("- ")) {
+                      return (
+                        <span key={j} className="block pl-3">
+                          {"  "}{line}
+                        </span>
+                      )
+                    }
+                    return (
+                      <span key={j}>
+                        {line}
+                        {j < block.split("\n").length - 1 && "\n"}
+                      </span>
+                    )
+                  })}
+                </span>
+              )
+            })}
+          </div>
+            </TooltipTrigger>
+            <TooltipContent>Click to edit and resend</TooltipContent>
+          </Tooltip>
+          ) : (
           <div
             className={cn(
               "text-sm leading-relaxed",
-              isAssistant
-                ? "text-foreground"
-                : "inline-block rounded-lg bg-primary/10 px-4 py-2.5 text-foreground max-w-[85%]"
+              isAssistant ? "text-foreground" : "inline-block rounded-lg bg-primary/10 px-4 py-2.5 text-foreground max-w-[85%]"
             )}
           >
             {message.content.split("```").map((block, i) => {
@@ -289,6 +441,7 @@ function MessageBubble({ message }: { message: Message }) {
               )
             })}
           </div>
+          )}
 
           {/* Tool calls */}
           {message.toolCalls && message.toolCalls.length > 0 && (

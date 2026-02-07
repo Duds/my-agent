@@ -1,6 +1,6 @@
 import enum
 import logging
-from typing import Any, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Tuple
 
 from .adapters_base import ModelAdapter
 from .adapters_local import OllamaAdapter
@@ -41,7 +41,11 @@ class ModelRouter:
         input_lower = user_input.lower()
         if any(w in input_lower for w in ["secret", "private", "personal", "password"]):
             return Intent.PRIVATE
-        if any(w in input_lower for w in ["roleplay", "nsfw", "erp"]):
+        nsfw_keywords = [
+            "roleplay", "nsfw", "erp", "erotic", "sexual", "intimate", "sexy", "flirty",
+            "pussy", "cunt", "cock", "dick", "vagina", "penis", "orgasm", "foreplay",
+        ]
+        if any(w in input_lower for w in nsfw_keywords):
             return Intent.NSFW
         if any(w in input_lower for w in ["code", "python", "script", "test"]):
             return Intent.CODING
@@ -81,13 +85,33 @@ class ModelRouter:
         mode_id: str | None = None,
         session_id: str | None = None,
     ) -> Dict[str, Any]:
-        # Manual override: when model_id provided, bypass intent routing
+        intent = await self.classify_intent(user_input)
+
+        # NSFW/PRIVATE always route to local uncensored models—ignore model_id override
+        if intent in [Intent.PRIVATE, Intent.NSFW] or mode_id == "private":
+            model_name = self._find_best_local_model(
+                ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
+            )
+            adapter_name = model_name
+            adapter = self._get_local_adapter(model_name)
+            answer = await adapter.generate(user_input)
+            return {
+                "intent": intent.value,
+                "adapter": adapter_name,
+                "answer": answer,
+                "model_info": adapter.get_model_info() if hasattr(adapter, "get_model_info") else {"type": "unknown"},
+                "requires_privacy": True,
+                "security": {"is_safe": True},
+            }
+
+        # Manual override: when model_id provided, bypass intent routing (for non-sensitive intents)
         if model_id:
             adapter = self._resolve_model_to_adapter(model_id)
             if adapter:
                 answer = await adapter.generate(user_input)
                 security_verdict = {"is_safe": True}
-                if self.security_validator and "anthropic" not in str(model_id) and "moonshot" not in str(model_id):
+                remote_model_ids = ("claude-sonnet", "anthropic", "mistral-small", "mistral", "moonshot-v1", "moonshot")
+                if self.security_validator and model_id not in remote_model_ids:
                     security_verdict = await self.security_validator.check_output(user_input, answer)
                     if not security_verdict["is_safe"]:
                         answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
@@ -96,21 +120,11 @@ class ModelRouter:
                     "adapter": model_id,
                     "answer": answer,
                     "model_info": adapter.get_model_info() if hasattr(adapter, "get_model_info") else {"type": "unknown"},
-                    "requires_privacy": mode_id == "private" if mode_id else False,
+                    "requires_privacy": False,
                     "security": security_verdict,
                 }
 
-        intent = await self.classify_intent(user_input)
-
-        # Route based on intent with specialized models (reuse adapters from pool)
-        if intent in [Intent.PRIVATE, Intent.NSFW]:
-            model_name = self._find_best_local_model(
-                ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
-            )
-            adapter_name = model_name
-            adapter = self._get_local_adapter(model_name)
-
-        elif intent == Intent.CODING:
+        if intent == Intent.CODING:
             model_name = self._find_best_local_model(
                 ["deepseek-coder", "codellama", "qwen-coder", "code"],
                 default="codellama:7b-instruct",
@@ -119,12 +133,12 @@ class ModelRouter:
             adapter = self._get_local_adapter(model_name)
 
         elif intent == Intent.QUALITY:
-            if "anthropic" in self.remote_clients:
+            if "anthropic" in self.remote_clients and mode_id != "private":
                 adapter_name = "anthropic"
                 adapter = self.remote_clients["anthropic"]
             else:
                 model_name = self._find_best_local_model(
-                    ["llama3", "mistral", "mixtral", "gemma"], default="llama3:latest"
+                    ["hermes", "llama3", "mistral", "mixtral", "gemma"], default="hermes-roleplay:latest"
                 )
                 adapter_name = model_name
                 adapter = self._get_local_adapter(model_name)
@@ -158,3 +172,91 @@ class ModelRouter:
             "requires_privacy": intent in [Intent.PRIVATE, Intent.NSFW],
             "security": security_verdict
         }
+
+    async def route_request_stream(
+        self,
+        user_input: str,
+        model_id: str | None = None,
+        mode_id: str | None = None,
+    ) -> AsyncIterator[Tuple[str, Dict[str, Any]]]:
+        """
+        Stream response chunks for Ollama models. Yields (chunk, metadata).
+        Use non-streaming route_request for remote adapters.
+        """
+        adapter: ModelAdapter | None = None
+        adapter_name: str = ""
+        routing_meta: Dict[str, Any] = {}
+
+        intent = await self.classify_intent(user_input)
+
+        # NSFW/PRIVATE always route to local uncensored models—ignore model_id override
+        if intent in [Intent.PRIVATE, Intent.NSFW] or mode_id == "private":
+            model_name = self._find_best_local_model(
+                ["hermes", "dolphin", "roleplay"], default="hermes-roleplay:latest"
+            )
+            adapter_name = model_name
+            adapter = self._get_local_adapter(model_name)
+            routing_meta = {
+                "intent": intent.value,
+                "adapter": adapter_name,
+                "requires_privacy": True,
+            }
+        elif model_id:
+            adapter = self._resolve_model_to_adapter(model_id)
+            adapter_name = model_id
+            routing_meta = {
+                "intent": "manual",
+                "adapter": adapter_name,
+                "requires_privacy": False,
+            }
+        else:
+            if intent == Intent.CODING:
+                model_name = self._find_best_local_model(
+                    ["deepseek-coder", "codellama", "qwen-coder", "code"],
+                    default="codellama:7b-instruct",
+                )
+                adapter_name = model_name
+                adapter = self._get_local_adapter(model_name)
+            elif intent == Intent.QUALITY:
+                if "anthropic" in self.remote_clients and mode_id != "private":
+                    adapter_name = "anthropic"
+                    adapter = self.remote_clients["anthropic"]
+                elif "mistral" in self.remote_clients and mode_id != "private":
+                    adapter_name = "mistral"
+                    adapter = self.remote_clients["mistral"]
+                else:
+                    model_name = self._find_best_local_model(
+                        ["hermes", "llama3", "mistral", "mixtral", "gemma"], default="hermes-roleplay:latest"
+                    )
+                    adapter_name = model_name
+                    adapter = self._get_local_adapter(model_name)
+            elif intent == Intent.SPEED:
+                if "mistral" in self.remote_clients and mode_id != "private":
+                    adapter_name = "mistral"
+                    adapter = self.remote_clients["mistral"]
+                else:
+                    model_name = self._find_best_local_model(
+                        ["mistral", "gemma", "phi", "tiny", "llama3"], default="mistral:latest"
+                    )
+                    adapter_name = model_name
+                    adapter = self._get_local_adapter(model_name)
+            else:
+                adapter_name = "llama3:latest"
+                adapter = self.local_client
+
+            routing_meta = {
+                "intent": intent.value,
+                "adapter": adapter_name,
+                "requires_privacy": intent in [Intent.PRIVATE, Intent.NSFW],
+            }
+
+        if not adapter:
+            yield ("[ERROR] No adapter available", routing_meta)
+            return
+
+        if isinstance(adapter, OllamaAdapter) and hasattr(adapter, "generate_stream"):
+            async for chunk in adapter.generate_stream(user_input):
+                yield (chunk, routing_meta)
+        else:
+            answer = await adapter.generate(user_input)
+            yield (answer, routing_meta)

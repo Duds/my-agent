@@ -53,7 +53,7 @@ Dashboard at `http://localhost:3000`. Ensure the backend is running for full fun
 
 ### Optional
 - Pull Ollama models: `ollama pull llama3` and `ollama pull mistral`
-- Copy `.env.example` to `.env` and add API keys for Anthropic/Moonshot
+- Copy `.env.example` to `.env` and add API keys for Anthropic, Mistral, and Moonshot
 
 ---
 *Created and maintained by the user in partnership with Google Antigravity.*
