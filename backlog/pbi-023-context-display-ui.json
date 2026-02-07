@@ -3,7 +3,7 @@
   "title": "Mode & Context Controls UI",
   "priority": "C",
   "phase": "Advanced Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "frontend",
     "description": "Design and implement UI for Mode & Context Controls: user activity mode (Focus, Relax), context display (active window, current activity), intervention toasts. Mode and model controls integrated inside the chat input area (bottom-left): Mode dropdown (General, Private, Focus, Relax), Model dropdown ('Auto' default). Placeholder: 'Message, @ for context, / for commands'. Empty state: controls visible even when no conversation. Replace header ModelSelector/PersonaSelector with integrated ModeSelector and Model controls. Per research: Mode only, not Persona. Model selection: best-fit routing is default; manual override deliberate opt-in. Subtle model indicator per response in chat. Supports capability.context_awareness from roadmap.",

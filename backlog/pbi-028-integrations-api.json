@@ -3,7 +3,7 @@
   "title": "Integrations API",
   "priority": "S",
   "phase": "Reconciled Scaffold Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "core",
     "description": "Wire adapters (Google Workspace, Pinterest) into /api/integrations. Consolidate GMail (sentinel), Pinterest (knowledge_graph), scaffold Integrations into single Integrations concept.",

@@ -3,7 +3,7 @@
   "title": "Automation Hub UI",
   "priority": "C",
   "phase": "Advanced Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "frontend",
     "description": "Design and implement Automation Hub UI: agents, cron jobs, automations, scripts, status logs, error reports. Unifies scaffold AppSidebar (Agents/Cron/Automations) with roadmap Automation Dashboard. Single concept for capability.automation_engine.",

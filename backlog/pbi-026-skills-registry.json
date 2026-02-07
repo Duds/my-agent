@@ -3,7 +3,7 @@
   "title": "Skills Registry",
   "priority": "S",
   "phase": "Reconciled Scaffold Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "core",
     "description": "Implement central management system to register, discover, and invoke agent capabilities (Skills). Promoted from .agent/backlog/PBI-SR-Skills-Registry. Enables SettingsPanel Skills tab to persist enable/disable state.",

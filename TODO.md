@@ -10,6 +10,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 ## ✅ Recently Completed
 | Date | Item | Notes |
 | :--- | :--- | :--- |
+| 07/02/2026 | **Codebase Review Plan Implementation** | Mode-only UX: integrated Mode/Model controls in chat input, StatusBar model only when overridden, /api/modes, query params (model_id, mode_id, session_id), skills PATCH, projects/conversations CRUD (in-memory), Automation Hub section, context-display, automation placeholders. PBIs 023, 025, 026, 028, 029, 032 addressed. |
 | 07/02/2026 | **IDE Workspace Configuration** (PBI-024) | Updated `.vscode/settings.json` and `.cursorignore`: excluded `my-agent-venv` from explorer/files/search, disabled Python analysis indexing, excluded venvs/node_modules from analysis for better Cursor/VS Code performance. |
 | 07/02/2026 | **README Startup Instructions** | Added clear backend (port 8001) and frontend (port 3000) startup instructions. |
 
@@ -24,9 +25,9 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | :--- | :--- | :--- |
 | **M** | **Window Poller Service** | Background daemon to detect active window/process contexts. |
 | **M** | **Context Classifier** | Local LLM capability to judge "Current Activity" vs "Stated Goal". |
-| **M** | **Mode & Context Controls** | User activity mode (Deep Work, Relax), context display, intervention toasts. Model selection: best-fit default; manual override is deliberate opt-in only. Subtle model indicator per response in chat. |
+| **M** | **Mode & Context Controls** | User activity mode (Focus, Relax), context display, intervention toasts. Model selection: best-fit default; manual override is deliberate opt-in only. Subtle model indicator per response in chat. ✅ PBI-023 |
 | **S** | **Intervention Toasts** | Non-blocking OS notifications to nudge users back on track. |
-| **S** | **Persona** | Agent personas for tailored conversation style (from scaffold). |
+| **S** | **Modes** | Activity modes (General, Private, Focus, Relax) for routing/behaviour. Per research: Mode replaces Persona. ✅ PBI-025 |
 
 ### 🤖 capability.automation_engine (The "Timesheet Terminator")
 *Solves: Administrative friction, Repetitive web tasks.*
@@ -34,7 +35,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | :--- | :--- | :--- |
 | **M** | **Headless Browser Core** | Robust Playwright/Selenium wrapper for background web navigation. |
 | **M** | **Credential Vault** | Secure, local storage for target site credentials. |
-| **M** | **Automation Hub** | UI for agents, cron jobs, automations, scripts, status logs, and error reports. |
+| **M** | **Automation Hub** | UI for agents, cron jobs, automations, scripts, status logs, and error reports. ✅ PBI-032 (UI structure; backend stubbed) |
 | **C** | **Human-in-the-Loop UX** | Secure pop-up for OTP entry or final submission approval. |
 
 ### 🛡️ capability.sentinel (The "Digital Janitor")
@@ -129,17 +130,17 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | **C** | **Knowledge Graph UI** | Design vector store browser, inspiration sidebar interface. | PBI-020 |
 | **C** | **Distributed Mesh UI** | Design mesh health visualization, node manager view. | PBI-021 |
 | **C** | **Sentinel Review Queue UI** | Design "Tinder for Files" approval interface. | PBI-022 |
-| **C** | **Mode & Context Controls UI** | User activity mode, context display, toasts. Best-fit model default; manual override deliberate only. Subtle model indicator in chat. | PBI-023 |
-| **C** | **Automation Hub UI** | Agents, cron, automations, scripts, logs, reports. | PBI-032 |
+| **C** | ~~**Mode & Context Controls UI**~~ | ~~User activity mode, context display, toasts.~~ **Done** — integrated Mode/Model in chat input. | PBI-023 ✅ |
+| **C** | ~~**Automation Hub UI**~~ | ~~Agents, cron, automations, scripts, logs, reports.~~ **Done** — section header + placeholders. | PBI-032 ✅ |
 
 ### 📋 Reconciled Scaffold Features (from codebase review)
 | Priority | Feature | Description | Backlog ID |
 | :--- | :--- | :--- | :--- |
-| **S** | **Persona from config** | Move personas from hardcoded to config. | PBI-025 |
-| **S** | **Skills Registry** | Promote PBI-SR; backend + persistence. | PBI-026 |
+| **S** | ~~**Modes from config**~~ | ~~Move personas to modes from config.~~ **Done** — /api/modes, mode_id in query. | PBI-025 ✅ |
+| **S** | ~~**Skills Registry**~~ | ~~Promote PBI-SR; backend + persistence.~~ **Done** — PATCH /api/skills/:id. | PBI-026 ✅ |
 | **S** | **MCP Server discovery** | Backend API + Settings UI. | PBI-027 |
-| **S** | **Integrations API** | Wire Google, Pinterest, etc. | PBI-028 |
-| **S** | **Projects persistence** | CRUD, conversation association. | PBI-029 |
+| **S** | ~~**Integrations API**~~ | ~~Wire Google, Pinterest, etc.~~ **Done** — Google wired when credentials present. | PBI-028 ✅ |
+| **S** | ~~**Projects persistence**~~ | ~~CRUD, conversation association.~~ **Done** — in-memory CRUD + conversation link. | PBI-029 ✅ |
 | **S** | **Privacy Vault UI** | Indicator and basic management. | PBI-030 |
 | **C** | **Approval UX design system** | Shared approve/reject/undo for Sentinel + HITL. | PBI-031 |
 

@@ -3,7 +3,7 @@
   "title": "Projects Persistence",
   "priority": "S",
   "phase": "Reconciled Scaffold Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "core + frontend",
     "description": "Implement projects CRUD and conversation association. Replace single hardcoded project with persistence. Fix project.conversationIds so conversations appear under projects in sidebar.",

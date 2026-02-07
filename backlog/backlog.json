@@ -180,7 +180,7 @@
         {
             "id": "PBI-023",
             "title": "Mode & Context Controls UI",
-            "status": "ready",
+            "status": "done",
             "priority": "C",
             "phase": "Advanced Features",
             "file": "pbi-023-context-display-ui.json"
@@ -196,7 +196,7 @@
         {
             "id": "PBI-025",
             "title": "Modes from Config",
-            "status": "ready",
+            "status": "done",
             "priority": "S",
             "phase": "Reconciled Scaffold Features",
             "file": "pbi-025-modes-from-config.json"
@@ -204,7 +204,7 @@
         {
             "id": "PBI-026",
             "title": "Skills Registry",
-            "status": "ready",
+            "status": "done",
             "priority": "S",
             "phase": "Reconciled Scaffold Features",
             "file": "pbi-026-skills-registry.json"
@@ -220,7 +220,7 @@
         {
             "id": "PBI-028",
             "title": "Integrations API",
-            "status": "ready",
+            "status": "done",
             "priority": "S",
             "phase": "Reconciled Scaffold Features",
             "file": "pbi-028-integrations-api.json"
@@ -228,7 +228,7 @@
         {
             "id": "PBI-029",
             "title": "Projects Persistence",
-            "status": "ready",
+            "status": "done",
             "priority": "S",
             "phase": "Reconciled Scaffold Features",
             "file": "pbi-029-projects-persistence.json"
@@ -252,7 +252,7 @@
         {
             "id": "PBI-032",
             "title": "Automation Hub UI",
-            "status": "ready",
+            "status": "done",
             "priority": "C",
             "phase": "Advanced Features",
             "file": "pbi-032-automation-hub-ui.json"
