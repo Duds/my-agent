@@ -63,7 +63,43 @@ class ModelRouter:
             self._local_adapter_pool[model_name] = OllamaAdapter(model_name=model_name)
         return self._local_adapter_pool[model_name]
 
-    async def route_request(self, user_input: str) -> Dict[str, Any]:
+    def _resolve_model_to_adapter(self, model_id: str) -> "ModelAdapter | None":
+        """Resolve model_id to adapter (Ollama or remote)."""
+        if model_id in ("claude-sonnet", "anthropic") and "anthropic" in self.remote_clients:
+            return self.remote_clients["anthropic"]
+        if model_id in ("moonshot-v1", "moonshot") and "moonshot" in self.remote_clients:
+            return self.remote_clients["moonshot"]
+        # Ollama model
+        if model_id in (self.available_models or []):
+            return self._get_local_adapter(model_id)
+        return self._get_local_adapter(model_id)
+
+    async def route_request(
+        self,
+        user_input: str,
+        model_id: str | None = None,
+        mode_id: str | None = None,
+        session_id: str | None = None,
+    ) -> Dict[str, Any]:
+        # Manual override: when model_id provided, bypass intent routing
+        if model_id:
+            adapter = self._resolve_model_to_adapter(model_id)
+            if adapter:
+                answer = await adapter.generate(user_input)
+                security_verdict = {"is_safe": True}
+                if self.security_validator and "anthropic" not in str(model_id) and "moonshot" not in str(model_id):
+                    security_verdict = await self.security_validator.check_output(user_input, answer)
+                    if not security_verdict["is_safe"]:
+                        answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
+                return {
+                    "intent": "manual",
+                    "adapter": model_id,
+                    "answer": answer,
+                    "model_info": adapter.get_model_info() if hasattr(adapter, "get_model_info") else {"type": "unknown"},
+                    "requires_privacy": mode_id == "private" if mode_id else False,
+                    "security": security_verdict,
+                }
+
         intent = await self.classify_intent(user_input)
 
         # Route based on intent with specialized models (reuse adapters from pool)

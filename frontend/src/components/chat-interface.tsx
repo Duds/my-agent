@@ -22,18 +22,33 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import type { Message, Conversation } from "@/lib/store"
+import { ModeSelector } from "@/components/mode-selector"
+import { ChatInputModelSelector } from "@/components/chat-input-model-selector"
+import type { Message, Conversation, Model } from "@/lib/store"
+import type { Mode } from "@/lib/api-client"
 
 interface ChatInterfaceProps {
   conversation: Conversation | null
   onSendMessage: (content: string) => void
   isStreaming: boolean
+  modes?: Mode[]
+  models?: Model[]
+  selectedModeId?: string
+  selectedModelId?: string
+  onSelectMode?: (id: string) => void
+  onSelectModel?: (id: string) => void
 }
 
 export function ChatInterface({
   conversation,
   onSendMessage,
   isStreaming,
+  modes = [],
+  models = [],
+  selectedModeId = "general",
+  selectedModelId = "",
+  onSelectMode = () => {},
+  onSelectModel = () => {},
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -54,6 +69,7 @@ export function ChatInterface({
 
   const handleSubmit = () => {
     if (!input.trim() || isStreaming) return
+    if (!hasConversation) return
     onSendMessage(input.trim())
     setInput("")
   }
@@ -65,37 +81,35 @@ export function ChatInterface({
     }
   }
 
-  if (!conversation) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center space-y-3">
-          <Avatar className="mx-auto h-12 w-12">
-            <AvatarFallback className="bg-muted">
-              <Bot className="h-6 w-6 text-muted-foreground" />
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="text-sm font-medium text-foreground">
-              Start a new conversation
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Select a conversation or create a new one
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const hasConversation = !!conversation
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Messages */}
+      {/* Messages or empty state */}
       <ScrollArea className="flex-1">
         <div ref={scrollRef} className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-          {conversation.messages.map((message) => (
+          {!hasConversation ? (
+            <div className="flex flex-1 flex-col items-center justify-center py-16">
+              <Avatar className="mx-auto h-12 w-12">
+                <AvatarFallback className="bg-muted">
+                  <Bot className="h-6 w-6 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="mt-3 text-center">
+                <h3 className="text-sm font-medium text-foreground">
+                  Start a new conversation
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select a conversation or create a new one from the sidebar
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+          {conversation!.messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
-          {isStreaming && (
+          {hasConversation && isStreaming && (
             <div className="flex items-start gap-3">
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="bg-primary/10 text-primary">
@@ -111,21 +125,44 @@ export function ChatInterface({
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </ScrollArea>
 
-      {/* Input area */}
+      {/* Input area - always visible per plan (empty state controls) */}
       <div className="border-t border-border bg-card p-4">
         <div className="mx-auto max-w-3xl">
+          {/* Mode and Model controls - bottom-left of input */}
+          <div className="flex items-center gap-1 mb-2">
+            {modes.length > 0 && (
+              <ModeSelector
+                modes={modes}
+                selectedModeId={selectedModeId}
+                onSelectMode={onSelectMode}
+              />
+            )}
+            {models.length > 0 && (
+              <>
+                <span className="text-border text-[10px]">|</span>
+                <ChatInputModelSelector
+                  models={models}
+                  selectedModelId={selectedModelId}
+                  onSelectModel={onSelectModel}
+                />
+              </>
+            )}
+          </div>
           <div className="relative rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring/20 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
+              placeholder="Message, @ for context, / for commands"
               rows={1}
-              className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              disabled={!hasConversation}
+              className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
             />
             <Button
               size="icon"
@@ -137,7 +174,7 @@ export function ChatInterface({
                   : "text-muted-foreground"
               )}
               onClick={handleSubmit}
-              disabled={!input.trim() || isStreaming}
+              disabled={!input.trim() || isStreaming || !hasConversation}
             >
               {isStreaming ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

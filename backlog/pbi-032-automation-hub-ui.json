@@ -1,0 +1,35 @@
+{
+  "id": "PBI-032",
+  "title": "Automation Hub UI",
+  "priority": "C",
+  "phase": "Advanced Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Design and implement Automation Hub UI: agents, cron jobs, automations, scripts, status logs, error reports. Unifies scaffold AppSidebar (Agents/Cron/Automations) with roadmap Automation Dashboard. Single concept for capability.automation_engine.",
+    "affected_files": [
+      "frontend/src/components/app-sidebar.tsx",
+      "frontend/src/components/automation/ (new)",
+      "frontend/src/app/ (automation dashboard view)"
+    ],
+    "solution": "1. Consolidate Agents, Cron, Automations as Automation Hub sub-sections. 2. Add scripts list view. 3. Add status logs and error reports view. 4. Connect to agent-processes, cron-jobs, automations APIs."
+  },
+  "acceptance_criteria": [
+    "Automation Hub consolidates agents, cron, automations",
+    "Scripts list with status",
+    "Status logs view",
+    "Error reports view",
+    "Connected to backend APIs",
+    "Responsive design"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to see all automations in one place."},
+    {"story": "As a user, I want to view script status and error logs."}
+  ],
+  "technical_notes": {
+    "current_issue": "Sidebar has Agents/Cron/Automations but backend returns empty; no scripts/logs/reports view",
+    "risk": "LOW",
+    "estimated_effort": "Medium (3-4 days)",
+    "dependencies": ["Automation Hub APIs (agent-processes, cron-jobs, automations)", "UI scaffold integration (PBI-010)"]
+  }
+}

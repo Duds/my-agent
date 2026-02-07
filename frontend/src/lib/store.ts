@@ -6,6 +6,7 @@
 export type {
   Model,
   Persona,
+  Mode,
   Skill,
   MCP,
   Integration,

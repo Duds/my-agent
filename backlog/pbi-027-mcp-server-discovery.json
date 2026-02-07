@@ -1,0 +1,34 @@
+{
+  "id": "PBI-027",
+  "title": "MCP Server Discovery and Config",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core + frontend",
+    "description": "Implement MCP (Model Context Protocol) server discovery and configuration. Backend API + SettingsPanel UI. Replace hardcoded /api/mcps with config-driven list.",
+    "affected_files": [
+      "core/main.py",
+      "core/config.py",
+      "frontend/src/components/settings-panel.tsx"
+    ],
+    "solution": "1. Add MCP config to settings schema. 2. Load MCP servers from config. 3. Expose via /api/mcps. 4. Add MCP status check (connected/disconnected). 5. SettingsPanel MCP tab uses real data."
+  },
+  "acceptance_criteria": [
+    "MCP servers loaded from config",
+    "/api/mcps returns config-driven list with status",
+    "SettingsPanel MCP tab displays real MCPs",
+    "Add MCP button (or placeholder for future)",
+    "Documentation for MCP config format"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to see which MCP servers are connected."},
+    {"story": "As an advanced user, I want to configure MCP servers via config."}
+  ],
+  "technical_notes": {
+    "current_issue": "MCPs hardcoded in main.py",
+    "risk": "LOW",
+    "estimated_effort": "Small (1-2 days)",
+    "dependencies": ["Configuration management (PBI-007)"]
+  }
+}

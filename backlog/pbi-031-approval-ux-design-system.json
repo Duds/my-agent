@@ -1,0 +1,34 @@
+{
+  "id": "PBI-031",
+  "title": "Approval UX Design System",
+  "priority": "C",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Create shared approval flow design system: approve/reject/undo pattern. Applies to Sentinel file review (PBI-022) and Human-in-the-Loop automation flows. Single design system for consistency.",
+    "affected_files": [
+      "frontend/src/components/approval/ (new)",
+      "frontend/src/components/sentinel/ (PBI-022)",
+      "docs/design/approval-ux.md"
+    ],
+    "solution": "1. Design ApprovalCard, ApproveRejectButtons, UndoToast components. 2. Document keyboard shortcuts, swipe gestures. 3. Implement in Sentinel Review Queue (PBI-022). 4. Reuse for HITL automation pop-ups."
+  },
+  "acceptance_criteria": [
+    "Reusable ApprovalCard component",
+    "Approve/Reject/Undo pattern documented",
+    "Keyboard shortcuts (e.g. A/R for approve/reject)",
+    "Used by Sentinel Review Queue UI",
+    "Ready for HITL automation flows"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want consistent approval flows across file review and automation."},
+    {"story": "As a user, I want to undo accidental approvals."}
+  ],
+  "technical_notes": {
+    "current_issue": "No shared approval UX; PBI-022 and HITL would build separately",
+    "risk": "LOW",
+    "estimated_effort": "Small (1-2 days)",
+    "dependencies": ["Sentinel Review Queue UI (PBI-022)"]
+  }
+}

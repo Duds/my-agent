@@ -1,0 +1,34 @@
+{
+  "id": "PBI-028",
+  "title": "Integrations API",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Wire adapters (Google Workspace, Pinterest) into /api/integrations. Consolidate GMail (sentinel), Pinterest (knowledge_graph), scaffold Integrations into single Integrations concept.",
+    "affected_files": [
+      "core/main.py",
+      "adapters/google_adapter.py",
+      "frontend/src/components/settings-panel.tsx"
+    ],
+    "solution": "1. Wire google_adapter to /api/integrations. 2. Add Pinterest integration status. 3. Replace Vercel/Supabase placeholders with real connector status. 4. Load integrations from config."
+  },
+  "acceptance_criteria": [
+    "Google Workspace (Gmail, Calendar, Drive) status in /api/integrations",
+    "Pinterest adapter status when implemented",
+    "Integrations loaded from config",
+    "SettingsPanel Integrations tab shows real status",
+    "Documentation for adding integrations"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to see which external services are connected."},
+    {"story": "As a user, I want to connect my Google account for Gmail/Calendar/Drive."}
+  ],
+  "technical_notes": {
+    "current_issue": "Integrations return Vercel/Supabase placeholder; Google adapter exists but not wired",
+    "risk": "MEDIUM",
+    "estimated_effort": "Medium (2-3 days)",
+    "dependencies": ["Configuration management (PBI-007)"]
+  }
+}

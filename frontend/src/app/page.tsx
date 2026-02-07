@@ -15,10 +15,8 @@ import {
 } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
-import { ModelSelector } from "@/components/model-selector";
 import { StatusBar } from "@/components/status-bar";
 import { SettingsPanel } from "@/components/settings-panel";
-import { PersonaSelector, PersonaBadge } from "@/components/persona-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { api } from "@/lib/api-client";
 import type {
@@ -26,7 +24,6 @@ import type {
   Message,
   Skill,
   Model,
-  Persona,
   Project,
   AgentProcess,
   CronJob,
@@ -39,14 +36,15 @@ function parseConversation(c: {
   id: string;
   title: string;
   projectId: string;
-  messages: { id: string; role: string; content: string; timestamp: string; model?: string; toolCalls?: { name: string; status: string }[] }[];
+  messages?: { id: string; role: string; content: string; timestamp: string; model?: string; toolCalls?: { name: string; status: string }[] }[];
   createdAt: string;
   updatedAt: string;
   persona?: string;
+  modeId?: string;
 }): Conversation {
   return {
     ...c,
-    messages: c.messages.map((m) => ({
+    messages: (c.messages ?? []).map((m) => ({
       ...m,
       role: m.role as "user" | "assistant" | "system",
       timestamp: new Date(m.timestamp),
@@ -60,17 +58,15 @@ function parseConversation(c: {
 export default function Page() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [personaDialogOpen, setPersonaDialogOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
-  const [selectedPersonaId, setSelectedPersonaId] = useState("coder");
-  const [agenticMode, setAgenticMode] = useState(true);
+  const [selectedModeId, setSelectedModeId] = useState("general");
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [models, setModels] = useState<Model[]>([]);
-  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [modes, setModes] = useState<{ id: string; name: string; description: string; routing: string }[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -81,17 +77,17 @@ export default function Page() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? null;
-  const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0] ?? null;
-  const selectedPersona = personas.find((p) => p.id === selectedPersonaId) ?? personas[0] ?? null;
+  const selectedModel = models.find((m) => m.id === selectedModelId) ?? null;
+  const isModelOverridden = !!selectedModelId && selectedModelId !== "auto";
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const [m, p, s, proj, conv, ap, cj, auto, mcpsRes, intRes] = await Promise.all([
+        const [m, mo, s, proj, conv, ap, cj, auto, mcpsRes, intRes] = await Promise.all([
           api.getModels(),
-          api.getPersonas(),
+          api.getModes(),
           api.getSkills(),
           api.getProjects(),
           api.getConversations(),
@@ -102,7 +98,7 @@ export default function Page() {
           api.getIntegrations(),
         ]);
         setModels(m);
-        setPersonas(p);
+        setModes(mo);
         setSkills(s);
         setProjects(proj);
         setConversations(conv.map(parseConversation));
@@ -111,7 +107,6 @@ export default function Page() {
         setAutomations(auto.map((a) => ({ ...a, lastTriggered: a.lastTriggered ? new Date(a.lastTriggered) : null })));
         setMcps(mcpsRes);
         setIntegrations(intRes);
-        if (m.length > 0 && !selectedModelId) setSelectedModelId(m[0].id);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -143,7 +138,11 @@ export default function Page() {
       setIsStreaming(true);
 
       try {
-        const res = await api.postQuery(content);
+        const res = await api.postQuery(content, {
+          modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
+          modeId: selectedModeId || undefined,
+          sessionId: activeConversationId || undefined,
+        });
         const assistantMessage: Message = {
           id: `m-${Date.now() + 1}`,
           role: "assistant",
@@ -151,13 +150,27 @@ export default function Page() {
           timestamp: new Date(),
           model: res.routing?.adapter,
         };
-        setConversations((prev) =>
-          prev.map((c) =>
+        setConversations((prev) => {
+          const updated = prev.map((c) =>
             c.id === activeConversationId
               ? { ...c, messages: [...c.messages, assistantMessage], updatedAt: new Date() }
               : c
-          )
-        );
+          );
+          const conv = updated.find((c) => c.id === activeConversationId);
+          if (conv) {
+            api.patchConversation(activeConversationId, {
+              messages: conv.messages.map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp.toISOString(),
+                model: m.model,
+                toolCalls: m.toolCalls,
+              })),
+            }).catch(() => {});
+          }
+          return updated;
+        });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "Request failed";
         const errorMessage: Message = {
@@ -177,28 +190,63 @@ export default function Page() {
         setIsStreaming(false);
       }
     },
-    [activeConversationId]
+    [activeConversationId, selectedModelId, selectedModeId]
   );
 
-  const handleNewConversation = useCallback(() => {
-    const newConv: Conversation = {
-      id: `conv-${Date.now()}`,
-      title: "New conversation",
-      projectId: projects[0]?.id ?? "proj-1",
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      persona: selectedPersonaId,
-    };
-    setConversations((prev) => [newConv, ...prev]);
-    setActiveConversationId(newConv.id);
-  }, [selectedPersonaId, projects]);
+  const handleNewConversation = useCallback(async () => {
+    const projectId = projects[0]?.id ?? "proj-1";
+    try {
+      const res = await api.postConversation({
+        title: "New conversation",
+        projectId,
+        modeId: selectedModeId || undefined,
+      });
+      const newConv = parseConversation(res);
+      setConversations((prev) => [newConv, ...prev]);
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? { ...p, conversationIds: [...(p.conversationIds ?? []), newConv.id] }
+            : p
+        )
+      );
+      setActiveConversationId(newConv.id);
+    } catch (err) {
+      const newConv: Conversation = {
+        id: `conv-${Date.now()}`,
+        title: "New conversation",
+        projectId,
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setConversations((prev) => [newConv, ...prev]);
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? { ...p, conversationIds: [...(p.conversationIds ?? []), newConv.id] }
+            : p
+        )
+      );
+      setActiveConversationId(newConv.id);
+    }
+  }, [selectedModeId, projects]);
 
-  const handleToggleSkill = useCallback((id: string) => {
+  const handleToggleSkill = useCallback(async (id: string) => {
+    const skill = skills.find((s) => s.id === id);
+    if (!skill) return;
+    const newEnabled = !skill.enabled;
     setSkills((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s))
+      prev.map((s) => (s.id === id ? { ...s, enabled: newEnabled } : s))
     );
-  }, []);
+    try {
+      await api.patchSkill(id, newEnabled);
+    } catch (err) {
+      setSkills((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, enabled: skill.enabled } : s))
+      );
+    }
+  }, [skills]);
 
   if (loading) {
     return (
@@ -268,21 +316,6 @@ export default function Page() {
               </div>
 
               <div className="flex items-center gap-1">
-                {selectedPersona && (
-                  <PersonaBadge
-                    persona={selectedPersona}
-                    onClick={() => setPersonaDialogOpen(true)}
-                  />
-                )}
-
-                <ModelSelector
-                  models={models}
-                  selectedModelId={selectedModelId}
-                  onSelectModel={setSelectedModelId}
-                  agenticMode={agenticMode}
-                  onToggleAgenticMode={() => setAgenticMode(!agenticMode)}
-                />
-
                 <ThemeToggle />
 
                 <Tooltip>
@@ -306,6 +339,12 @@ export default function Page() {
                 conversation={activeConversation}
                 onSendMessage={handleSendMessage}
                 isStreaming={isStreaming}
+                modes={modes}
+                models={models}
+                selectedModeId={selectedModeId}
+                selectedModelId={selectedModelId}
+                onSelectMode={setSelectedModeId}
+                onSelectModel={setSelectedModelId}
               />
 
               <SettingsPanel
@@ -322,17 +361,9 @@ export default function Page() {
         </div>
 
         <StatusBar
-          activeModel={selectedModel}
+          activeModel={isModelOverridden ? selectedModel ?? undefined : undefined}
           agentProcesses={agentProcesses}
-          agenticMode={agenticMode}
-        />
-
-        <PersonaSelector
-          personas={personas}
-          selectedPersonaId={selectedPersonaId}
-          onSelectPersona={setSelectedPersonaId}
-          open={personaDialogOpen}
-          onOpenChange={setPersonaDialogOpen}
+          agenticMode={true}
         />
       </div>
     </TooltipProvider>

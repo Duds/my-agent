@@ -1,0 +1,37 @@
+{
+  "id": "PBI-026",
+  "title": "Skills Registry",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Implement central management system to register, discover, and invoke agent capabilities (Skills). Promoted from .agent/backlog/PBI-SR-Skills-Registry. Enables SettingsPanel Skills tab to persist enable/disable state.",
+    "affected_files": [
+      "core/skills.py (new)",
+      "core/router.py",
+      "core/main.py",
+      "requirements.txt"
+    ],
+    "solution": "1. Create SkillRegistry class (Singleton). 2. Implement register_skill, get_skill, list_skills. 3. Add @skill decorator. 4. Integrate with Router for intent classification. 5. Add PATCH /api/skills/:id for enable/disable. 6. Persist skill state to config."
+  },
+  "acceptance_criteria": [
+    "SkillRegistry unit tests pass",
+    "Sample skill registered via decorator",
+    "ModelRouter can list available skills",
+    "PATCH /api/skills/:id persists enabled state",
+    "Skills report security level (Local Only vs Remote Allowed)",
+    "Documentation in ARCHITECTURE.md"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to enable/disable agent skills (web search, code exec, etc.)."},
+    {"story": "As a developer, I want to register new skills via decorator."}
+  ],
+  "technical_notes": {
+    "current_issue": "Skills hardcoded; toggle only updates local state",
+    "risk": "MEDIUM",
+    "estimated_effort": "Medium (2-3 days)",
+    "dependencies": ["Configuration management (PBI-007)"],
+    "source": "Promoted from .agent/backlog/PBI-SR-Skills-Registry.md"
+  }
+}

@@ -23,7 +23,7 @@
         "**/__pycache__": true,
         "**/.git": true
     },
-    "python.defaultInterpreterPath": "${workspaceFolder}/../my-agent-venv/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
     "python.analysis.extraPaths": [
         "./core"
     ],

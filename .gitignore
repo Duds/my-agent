@@ -22,3 +22,6 @@ Thumbs.db
 
 # Misc
 .temp/
+
+# Docs (excluded from repo)
+docs/

@@ -326,8 +326,11 @@ export function AppSidebar({
             })}
           </div>
         ) : (
-          /* Agents tab */
+          /* Agents tab - Automation Hub */
           <div className="space-y-0.5 pb-4">
+            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Automation Hub
+            </div>
             {/* Background Agents */}
             <SectionHeader
               icon={Bot}

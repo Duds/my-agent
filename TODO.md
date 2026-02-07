@@ -24,8 +24,9 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | :--- | :--- | :--- |
 | **M** | **Window Poller Service** | Background daemon to detect active window/process contexts. |
 | **M** | **Context Classifier** | Local LLM capability to judge "Current Activity" vs "Stated Goal". |
-| **M** | **Mode Switcher UX** | Status bar/Toggle for specific modes (e.g., "Deep Work", "Relax"). |
+| **M** | **Mode & Context Controls** | User activity mode (Deep Work, Relax), context display, intervention toasts. Model selection: best-fit default; manual override is deliberate opt-in only. Subtle model indicator per response in chat. |
 | **S** | **Intervention Toasts** | Non-blocking OS notifications to nudge users back on track. |
+| **S** | **Persona** | Agent personas for tailored conversation style (from scaffold). |
 
 ### 🤖 capability.automation_engine (The "Timesheet Terminator")
 *Solves: Administrative friction, Repetitive web tasks.*
@@ -33,7 +34,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | :--- | :--- | :--- |
 | **M** | **Headless Browser Core** | Robust Playwright/Selenium wrapper for background web navigation. |
 | **M** | **Credential Vault** | Secure, local storage for target site credentials. |
-| **M** | **Automation Dashboard** | UI to view available scripts, status logs, and error reports. |
+| **M** | **Automation Hub** | UI for agents, cron jobs, automations, scripts, status logs, and error reports. |
 | **C** | **Human-in-the-Loop UX** | Secure pop-up for OTP entry or final submission approval. |
 
 ### 🛡️ capability.sentinel (The "Digital Janitor")
@@ -44,6 +45,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | **M** | **Content Classifier** | LLM-based inspection of file contents for auto-sorting rules. |
 | **S** | **Review Queue UX** | "Tinder for Files" interface to approve/reject agent sorting suggestions. |
 | **S** | **Inbox Zero Connector** | GMail adapter for classifying and archiving newsletters/spam. |
+| **S** | **Privacy Vault indicator** | UI to show/manage local-only sensitive data. |
 
 ### 🧠 capability.knowledge_graph (The "Connector")
 *Solves: Project abandonment, Idea loss, Relationship tracking.*
@@ -70,6 +72,10 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | **M** | **Settings Schema** | Centralized `settings.yaml` / Pydantic models for all engine config. |
 | **M** | **Event Bus** | Pub/Sub system for engines to communicate (e.g., Sentinel -> Knowledge). |
 | **M** | **Frontend Core** | Next.js Dashboard to host the UI for all above capabilities. |
+| **S** | **Integrations** | External connectors: Google Workspace (Gmail, Calendar, Drive), Pinterest, deployment, database. Single capability. |
+| **S** | **Projects** | Organisational grouping for conversations (scaffold concept). |
+| **S** | **Skills Registry** | Agent capabilities/tools, enable/disable. |
+| **S** | **MCP Server Config** | MCP discovery and configuration. |
 
 ---
 
@@ -123,7 +129,19 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 | **C** | **Knowledge Graph UI** | Design vector store browser, inspiration sidebar interface. | PBI-020 |
 | **C** | **Distributed Mesh UI** | Design mesh health visualization, node manager view. | PBI-021 |
 | **C** | **Sentinel Review Queue UI** | Design "Tinder for Files" approval interface. | PBI-022 |
-| **C** | **Context Display UI** | Design active window/activity context indicator. | PBI-023 |
+| **C** | **Mode & Context Controls UI** | User activity mode, context display, toasts. Best-fit model default; manual override deliberate only. Subtle model indicator in chat. | PBI-023 |
+| **C** | **Automation Hub UI** | Agents, cron, automations, scripts, logs, reports. | PBI-032 |
+
+### 📋 Reconciled Scaffold Features (from codebase review)
+| Priority | Feature | Description | Backlog ID |
+| :--- | :--- | :--- | :--- |
+| **S** | **Persona from config** | Move personas from hardcoded to config. | PBI-025 |
+| **S** | **Skills Registry** | Promote PBI-SR; backend + persistence. | PBI-026 |
+| **S** | **MCP Server discovery** | Backend API + Settings UI. | PBI-027 |
+| **S** | **Integrations API** | Wire Google, Pinterest, etc. | PBI-028 |
+| **S** | **Projects persistence** | CRUD, conversation association. | PBI-029 |
+| **S** | **Privacy Vault UI** | Indicator and basic management. | PBI-030 |
+| **C** | **Approval UX design system** | Shared approve/reject/undo for Sentinel + HITL. | PBI-031 |
 
 ---
 *Follow the [VISION.md](./VISION.md) and [Operating Principles](./operating_principles.md) when contributing.*

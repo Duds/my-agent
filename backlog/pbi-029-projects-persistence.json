@@ -1,0 +1,35 @@
+{
+  "id": "PBI-029",
+  "title": "Projects Persistence",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core + frontend",
+    "description": "Implement projects CRUD and conversation association. Replace single hardcoded project with persistence. Fix project.conversationIds so conversations appear under projects in sidebar.",
+    "affected_files": [
+      "core/main.py",
+      "core/memory.py or new persistence layer",
+      "frontend/src/app/page.tsx",
+      "frontend/src/components/app-sidebar.tsx"
+    ],
+    "solution": "1. Add projects storage (JSON/Markdown). 2. CRUD endpoints for projects. 3. Associate conversations with projects. 4. Update project.conversationIds when creating/assigning conversations. 5. Frontend persists new conversations to backend."
+  },
+  "acceptance_criteria": [
+    "Projects CRUD API",
+    "Conversations associated with projectId",
+    "project.conversationIds populated correctly",
+    "New conversations appear under correct project in sidebar",
+    "Conversations persist across refresh"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to organise conversations by project."},
+    {"story": "As a user, I want my conversations to persist."}
+  ],
+  "technical_notes": {
+    "current_issue": "Single hardcoded project; conversationIds always empty; conversations not persisted",
+    "risk": "MEDIUM",
+    "estimated_effort": "Medium (2-3 days)",
+    "dependencies": ["Memory System Integration (PBI-012) or new persistence layer"]
+  }
+}

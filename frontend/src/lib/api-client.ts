@@ -34,6 +34,13 @@ export interface Persona {
   color: string;
 }
 
+export interface Mode {
+  id: string;
+  name: string;
+  description: string;
+  routing: string;
+}
+
 export interface Skill {
   id: string;
   name: string;
@@ -121,6 +128,7 @@ export interface Automation {
 export const api = {
   getModels: () => fetchApi<Model[]>("/api/models"),
   getPersonas: () => fetchApi<Persona[]>("/api/personas"),
+  getModes: () => fetchApi<Mode[]>("/api/modes"),
   getSkills: () => fetchApi<Skill[]>("/api/skills"),
   getMcps: () => fetchApi<MCP[]>("/api/mcps"),
   getIntegrations: () => fetchApi<Integration[]>("/api/integrations"),
@@ -129,15 +137,27 @@ export const api = {
   getAgentProcesses: () => fetchApi<AgentProcess[]>("/api/agent-processes"),
   getCronJobs: () => fetchApi<CronJob[]>("/api/cron-jobs"),
   getAutomations: () => fetchApi<Automation[]>("/api/automations"),
-  postQuery: async (text: string, apiKey?: string) => {
+  postQuery: async (
+    text: string,
+    options?: {
+      apiKey?: string;
+      modelId?: string;
+      modeId?: string;
+      sessionId?: string;
+    }
+  ) => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    if (apiKey) headers["X-API-Key"] = apiKey;
+    if (options?.apiKey) headers["X-API-Key"] = options.apiKey;
+    const body: Record<string, string> = { text };
+    if (options?.modelId) body.model_id = options.modelId;
+    if (options?.modeId) body.mode_id = options.modeId;
+    if (options?.sessionId) body.session_id = options.sessionId;
     const res = await fetch(`${API_BASE}/query`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -146,4 +166,47 @@ export const api = {
     return res.json();
   },
   getHealth: () => fetchApi<{ status: string; service: string }>("/health"),
+  patchSkill: async (skillId: string, enabled: boolean) => {
+    const res = await fetch(`${API_BASE}/api/skills/${skillId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `PATCH failed: ${res.statusText}`);
+    }
+    return res.json();
+  },
+  postConversation: async (body: {
+    title?: string;
+    projectId?: string;
+    modeId?: string;
+  }) => {
+    const res = await fetch(`${API_BASE}/api/conversations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `POST failed: ${res.statusText}`);
+    }
+    return res.json();
+  },
+  patchConversation: async (
+    conversationId: string,
+    body: { title?: string; messages?: unknown[] }
+  ) => {
+    const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `PATCH failed: ${res.statusText}`);
+    }
+    return res.json();
+  },
 };

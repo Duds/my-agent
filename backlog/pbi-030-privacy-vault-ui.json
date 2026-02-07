@@ -1,0 +1,32 @@
+{
+  "id": "PBI-030",
+  "title": "Privacy Vault UI",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Add UI indicator and basic management for local-only sensitive data (Privacy Vault). README mentions 'Privacy Vault: Traps sensitive/NSFW/Personal data locally' but no UI exists.",
+    "affected_files": [
+      "frontend/src/components/ (new)",
+      "core/main.py (API if needed)"
+    ],
+    "solution": "1. Add subtle status bar or Settings indicator for vault status. 2. Optional: basic vault summary (items count, last used). 3. Connect to memory/vault backend when available."
+  },
+  "acceptance_criteria": [
+    "Subtle indicator when data is in local vault",
+    "Optional: vault summary in Settings",
+    "No sensitive data exposed in UI",
+    "Connected to vault backend when implemented"
+  ],
+  "user_stories": [
+    {"story": "As a security-conscious user, I want to know when sensitive data is kept local."},
+    {"story": "As a user, I want reassurance that my private data stays on my hardware."}
+  ],
+  "technical_notes": {
+    "current_issue": "No UI for Privacy Vault",
+    "risk": "LOW",
+    "estimated_effort": "Small (1 day)",
+    "dependencies": ["Memory System Integration (PBI-012) for vault"]
+  }
+}

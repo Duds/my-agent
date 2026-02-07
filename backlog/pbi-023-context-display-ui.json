@@ -1,43 +1,48 @@
 {
-    "id": "PBI-023",
-    "title": "Context Display UI",
-    "priority": "C",
-    "phase": "Advanced Features",
-    "status": "ready",
-    "detailed_design": {
-        "module": "frontend",
-        "description": "Design and implement UI for displaying current user context (active window, current activity, mode). Shows real-time context that drives the context awareness engine. Supports capability.context_awareness from roadmap.",
-        "affected_files": [
-            "frontend/src/components/context-display.tsx (new)",
-            "frontend/src/components/mode-indicator.tsx (new)"
-        ],
-        "solution": "1. Design context display component. 2. Add active window indicator. 3. Add current activity display. 4. Add mode indicator (Deep Work, Relax, etc.). 5. Connect to context awareness backend."
-    },
-    "acceptance_criteria": [
-        "Shows active window/application",
-        "Shows current activity classification",
-        "Mode indicator (Deep Work, Relax, etc.)",
-        "Real-time updates (WebSocket or polling)",
-        "Compact display (status bar or header)",
-        "Click to see detailed context",
-        "Connected to context awareness backend",
-        "Responsive design"
+  "id": "PBI-023",
+  "title": "Mode & Context Controls UI",
+  "priority": "C",
+  "phase": "Advanced Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Design and implement UI for Mode & Context Controls: user activity mode (Focus, Relax), context display (active window, current activity), intervention toasts. Mode and model controls integrated inside the chat input area (bottom-left): Mode dropdown (General, Private, Focus, Relax), Model dropdown ('Auto' default). Placeholder: 'Message, @ for context, / for commands'. Empty state: controls visible even when no conversation. Replace header ModelSelector/PersonaSelector with integrated ModeSelector and Model controls. Per research: Mode only, not Persona. Model selection: best-fit routing is default; manual override deliberate opt-in. Subtle model indicator per response in chat. Supports capability.context_awareness from roadmap.",
+    "affected_files": [
+      "frontend/src/components/chat-interface.tsx (add integrated mode/model controls to input area)",
+      "frontend/src/components/context-display.tsx (new)",
+      "frontend/src/components/mode-indicator.tsx (new)","frontend/src/components/mode-selector.tsx (new, replaces PersonaSelector)",
+      "frontend/src/app/page.tsx (remove ModelSelector, PersonaBadge, PersonaSelector from header)"
     ],
-    "user_stories": [
-        {
-            "story": "As a user, I want to see what context the agent is aware of."
-        },
-        {
-            "story": "As a user, I want to know which mode I'm currently in."
-        },
-        {
-            "story": "As a user, I want to quickly switch modes."
-        }
-    ],
-    "technical_notes": {
-        "current_issue": "No UI for context awareness display",
-        "risk": "LOW - Feature gap",
-        "estimated_effort": "Medium (2-3 days)",
-        "dependencies": ["Context awareness backend", "UI scaffold integration (PBI-010)"]
-    }
+    "solution": "1. Design mode indicator for user activity (Focus, Relax). 2. Add context display (active window, current activity). 3. Add intervention toast component. 4. Reframe ModelSelector: best-fit default; manual override as deliberate 'Pin model' opt-in. 5. Implement ModeSelector (replaces PersonaSelector); modes: General, Private, Focus, Relax. 6. Preserve subtle model indicator in ChatInterface MessageBubble. 7. Connect to context awareness backend. StatusBar: show model name only when overridden; omit when Auto."
+  },
+  "acceptance_criteria": [
+    "Mode and model controls inside chat input area (bottom-left), not in header",
+    "Mode dropdown (General, Private, Focus, Relax) and Model dropdown ('Auto' default) in input area","Placeholder: 'Message, @ for context, / for commands' (Option A per research)","Empty state: mode and model controls visible in chat input even when no conversation selected",
+    "Header has no ModelSelector, PersonaSelector, or PersonaBadge",
+    "Shows active window/application",
+    "Shows current activity classification",
+    "Mode indicator (Focus, Relax, etc.) in status bar or header",
+    "Best-fit model routing is default; manual override is explicit opt-in",
+    "Subtle model indicator per assistant message in chat (small, muted)",
+    "Intervention toasts for nudge notifications",
+    "Real-time updates (WebSocket or polling)",
+    "Compact display (status bar or header)",
+    "Click to see detailed context",
+    "Connected to context awareness backend",
+    "Responsive design"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to see what context the agent is aware of."},
+    {"story": "As a user, I want to know which mode I'm currently in (Focus, Relax, etc.)."},
+    {"story": "As a user, I want to quickly switch activity modes."},
+    {"story": "As a user, I want to see which model answered, but subtly."},
+    {"story": "As a power user, I want to deliberately override model selection when needed."}
+  ],
+  "technical_notes": {
+    "current_issue": "No UI for context awareness display; ModelSelector frames Agentic as equal toggle",
+    "risk": "LOW - Feature gap",
+    "estimated_effort": "Medium (2-3 days)",
+    "dependencies": ["Context awareness backend", "UI scaffold integration (PBI-010)"],
+    "ux_principles": ["Best-fit model default", "Manual override deliberate opt-in only", "Subtle model indicator in chat"]
+  }
 }
