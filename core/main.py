@@ -39,6 +39,7 @@ from core.adapters_local import OllamaAdapter
 from core.factory import AdapterFactory
 from core.router import ModelRouter
 from core.security import SecurityValidator
+from core.memory import MemorySystem
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,13 @@ adapter_factory.initialize_remotes()
 # Initialize core services
 local_model = adapter_factory.get_local_adapter(settings.ollama_default_model)
 security_validator = SecurityValidator(judge_adapter=local_model)
+memory_system = MemorySystem(base_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 
 router = ModelRouter(
     local_client=local_model,
     adapter_factory=adapter_factory,
     security_validator=security_validator,
+    memory_system=memory_system,
 )
 
 

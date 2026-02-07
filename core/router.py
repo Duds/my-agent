@@ -5,6 +5,8 @@ from typing import Any, AsyncIterator, Dict, List, Tuple
 from .adapters_base import ModelAdapter
 from .factory import AdapterFactory
 from .security import SecurityValidator
+from .memory import MemorySystem
+from .exceptions import AdapterError
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +28,13 @@ class ModelRouter:
         adapter_factory: AdapterFactory,
         security_validator: SecurityValidator | None = None,
         available_models: List[str] | None = None,
+        memory_system: MemorySystem | None = None,
     ):
         self.local_client = local_client
         self.adapter_factory = adapter_factory
         self.security_validator = security_validator
         self.available_models = available_models or []
+        self.memory_system = memory_system
         logger.info("ModelRouter initialized with %d local models", len(self.available_models))
 
     async def classify_intent(self, user_input: str) -> Intent:
@@ -84,6 +88,11 @@ class ModelRouter:
         session_id: str | None = None,
     ) -> Dict[str, Any]:
         intent = await self.classify_intent(user_input)
+        
+        # Load context if session_id is provided
+        context = []
+        if session_id and self.memory_system:
+            context = await self.memory_system.get_context(session_id)
 
         # NSFW/PRIVATE always route to local uncensored models—ignore model_id override
         if intent in [Intent.PRIVATE, Intent.NSFW] or mode_id == "private":
@@ -92,8 +101,13 @@ class ModelRouter:
             )
             adapter_name = model_name
             adapter = self.adapter_factory.get_local_adapter(model_name)
-            answer = await adapter.generate(user_input)
-            return {
+            try:
+                answer = await adapter.generate(user_input)
+            except AdapterError as e:
+                logger.error(f"Private/NSFW route failed: {e}")
+                answer = f"Error generating private response: {e}"
+            
+            result = {
                 "intent": intent.value,
                 "adapter": adapter_name,
                 "answer": answer,
@@ -101,37 +115,24 @@ class ModelRouter:
                 "requires_privacy": True,
                 "security": {"is_safe": True},
             }
+            if session_id and self.memory_system:
+                await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})
+                await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": answer})
+            return result
+
+        adapter = None
+        adapter_name = "local-default"
 
         if model_id:
             adapter = self._resolve_model_to_adapter(model_id)
-            if adapter:
-                answer = await adapter.generate(user_input)
-                security_verdict = {"is_safe": True}
-                
-                all_remotes = self.adapter_factory.get_all_remote_adapters()
-                is_remote = any(provider in model_id.lower() for provider in all_remotes.keys())
-                
-                if self.security_validator and not is_remote:
-                    security_verdict = await self.security_validator.check_output(user_input, answer)
-                if not security_verdict["is_safe"]:
-                    answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
-                return {
-                    "intent": "manual",
-                    "adapter": model_id,
-                    "answer": answer,
-                    "model_info": adapter.get_model_info(),
-                    "requires_privacy": False,
-                    "security": security_verdict,
-                }
-
-        if intent == Intent.CODING:
+            adapter_name = model_id
+        elif intent == Intent.CODING:
             model_name = self._find_best_local_model(
                 ["deepseek-coder", "codellama", "qwen-coder", "code"],
                 default="codellama:7b-instruct",
             )
             adapter_name = model_name
             adapter = self.adapter_factory.get_local_adapter(model_name)
-
         elif intent == Intent.QUALITY:
             anthropic_adapter = self.adapter_factory.get_remote_adapter("anthropic")
             if anthropic_adapter and mode_id != "private":
@@ -143,7 +144,6 @@ class ModelRouter:
                 )
                 adapter_name = model_name
                 adapter = self.adapter_factory.get_local_adapter(model_name)
-
         elif intent == Intent.SPEED:
             mistral_adapter = self.adapter_factory.get_remote_adapter("mistral")
             if mistral_adapter and mode_id != "private":
@@ -155,13 +155,22 @@ class ModelRouter:
                 )
                 adapter_name = model_name
                 adapter = self.adapter_factory.get_local_adapter(model_name)
-
-        else:
-            adapter_name = "local-default"
-            adapter = self.local_client
         
-        # Actually generate the response
-        answer = await adapter.generate(user_input)
+        if not adapter:
+            adapter = self.local_client
+            adapter_name = "local-default"
+
+        try:
+            answer = await adapter.generate(user_input)
+        except AdapterError as e:
+            logger.warning(f"Primary adapter {adapter_name} failed: {e}. Falling back to local.")
+            adapter = self.local_client
+            adapter_name = f"fallback-{adapter_name}"
+            try:
+                answer = await adapter.generate(user_input)
+            except Exception as fe:
+                logger.error(f"Fallback also failed: {fe}")
+                answer = f"Sorry, both primary and fallback models failed: {e}"
 
         # Security check for remote models (Trust but Verify)
         security_verdict = {"is_safe": True}
@@ -170,8 +179,12 @@ class ModelRouter:
             if not security_verdict["is_safe"]:
                 answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
 
+        if session_id and self.memory_system:
+            await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})
+            await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": answer})
+
         return {
-            "intent": intent.value,
+            "intent": intent.value if intent else "unknown",
             "adapter": adapter_name,
             "answer": answer,
             "model_info": adapter.get_model_info(),

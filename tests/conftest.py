@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from core.adapters_base import ModelAdapter
+from core.factory import AdapterFactory
 from core.router import ModelRouter
 from core.security import SecurityValidator
 
@@ -36,11 +37,20 @@ def mock_security_validator() -> SecurityValidator:
 
 
 @pytest.fixture
-def router(mock_adapter: ModelAdapter, mock_security_validator: SecurityValidator) -> ModelRouter:
+def mock_factory(mock_adapter: ModelAdapter) -> AdapterFactory:
+    """Create a mock AdapterFactory."""
+    factory = MagicMock(spec=AdapterFactory)
+    factory.get_local_adapter.return_value = mock_adapter
+    factory.get_remote_adapter.return_value = None
+    return factory
+
+
+@pytest.fixture
+def router(mock_adapter: ModelAdapter, mock_factory: AdapterFactory, mock_security_validator: SecurityValidator) -> ModelRouter:
     """Create a ModelRouter with mock dependencies."""
     return ModelRouter(
         local_client=mock_adapter,
-        remote_clients={"anthropic": mock_adapter},
+        adapter_factory=mock_factory,
         security_validator=mock_security_validator,
         available_models=["llama3:latest", "mistral:latest"],
     )

@@ -1,21 +1,144 @@
-/** API response types for the Secure Personal Agentic Platform */
+/**
+ * API Request and Response interfaces for the MyAgent platform.
+ */
 
-export interface RoutingInfo {
-  intent: string;
-  adapter: string;
-  requires_privacy: boolean;
+export interface ModelInfo {
+  id: string;
+  name: string;
+  provider: string;
+  type?: 'commercial' | 'local' | 'ollama';
+  contextWindow?: string;
+  status?: 'online' | 'offline' | 'loading';
 }
 
-export interface SecurityInfo {
-  is_safe: boolean;
-  reason: string;
+export interface ModelsResponse {
+  remote: ModelInfo[];
+  local: ModelInfo[];
+  active_local_default: string;
+}
+
+export interface ModeInfo {
+  id: string;
+  name: string;
+  description: string;
+  routing: string;
+}
+
+export interface SkillInfo {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface MCPInfo {
+  id: string;
+  name: string;
+  endpoint: string;
+  status: 'connected' | 'disconnected' | 'error';
+  description: string;
+}
+
+export interface IntegrationInfo {
+  id: string;
+  name: string;
+  type: string;
+  status: 'active' | 'inactive' | 'error';
+  description: string;
+}
+
+export interface ProjectInfo {
+  id: string;
+  name: string;
+  color: string;
+  conversationIds: string[];
+}
+
+export interface MessageInfo {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  model?: string;
+  toolCalls?: { name: string; status: 'running' | 'complete' | 'error' }[];
+}
+
+export interface ConversationInfo {
+  id: string;
+  title: string;
+  projectId: string;
+  messages: MessageInfo[];
+  createdAt: string;
+  updatedAt: string;
+  persona?: string;
+  modeId?: string;
+}
+
+export interface AgentProcessInfo {
+  id: string;
+  name: string;
+  status: 'running' | 'idle' | 'error';
+  type: 'internal' | 'external';
+  model: string;
+  projectId?: string;
+  startedAt?: string;
+  description?: string;
+}
+
+export interface CronJobInfo {
+  id: string;
+  name: string;
+  schedule: string;
+  status: 'active' | 'paused' | 'error';
+  lastRun: string | null;
+  nextRun: string;
+  projectId?: string;
+  description: string;
+  model?: string;
+}
+
+export interface AutomationInfo {
+  id: string;
+  name: string;
+  trigger: string;
+  status: 'active' | 'paused' | 'error';
+  lastTriggered: string | null;
+  runsToday: number;
+  projectId?: string;
+  description: string;
+  type: 'webhook' | 'event' | 'schedule' | 'watch';
+}
+
+export interface QueryRequest {
+  text: string;
+  model_id?: string;
+  mode_id?: string;
+  session_id?: string;
 }
 
 export interface QueryResponse {
   status: string;
-  routing: RoutingInfo;
+  routing: {
+    intent: string;
+    adapter: string;
+    requires_privacy: boolean;
+  };
   answer: string;
-  security?: SecurityInfo;
+  security: {
+    is_safe: boolean;
+    reason?: string;
+  };
+}
+
+export interface StreamChunk {
+  chunk?: string;
+  done?: boolean;
+  routing?: {
+    intent: string;
+    adapter: string;
+    requires_privacy: boolean;
+  };
+  error?: string;
 }
 
 export interface HealthResponse {

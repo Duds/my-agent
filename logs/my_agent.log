@@ -1,2 +1,15 @@
 2026-02-07 14:59:46 [INFO] root: Logging initialized (Level: INFO, Format: text, File: logs/my_agent.log)
 2026-02-07 14:59:46 [INFO] core.router: ModelRouter initialized with 0 local models
+2026-02-07 15:09:18 [INFO] root: Logging initialized (Level: INFO, Format: text, File: logs/my_agent.log)
+2026-02-07 15:09:18 [WARNING] core.memory: No encryption key found in settings. Vault data will NOT be encrypted.
+2026-02-07 15:09:18 [INFO] core.router: ModelRouter initialized with 0 local models
+2026-02-07 15:10:18 [INFO] root: Logging initialized (Level: INFO, Format: text, File: logs/my_agent.log)
+2026-02-07 15:10:19 [WARNING] core.memory: No encryption key found in settings. Vault data will NOT be encrypted.
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 0 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 1 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 1 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 1 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 1 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 2 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 0 local models
+2026-02-07 15:10:19 [INFO] core.router: ModelRouter initialized with 2 local models

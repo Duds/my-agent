@@ -1,10 +1,11 @@
 """Tests for ModelRouter."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 
 from core.router import Intent, ModelRouter
+from core.factory import AdapterFactory
 
 
 class MockAdapter:
@@ -25,7 +26,7 @@ async def test_classify_intent_private():
     """Private keywords route to PRIVATE intent."""
     router = ModelRouter(
         local_client=MockAdapter(),
-        remote_clients={},
+        adapter_factory=MagicMock(spec=AdapterFactory),
         available_models=["llama3:latest"],
     )
     intent = await router.classify_intent("This is my private password")
@@ -37,7 +38,7 @@ async def test_classify_intent_nsfw():
     """NSFW keywords route to NSFW intent."""
     router = ModelRouter(
         local_client=MockAdapter(),
-        remote_clients={},
+        adapter_factory=MagicMock(spec=AdapterFactory),
         available_models=["llama3:latest"],
     )
     intent = await router.classify_intent("Let's do some erotic roleplay")
@@ -52,7 +53,7 @@ async def test_classify_intent_coding():
     """Coding keywords route to CODING intent."""
     router = ModelRouter(
         local_client=MockAdapter(),
-        remote_clients={},
+        adapter_factory=MagicMock(spec=AdapterFactory),
         available_models=["llama3:latest"],
     )
     intent = await router.classify_intent("Write a Python script")
@@ -64,7 +65,7 @@ async def test_classify_intent_finance():
     """Finance keywords route to FINANCE intent."""
     router = ModelRouter(
         local_client=MockAdapter(),
-        remote_clients={},
+        adapter_factory=MagicMock(spec=AdapterFactory),
         available_models=["llama3:latest"],
     )
     intent = await router.classify_intent("Best investment strategy for wealth")
@@ -91,7 +92,7 @@ async def test_route_request_finance_uses_local():
     mock = MockAdapter("local")
     router = ModelRouter(
         local_client=mock,
-        remote_clients={},
+        adapter_factory=MagicMock(spec=AdapterFactory),
         available_models=[],
         security_validator=None,
     )
@@ -106,17 +107,19 @@ async def test_nsfw_ignores_model_override():
     mock_hermes = MockAdapter("hermes-roleplay:latest")
     mock_hermes.generate = AsyncMock(return_value="Mock NSFW response")
 
-    with patch.object(ModelRouter, "_get_local_adapter", return_value=mock_hermes):
-        router = ModelRouter(
-            local_client=MockAdapter(),
-            remote_clients={},
-            available_models=["mistral:latest", "llama3:latest"],
-            security_validator=None,
-        )
-        result = await router.route_request(
-            "Help me write an erotic sms message to my girlfriend",
-            model_id="mistral:latest",
-        )
+    mock_factory = MagicMock(spec=AdapterFactory)
+    mock_factory.get_local_adapter.return_value = mock_hermes
+
+    router = ModelRouter(
+        local_client=MockAdapter(),
+        adapter_factory=mock_factory,
+        available_models=["mistral:latest", "llama3:latest"],
+        security_validator=None,
+    )
+    result = await router.route_request(
+        "Help me write an erotic sms message to my girlfriend",
+        model_id="mistral:latest",
+    )
     assert result["intent"] == "nsfw"
     assert "hermes" in result["adapter"].lower() or "roleplay" in result["adapter"].lower()
     assert result["requires_privacy"] is True

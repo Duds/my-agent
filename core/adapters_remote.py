@@ -15,6 +15,8 @@ except ImportError:
     openai = None # type: ignore
 
 from .config import settings
+from .utils import retry
+from .exceptions import AdapterError
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +36,10 @@ class AnthropicAdapter(ModelAdapter):
                 self.client = anthropic.AsyncAnthropic(api_key=self.api_key)
         self.name = "Anthropic"
 
+    @retry((Exception,), tries=3, delay=1, backoff=2)
     async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
         if not self.client:
-            return "❌ Anthropic API not configured."
+            raise AdapterError("Anthropic API not configured.")
         
         try:
             # Simple message format
@@ -50,7 +53,7 @@ class AnthropicAdapter(ModelAdapter):
             return response.content[0].text
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
-            return f"❌ Anthropic Error: {str(e)}"
+            raise AdapterError(f"Anthropic Error: {str(e)}") from e
 
     def get_model_info(self) -> Dict[str, Any]:
         return {"model": self.model, "type": "remote", "provider": "anthropic"}
@@ -72,9 +75,10 @@ class MoonshotAdapter(ModelAdapter):
                 self.client = openai.AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
         self.name = "Moonshot"
 
+    @retry((Exception,), tries=3, delay=1, backoff=2)
     async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
         if not self.client:
-            return "❌ Moonshot API not configured."
+            raise AdapterError("Moonshot API not configured.")
 
         try:
             messages = [{"role": "user", "content": prompt}]
@@ -86,7 +90,7 @@ class MoonshotAdapter(ModelAdapter):
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"Moonshot API error: {e}")
-            return f"❌ Moonshot Error: {str(e)}"
+            raise AdapterError(f"Moonshot Error: {str(e)}") from e
 
     def get_model_info(self) -> Dict[str, Any]:
         return {"model": self.model, "type": "remote", "provider": "moonshot"}
@@ -119,9 +123,10 @@ class MistralAdapter(ModelAdapter):
                 )
         self.name = "Mistral"
 
+    @retry((Exception,), tries=3, delay=1, backoff=2)
     async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
         if not self.client:
-            return "❌ Mistral API not configured."
+            raise AdapterError("Mistral API not configured.")
 
         try:
             messages = [{"role": "user", "content": prompt}]
@@ -133,7 +138,7 @@ class MistralAdapter(ModelAdapter):
             return response.choices[0].message.content or ""
         except Exception as e:
             logger.error(f"Mistral API error: {e}")
-            return f"❌ Mistral Error: {str(e)}"
+            raise AdapterError(f"Mistral Error: {str(e)}") from e
 
     def get_model_info(self) -> Dict[str, Any]:
         return {"model": self.model, "type": "remote", "provider": "mistral"}

@@ -1,68 +1,68 @@
 {
-    "id": "PBI-012",
-    "title": "Memory System Integration",
-    "priority": "M",
-    "phase": "Production Readiness",
-    "status": "ready",
-    "detailed_design": {
-        "module": "core.memory",
-        "description": "Integrate the memory system into the router and implement vault encryption. Currently, core/memory.py exists but isn't connected to the router, vault storage is unencrypted, and there's no session management. Connect memory to router for context, encrypt vault files, implement proper session management, and add async file I/O.",
-        "affected_files": [
-            "core/memory.py",
-            "core/router.py",
-            "core/main.py",
-            "requirements.txt"
-        ],
-        "solution": "1. Add encryption for vault files (cryptography library). 2. Convert to async file I/O (aiofiles). 3. Add session management. 4. Integrate with router to provide context. 5. Add file locking to prevent race conditions. 6. Validate and sanitize session_id. 7. Add size limits for history/vault."
+  "id": "PBI-012",
+  "title": "Memory System Integration",
+  "priority": "M",
+  "phase": "Production Readiness",
+  "status": "done",
+  "detailed_design": {
+    "module": "core.memory",
+    "description": "Integrate the memory system into the router and implement vault encryption. Currently, core/memory.py exists but isn't connected to the router, vault storage is unencrypted, and there's no session management. Connect memory to router for context, encrypt vault files, implement proper session management, and add async file I/O.",
+    "affected_files": [
+      "core/memory.py",
+      "core/router.py",
+      "core/main.py",
+      "requirements.txt"
+    ],
+    "solution": "1. Add encryption for vault files (cryptography library). 2. Convert to async file I/O (aiofiles). 3. Add session management. 4. Integrate with router to provide context. 5. Add file locking to prevent race conditions. 6. Validate and sanitize session_id. 7. Add size limits for history/vault."
+  },
+  "acceptance_criteria": [
+    "Memory system integrated with router",
+    "Vault files encrypted at rest",
+    "Session management implemented",
+    "Context passed to adapters from memory",
+    "Async file I/O (no blocking operations)",
+    "File locking prevents race conditions",
+    "Session IDs validated (no path traversal)",
+    "Size limits enforced on history/vault",
+    "Encryption key managed securely",
+    "Memory operations logged",
+    "Tests for memory system"
+  ],
+  "user_stories": [
+    {
+      "story": "As a user, I want my conversation history to provide context to the agent."
     },
-    "acceptance_criteria": [
-        "Memory system integrated with router",
-        "Vault files encrypted at rest",
-        "Session management implemented",
-        "Context passed to adapters from memory",
-        "Async file I/O (no blocking operations)",
-        "File locking prevents race conditions",
-        "Session IDs validated (no path traversal)",
-        "Size limits enforced on history/vault",
-        "Encryption key managed securely",
-        "Memory operations logged",
-        "Tests for memory system"
-    ],
-    "user_stories": [
-        {
-            "story": "As a user, I want my conversation history to provide context to the agent."
-        },
-        {
-            "story": "As a user, I want my sensitive data encrypted in the vault."
-        },
-        {
-            "story": "As a user, I want separate sessions for different contexts (Telegram vs Web)."
-        },
-        {
-            "story": "As a security-conscious user, I want protection against path traversal attacks."
-        }
-    ],
-    "technical_notes": {
-        "current_issue": "Memory not integrated, no encryption, sync I/O, no validation",
-        "risk": "HIGH - Data security, performance",
-        "estimated_effort": "High (3-4 days)",
-        "dependencies": ["Configuration management (PBI-007)"],
-        "encryption_approach": {
-            "library": "cryptography (Fernet)",
-            "key_storage": "Environment variable or key file",
-            "key_rotation": "Manual for MVP, automated later"
-        },
-        "session_management": {
-            "session_types": ["telegram", "web", "api"],
-            "session_storage": "JSON files per session",
-            "session_expiry": "30 days inactive"
-        },
-        "security_measures": [
-            "Validate session_id against regex",
-            "Sanitize file paths",
-            "Encrypt vault files",
-            "Add file size limits (10MB per file)",
-            "Implement file locking"
-        ]
+    {
+      "story": "As a user, I want my sensitive data encrypted in the vault."
+    },
+    {
+      "story": "As a user, I want separate sessions for different contexts (Telegram vs Web)."
+    },
+    {
+      "story": "As a security-conscious user, I want protection against path traversal attacks."
     }
+  ],
+  "technical_notes": {
+    "current_issue": "Memory not integrated, no encryption, sync I/O, no validation",
+    "risk": "HIGH - Data security, performance",
+    "estimated_effort": "High (3-4 days)",
+    "dependencies": ["Configuration management (PBI-007)"],
+    "encryption_approach": {
+      "library": "cryptography (Fernet)",
+      "key_storage": "Environment variable or key file",
+      "key_rotation": "Manual for MVP, automated later"
+    },
+    "session_management": {
+      "session_types": ["telegram", "web", "api"],
+      "session_storage": "JSON files per session",
+      "session_expiry": "30 days inactive"
+    },
+    "security_measures": [
+      "Validate session_id against regex",
+      "Sanitize file paths",
+      "Encrypt vault files",
+      "Add file size limits (10MB per file)",
+      "Implement file locking"
+    ]
+  }
 }
