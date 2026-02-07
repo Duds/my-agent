@@ -100,7 +100,7 @@
     {
       "id": "PBI-013",
       "title": "Enhanced Intent Classification",
-      "status": "ready",
+      "status": "in-progress",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-013-enhanced-intent-classification.json"
@@ -108,7 +108,7 @@
     {
       "id": "PBI-014",
       "title": "Comprehensive Testing",
-      "status": "ready",
+      "status": "in-progress",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-014-comprehensive-testing.json"
@@ -116,7 +116,7 @@
     {
       "id": "PBI-015",
       "title": "API Documentation",
-      "status": "ready",
+      "status": "in-progress",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-015-api-documentation.json"
@@ -124,7 +124,7 @@
     {
       "id": "PBI-016",
       "title": "Monitoring & Observability",
-      "status": "ready",
+      "status": "in-progress",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-016-monitoring-observability.json"

@@ -52,9 +52,9 @@ _Solves: File clutter, Inbox overload, Organization overhead._
 | :--- | :--- | :--- |
 | **M** | **File Watchdog** | Service to monitor `~/Downloads` and `~/Projects` for new files. |
 | **M** | **Content Classifier** | LLM-based inspection of file contents for auto-sorting rules. |
-| **S** | **Review Queue UX** | "Tinder for Files" interface to approve/reject agent sorting suggestions. |
+| **S** | **Review Queue UX** | "Tinder for Files" interface to approve/reject agent sorting suggestions. PBI-022 |
 | **S** | **Inbox Zero Connector** | GMail adapter for classifying and archiving newsletters/spam. |
-| **S** | **Privacy Vault indicator** | UI to show/manage local-only sensitive data. |
+| **S** | **Privacy Vault indicator** | UI to show/manage local-only sensitive data. PBI-030 |
 
 ### 🧠 capability.knowledge_graph (The "Connector")
 
@@ -62,6 +62,7 @@ _Solves: Project abandonment, Idea loss, Relationship tracking._
 | Priority | Feature | Description |
 | :--- | :--- | :--- |
 | **M** | **Vector Store Core** | Local vector db (Chroma) for long-term semantic storage. |
+| **S** | **Knowledge Graph UI** | Design vector store browser, inspiration sidebar interface. PBI-020 |
 | **S** | **Pinterest Adapter** | Scraper to ingest boards into the user profile. |
 | **C** | **Inspiration Sidebar** | IDE/Desktop widget suggesting relevant past ideas/notes. |
 
@@ -75,19 +76,21 @@ _Solves: Resource constraints, Work/Home continuity._
 | **M** | **Mesh Networking** | Secure overlay network (Tailscale/ZeroTier) to connect nodes. |
 | **M** | **Remote RPC Layer** | API for Node A to trigger function on Node B (e.g., "Run Model"). |
 | **M** | **State Synchronization** | Syncing Vector DB / Task State between nodes. |
+| **S** | **Distributed Mesh UI** | Design mesh health visualization, node manager view. PBI-021 |
 | **S** | **Resource Discovery** | Auto-detection of available GPUs/Tools on the mesh. |
 
 ### 🏗️ Foundation & Infrastructure
 
-| Priority | Feature               | Description                                                                                                         |
-| :------- | :-------------------- | :------------------------------------------------------------------------------------------------------------------ |
-| **M**    | **Settings Schema**   | Centralized `settings.yaml` / Pydantic models for all engine config.                                                |
-| **M**    | **Event Bus**         | Pub/Sub system for engines to communicate (e.g., Sentinel -> Knowledge).                                            |
-| **M**    | **Frontend Core**     | Next.js Dashboard to host the UI for all above capabilities.                                                        |
-| **S**    | **Integrations**      | External connectors: Google Workspace (Gmail, Calendar, Drive), Pinterest, deployment, database. Single capability. |
-| **S**    | **Projects**          | Organisational grouping for conversations (scaffold concept).                                                       |
-| **S**    | **Skills Registry**   | Agent capabilities/tools, enable/disable.                                                                           |
-| **S**    | **MCP Server Config** | MCP discovery and configuration.                                                                                    |
+| Priority | Feature                | Description                                                                                                                    |
+| :------- | :--------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| **M**    | **Settings Schema**    | Centralized `settings.yaml` / Pydantic models for all engine config.                                                           |
+| **M**    | **Event Bus**          | Pub/Sub system for engines to communicate (e.g., Sentinel -> Knowledge).                                                       |
+| **M**    | **Frontend Core**      | Next.js Dashboard to host the UI for all above capabilities.                                                                   |
+| **S**    | **Integrations**       | External connectors: Google Workspace (Gmail, Calendar, Drive), Pinterest, deployment, database. Single capability. ✅ PBI-028 |
+| **S**    | **Projects**           | Organisational grouping for conversations (scaffold concept). ✅ PBI-029                                                       |
+| **S**    | **Skills Registry**    | Agent capabilities/tools, enable/disable. ✅ PBI-026                                                                           |
+| **S**    | **MCP Server Config**  | MCP discovery and configuration. PBI-027                                                                                       |
+| **C**    | **Approval UX Design** | Shared approve/reject/undo for Sentinel + HITL. PBI-031                                                                        |
 
 ---
 
@@ -118,7 +121,7 @@ _Priority: HIGH - Make system production-ready_
 | ✅       | **Frontend Type Safety**      | Define TypeScript interfaces for API, fix `any` types, add error handling. | PBI-011    |
 | ✅       | **Memory System Integration** | Connect memory to router, add vault encryption, implement sessions.        | PBI-012    |
 
-### 🎯 Phase 3: Feature Completion (Week 4-6)
+### 🎯 Phase 3: Feature Completion (Week 4-6) - **IN PROGRESS**
 
 _Priority: MEDIUM - Complete MVP features_
 
