@@ -1,0 +1,108 @@
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any
+
+class RoutingMeta(BaseModel):
+    intent: str
+    adapter: str
+    requires_privacy: bool
+
+class SecurityInfo(BaseModel):
+    is_safe: bool
+    reason: Optional[str] = None
+
+class QueryResponse(BaseModel):
+    status: str
+    routing: RoutingMeta
+    answer: str
+    security: SecurityInfo
+
+class ModelInfo(BaseModel):
+    id: str
+    name: str
+    provider: str
+
+class ModelsResponse(BaseModel):
+    remote: List[ModelInfo]
+    local: List[ModelInfo]
+    active_local_default: str
+
+class ModeInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    routing: str
+
+class SkillInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    enabled: bool
+
+class MCPInfo(BaseModel):
+    id: str
+    name: str
+    endpoint: str
+    status: str
+    description: str
+
+class IntegrationInfo(BaseModel):
+    id: str
+    name: str
+    type: str
+    status: str
+    description: str
+
+class ProjectInfo(BaseModel):
+    id: str
+    name: str
+    color: str
+    conversationIds: List[str]
+
+class MessageInfo(BaseModel):
+    id: str
+    role: str
+    content: str
+    timestamp: str
+    model: Optional[str] = None
+    toolCalls: Optional[List[Dict[str, str]]] = None
+
+class ConversationInfo(BaseModel):
+    id: str
+    title: str
+    projectId: str
+    messages: List[MessageInfo]
+    createdAt: str
+    updatedAt: str
+    modeId: Optional[str] = None
+
+class AgentProcessInfo(BaseModel):
+    id: str
+    name: str
+    status: str
+    type: str
+    model: str
+    projectId: Optional[str] = None
+    startedAt: Optional[str] = None
+    description: Optional[str] = None
+
+class CronJobInfo(BaseModel):
+    id: str
+    name: str
+    schedule: str
+    status: str
+    lastRun: Optional[str] = None
+    nextRun: str
+    projectId: Optional[str] = None
+    description: str
+    model: Optional[str] = None
+
+class AutomationInfo(BaseModel):
+    id: str
+    name: str
+    trigger: str
+    status: str
+    lastTriggered: Optional[str] = None
+    runsToday: int
+    projectId: Optional[str] = None
+    description: str
+    type: str

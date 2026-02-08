@@ -7,17 +7,13 @@ from .factory import AdapterFactory
 from .security import SecurityValidator
 from .memory import MemorySystem
 from .exceptions import AdapterError
+from .schema import Intent
+from .intent_classifier import IntentClassifier
 
 logger = logging.getLogger(__name__)
 
 
-class Intent(enum.Enum):
-    SPEED = "speed"
-    QUALITY = "quality"
-    PRIVATE = "private"
-    NSFW = "nsfw"
-    CODING = "coding"
-    FINANCE = "finance"
+
 
 class ModelRouter:
     """Routes requests to appropriate adapters. Reuses adapter instances from factory."""
@@ -35,24 +31,14 @@ class ModelRouter:
         self.security_validator = security_validator
         self.available_models = available_models or []
         self.memory_system = memory_system
-        logger.info("ModelRouter initialized with %d local models", len(self.available_models))
+        self.intent_classifier = IntentClassifier()
+        logger.info("ModelRouter initialized with %d local models and Enhanced Intent Classification", len(self.available_models))
 
     async def classify_intent(self, user_input: str) -> Intent:
-        # Initial implementation uses simple keyword matching or a cheap local model
-        input_lower = user_input.lower()
-        if any(w in input_lower for w in ["secret", "private", "personal", "password"]):
-            return Intent.PRIVATE
-        nsfw_keywords = [
-            "roleplay", "nsfw", "erp", "erotic", "sexual", "intimate", "sexy", "flirty",
-            "pussy", "cunt", "cock", "dick", "vagina", "penis", "orgasm", "foreplay",
-        ]
-        if any(w in input_lower for w in nsfw_keywords):
-            return Intent.NSFW
-        if any(w in input_lower for w in ["code", "python", "script", "test"]):
-            return Intent.CODING
-        if any(w in input_lower for w in ["money", "stock", "invest", "wealth", "budget"]):
-            return Intent.FINANCE
-        return Intent.QUALITY if len(user_input) > 100 else Intent.SPEED
+        """Enhanced intent classification using semantic similarity."""
+        intent, confidence = self.intent_classifier.classify(user_input)
+        logger.info("Classified intent: %s (confidence: %.2f)", intent.value, confidence)
+        return intent
 
     def _find_best_local_model(self, keywords: List[str], default: str) -> str:
         """Finds the first available model matching any keyword, or returns default."""

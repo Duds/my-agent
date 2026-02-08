@@ -28,7 +28,16 @@ const API_BASE =
     : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, options);
+  const headers = new Headers(options?.headers);
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+  if (apiKey && !headers.has('X-API-Key')) {
+    headers.set('X-API-Key', apiKey);
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
     throw new Error(
@@ -100,7 +109,8 @@ export const api = {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (options?.apiKey) headers['X-API-Key'] = options.apiKey;
+    const apiKey = options?.apiKey || process.env.NEXT_PUBLIC_API_KEY;
+    if (apiKey) headers['X-API-Key'] = apiKey;
     const body: QueryRequest = { text };
     if (options?.modelId) body.model_id = options.modelId;
     if (options?.modeId) body.mode_id = options.modeId;

@@ -18,6 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
+import json
+from . import api_schemas as schemas
 
 # Security scheme
 API_KEY_NAME = "X-API-Key"
@@ -99,6 +101,7 @@ class UserQuery(BaseModel):
     "/query",
     summary="Submit a query",
     response_description="Routing info and AI response",
+    response_model=schemas.QueryResponse,
     dependencies=[Depends(get_api_key)],
 )
 async def handle_query(
@@ -176,7 +179,7 @@ async def readiness_check():
 # --- UI API endpoints (for Command Center frontend) ---
 
 
-@app.get("/api/models", summary="List all available models")
+@app.get("/api/models", summary="List all available models", response_model=schemas.ModelsResponse)
 async def list_models(
     api_key: str = Depends(get_api_key),
 ):
@@ -215,7 +218,7 @@ DEFAULT_MODES = [
 ]
 
 
-@app.get("/api/modes", summary="List modes", dependencies=[Depends(get_api_key)])
+@app.get("/api/modes", summary="List modes", response_model=list[schemas.ModeInfo], dependencies=[Depends(get_api_key)])
 async def list_modes():
     """Return available modes (General, Private, Focus, Relax). Per research: Mode replaces Persona."""
     return DEFAULT_MODES.copy()
@@ -241,7 +244,7 @@ _skills_store = [
 ]
 
 
-@app.get("/api/skills", summary="List platform skills", dependencies=[Depends(get_api_key)])
+@app.get("/api/skills", summary="List platform skills", response_model=list[schemas.SkillInfo], dependencies=[Depends(get_api_key)])
 async def list_skills():
     """Return available skills (tools/capabilities)."""
     return _skills_store.copy()
@@ -263,7 +266,7 @@ async def patch_skill(skill_id: str, body: SkillPatch):
     raise HTTPException(status_code=404, detail="Skill not found")
 
 
-@app.get("/api/mcps", summary="List MCP servers", dependencies=[Depends(get_api_key)])
+@app.get("/api/mcps", summary="List MCP servers", response_model=list[schemas.MCPInfo], dependencies=[Depends(get_api_key)])
 async def list_mcps():
     """Return MCP (Model Context Protocol) server connections."""
     return [
@@ -272,7 +275,7 @@ async def list_mcps():
     ]
 
 
-@app.get("/api/integrations", summary="List integrations", dependencies=[Depends(get_api_key)])
+@app.get("/api/integrations", summary="List integrations", response_model=list[schemas.IntegrationInfo], dependencies=[Depends(get_api_key)])
 async def list_integrations():
     """Return third-party integrations. Includes Google when credentials available."""
     integrations = [
@@ -300,7 +303,7 @@ def _next_conv_id() -> str:
     return f"conv-{_conversation_counter}"
 
 
-@app.get("/api/projects", summary="List projects", dependencies=[Depends(get_api_key)])
+@app.get("/api/projects", summary="List projects", response_model=list[schemas.ProjectInfo], dependencies=[Depends(get_api_key)])
 async def list_projects():
     """Return projects from in-memory store."""
     return [dict(p) for p in _projects_store]
@@ -342,7 +345,7 @@ async def patch_project(project_id: str, body: ProjectPatch):
     raise HTTPException(status_code=404, detail="Project not found")
 
 
-@app.get("/api/conversations", summary="List conversations", dependencies=[Depends(get_api_key)])
+@app.get("/api/conversations", summary="List conversations", response_model=list[schemas.ConversationInfo], dependencies=[Depends(get_api_key)])
 async def list_conversations():
     """Return conversations from in-memory store."""
     return [dict(c) for c in _conversations_store]
@@ -399,19 +402,19 @@ async def patch_conversation(conversation_id: str, body: ConversationPatch):
     raise HTTPException(status_code=404, detail="Conversation not found")
 
 
-@app.get("/api/agent-processes", summary="List agent processes", dependencies=[Depends(get_api_key)])
+@app.get("/api/agent-processes", summary="List agent processes", response_model=list[schemas.AgentProcessInfo], dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
     """Return background agent processes. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032
 
 
-@app.get("/api/cron-jobs", summary="List cron jobs", dependencies=[Depends(get_api_key)])
+@app.get("/api/cron-jobs", summary="List cron jobs", response_model=list[schemas.CronJobInfo], dependencies=[Depends(get_api_key)])
 async def list_cron_jobs():
     """Return cron jobs. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032
 
 
-@app.get("/api/automations", summary="List automations", dependencies=[Depends(get_api_key)])
+@app.get("/api/automations", summary="List automations", response_model=list[schemas.AutomationInfo], dependencies=[Depends(get_api_key)])
 async def list_automations():
     """Return automations. Stubbed until Automation Hub API."""
     return []  # Stub: returns empty; backend will add config-driven data in PBI-032

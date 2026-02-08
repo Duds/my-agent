@@ -22,6 +22,8 @@ Thumbs.db
 
 # Misc
 .temp/
+.coverage
+logs/
 
 # Docs (excluded from repo)
 docs/
