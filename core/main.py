@@ -1,8 +1,11 @@
 import logging
 import os
 import sys
+import subprocess
+import httpx
 from datetime import datetime
 from contextlib import asynccontextmanager
+from typing import Dict
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -209,6 +212,19 @@ async def list_models(
     }
 
 
+@app.get("/api/config/routing", summary="Get task-specific routing config", dependencies=[Depends(get_api_key)])
+async def get_routing_config():
+    """Returns current model assignments for meta-tasks."""
+    return router.routing_config
+
+
+@app.post("/api/config/routing", summary="Update task-specific routing config", dependencies=[Depends(get_api_key)])
+async def update_routing_config(config: Dict[str, str]):
+    """Updates model assignments for meta-tasks (intent, security, pii)."""
+    router.update_config(config)
+    return {"status": "success", "config": router.routing_config}
+
+
 # Modes (replaces personas per research). Load from config or default.
 DEFAULT_MODES = [
     {"id": "general", "name": "General", "description": "General-purpose assistance", "routing": "best-fit"},
@@ -273,6 +289,63 @@ async def list_mcps():
         {"id": "filesystem", "name": "Filesystem", "endpoint": "stdio://fs-server", "status": "connected", "description": "Local filesystem access"},
         {"id": "github", "name": "GitHub", "endpoint": "stdio://gh-server", "status": "connected", "description": "GitHub repository operations"},
     ]
+
+
+@app.get("/api/system/status", summary="Get system status", dependencies=[Depends(get_api_key)])
+async def get_system_status():
+    """Check status of Ollama, Backend, and other components."""
+    # Ollama check
+    ollama_running = False
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("http://localhost:11434/api/tags", timeout=1.0)
+            ollama_running = resp.status_code == 200
+    except Exception:
+        ollama_running = False
+
+    # Frontend check (best effort)
+    frontend_running = False
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("http://localhost:3000", timeout=0.5)
+            frontend_running = resp.status_code == 200
+    except Exception:
+        frontend_running = False
+
+    return {
+        "ollama": {"status": "online" if ollama_running else "offline", "port": 11434},
+        "backend": {"status": "online", "port": 8001},
+        "frontend": {"status": "online" if frontend_running else "offline", "port": 3000},
+    }
+
+
+@app.post("/api/system/ollama/start", summary="Start Ollama daemon", dependencies=[Depends(get_api_key)])
+async def start_ollama_daemon():
+    """Attempt to start Ollama serve in the background."""
+    try:
+        # Check if already running
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("http://localhost:11434/api/tags", timeout=1.0)
+                if resp.status_code == 200:
+                    return {"status": "success", "message": "Ollama is already running"}
+        except Exception:
+            pass
+
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return {"status": "success", "message": "Ollama start command issued"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start Ollama: {str(e)}")
+
+
+@app.post("/api/system/ollama/stop", summary="Stop Ollama daemon", dependencies=[Depends(get_api_key)])
+async def stop_ollama_daemon():
+    """Attempt to stop Ollama (pkill). Use with caution."""
+    try:
+        subprocess.run(["pkill", "ollama"], check=False)
+        return {"status": "success", "message": "Ollama stop command issued"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stop Ollama: {str(e)}")
 
 
 @app.get("/api/integrations", summary="List integrations", response_model=list[schemas.IntegrationInfo], dependencies=[Depends(get_api_key)])

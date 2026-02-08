@@ -11,6 +11,7 @@ class IntentClassifier:
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
+        self.classification_adapter = None
         # Predefined exemplars for each intent
         self.exemplars: Dict[Intent, List[str]] = {
             Intent.PRIVATE: [
@@ -68,6 +69,43 @@ class IntentClassifier:
             self.exemplar_embeddings[intent] = self.model.encode(texts, convert_to_tensor=True)
             
         logger.info("IntentClassifier initialized with model: %s", model_name)
+
+    def set_adapter(self, adapter):
+        """Sets the LLM adapter for classification."""
+        self.classification_adapter = adapter
+        if adapter:
+            logger.info("IntentClassifier now using LLM adapter for classification")
+        else:
+            logger.info("IntentClassifier reverted to local semantic classification")
+
+    async def classify_with_llm(self, user_input: str) -> Tuple[Intent, float]:
+        """Uses an LLM to classify intent for better accuracy/offloading."""
+        if not self.classification_adapter:
+            return self.classify(user_input)
+
+        prompt = f"""
+        Classify the following user input into exactly one of these categories:
+        - PRIVATE: Request for secrets, passwords, or personal data storage.
+        - NSFW: Erotic roleplay, suggestive content, or adult themes.
+        - CODING: Programming help, debugging, or script writing.
+        - FINANCE: Budgeting, investments, or financial planning.
+        - QUALITY: Requests for deep analysis, long explanations, or complex logic.
+        - SPEED: Simple questions or brief requests.
+
+        USER INPUT: {user_input}
+
+        Respond ONLY with the category name.
+        """
+        try:
+            response = await self.classification_adapter.generate(prompt)
+            result = response.strip().upper()
+            for intent in Intent:
+                if intent.value.upper() in result:
+                    return intent, 0.95
+            return Intent.SPEED, 0.5
+        except Exception as e:
+            logger.error(f"LLM Classification failed: {e}. Falling back to local.")
+            return self.classify(user_input)
 
     def classify(self, user_input: str, threshold: float = 0.4) -> Tuple[Intent, float]:
         """Classifies user input into an Intent and returns confidence score."""

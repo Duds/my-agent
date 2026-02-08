@@ -196,4 +196,34 @@ export const api = {
       body: JSON.stringify(body),
     });
   },
+
+  getRoutingConfig: () =>
+    fetchApi<Record<string, string>>('/api/config/routing'),
+
+  updateRoutingConfig: (config: Record<string, string>) =>
+    fetchApi<{ status: string; config: Record<string, string> }>(
+      '/api/config/routing',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      }
+    ),
+
+  getSystemStatus: () =>
+    fetchApi<{
+      ollama: { status: string; port: number };
+      backend: { status: string; port: number };
+      frontend: { status: string; port: number };
+    }>('/api/system/status'),
+
+  startOllama: () =>
+    fetchApi<{ status: string; message: string }>('/api/system/ollama/start', {
+      method: 'POST',
+    }),
+
+  stopOllama: () =>
+    fetchApi<{ status: string; message: string }>('/api/system/ollama/stop', {
+      method: 'POST',
+    }),
 };

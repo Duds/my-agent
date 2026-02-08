@@ -60,10 +60,12 @@ class Settings(BaseSettings):
     log_backup_count: int = 30
     log_format: str = "text" # "text" or "json"
 
-    # Integrations & Storage
     google_credentials_path: str | None = None
     vault_path: str = "memory/vault.json"
     encryption_key: str | None = None
+
+    # Routing Configuration
+    routing_config_path: str = "data/routing_rules.json"
 
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""

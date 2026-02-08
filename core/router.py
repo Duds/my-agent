@@ -9,6 +9,8 @@ from .memory import MemorySystem
 from .exceptions import AdapterError
 from .schema import Intent
 from .intent_classifier import IntentClassifier
+import json
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +34,63 @@ class ModelRouter:
         self.available_models = available_models or []
         self.memory_system = memory_system
         self.intent_classifier = IntentClassifier()
-        logger.info("ModelRouter initialized with %d local models and Enhanced Intent Classification", len(self.available_models))
+        self.pii_redactor = None # Initialized by set_pii_redactor
+        self._load_routing_config()
+        logger.info("ModelRouter initialized with %d local models and Task-Specific Routing", len(self.available_models))
+
+    def _load_routing_config(self):
+        """Loads task-specific model assignments from config."""
+        from .config import settings
+        self.routing_config = {}
+        if os.path.exists(settings.routing_config_path):
+            try:
+                with open(settings.routing_config_path, "r") as f:
+                    self.routing_config = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load routing config: {e}")
+        
+        # Apply initial config
+        self._apply_routing_config()
+
+    def _apply_routing_config(self):
+        """Applies task assignments to classifier and security judge."""
+        # Intent Classifier
+        classifier_model = self.routing_config.get("intent_classification")
+        if classifier_model:
+            adapter = self._resolve_model_to_adapter(classifier_model)
+            self.intent_classifier.set_adapter(adapter)
+        
+        # Security Validator
+        security_model = self.routing_config.get("security_judge")
+        if security_model and self.security_validator:
+            adapter = self._resolve_model_to_adapter(security_model)
+            self.security_validator.set_judge_adapter(adapter)
+
+        # PII Redactor
+        pii_model = self.routing_config.get("pii_redactor")
+        if pii_model:
+            from .security import PIIRedactor
+            adapter = self._resolve_model_to_adapter(pii_model)
+            if not self.pii_redactor:
+                self.pii_redactor = PIIRedactor(adapter)
+            else:
+                self.pii_redactor.set_adapter(adapter)
+
+    def update_config(self, new_config: dict):
+        """Updates and persists new routing configuration."""
+        from .config import settings
+        self.routing_config.update(new_config)
+        os.makedirs(os.path.dirname(settings.routing_config_path), exist_ok=True)
+        try:
+            with open(settings.routing_config_path, "w") as f:
+                json.dump(self.routing_config, f, indent=2)
+            self._apply_routing_config()
+        except Exception as e:
+            logger.error(f"Failed to save routing config: {e}")
 
     async def classify_intent(self, user_input: str) -> Intent:
-        """Enhanced intent classification using semantic similarity."""
-        intent, confidence = self.intent_classifier.classify(user_input)
+        """Enhanced intent classification using semantic similarity or LLM."""
+        intent, confidence = await self.intent_classifier.classify_with_llm(user_input)
         logger.info("Classified intent: %s (confidence: %.2f)", intent.value, confidence)
         return intent
 
@@ -164,6 +218,10 @@ class ModelRouter:
             security_verdict = await self.security_validator.check_output(user_input, answer)
             if not security_verdict["is_safe"]:
                 answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
+
+        # PII Redaction
+        if security_verdict["is_safe"] and self.pii_redactor:
+            answer = await self.pii_redactor.redact(answer)
 
         if session_id and self.memory_system:
             await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})

@@ -6,8 +6,12 @@ logger = logging.getLogger(__name__)
 
 
 class SecurityValidator:
-    def __init__(self, judge_adapter):
+    def __init__(self, judge_adapter=None):
         self.judge_adapter = judge_adapter
+
+    def set_judge_adapter(self, adapter):
+        """Dynamic update of judge adapter."""
+        self.judge_adapter = adapter
 
     async def check_output(self, original_prompt: str, model_output: str) -> Dict[str, Any]:
         """
@@ -81,3 +85,37 @@ class SecurityValidator:
             "is_safe": is_safe,
             "reason": reason
         }
+
+
+class PIIRedactor:
+    """Handles redaction of PII using an LLM."""
+
+    def __init__(self, redactor_adapter=None):
+        self.redactor_adapter = redactor_adapter
+
+    def set_adapter(self, adapter):
+        """Dynamic update of redactor adapter."""
+        self.redactor_adapter = adapter
+
+    async def redact(self, text: str) -> str:
+        """Redacts PII from text if an adapter is configured."""
+        if not self.redactor_adapter:
+            return text
+
+        prompt = f"""
+        As a Privacy Protection agent, redact all Personally Identifiable Information (PII) from the following text.
+        PII includes: Names, Email addresses, Phone numbers, Physical addresses, Passwords, API keys.
+        Replace PII with [REDACTED_TYPE] (e.g., [REDACTED_NAME]).
+        Maintain the flow and meaning of the text.
+
+        TEXT TO REDACT:
+        {text}
+
+        REDACTED TEXT:
+        """
+        try:
+            redacted = await self.redactor_adapter.generate(prompt)
+            return redacted.strip()
+        except Exception as e:
+            logger.error(f"PII Redaction failed: {e}")
+            return text
