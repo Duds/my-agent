@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     # Routing Configuration
     routing_config_path: str = "data/routing_rules.json"
 
+    # MCP (Model Context Protocol) Servers
+    mcp_config_path: str = "data/mcp_servers.json"
+
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -61,6 +61,7 @@ export default function Page() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [selectedModeId, setSelectedModeId] = useState("general");
+  const [agenticMode, setAgenticMode] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +116,15 @@ export default function Page() {
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load once on mount
+  }, []);
+
+  const refetchModels = useCallback(async () => {
+    try {
+      const m = await api.getModels();
+      setModels(m);
+    } catch (err) {
+      console.error("Failed to refetch models:", err);
+    }
   }, []);
 
   const handleSendMessage = useCallback(
@@ -604,6 +614,8 @@ export default function Page() {
                 selectedModelId={selectedModelId}
                 onSelectMode={setSelectedModeId}
                 onSelectModel={setSelectedModelId}
+                agenticMode={agenticMode}
+                onToggleAgenticMode={() => setAgenticMode((prev) => !prev)}
               />
 
               <SettingsPanel
@@ -614,6 +626,7 @@ export default function Page() {
                 mcps={mcps}
                 integrations={integrations}
                 onToggleSkill={handleToggleSkill}
+                onServiceChanged={refetchModels}
               />
             </div>
           </div>
@@ -622,7 +635,7 @@ export default function Page() {
         <StatusBar
           activeModel={isModelOverridden ? selectedModel ?? undefined : undefined}
           agentProcesses={agentProcesses}
-          agenticMode={true}
+          agenticMode={agenticMode}
         />
       </div>
     </TooltipProvider>

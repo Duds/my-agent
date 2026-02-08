@@ -89,3 +89,60 @@ def test_auth_not_required_when_key_not_set():
         assert response.status_code == 200
     finally:
         settings.api_key = original_key
+
+
+def test_api_config_routing_get(api_key):
+    """GET /api/config/routing returns current routing config."""
+    response = client.get(
+        "/api/config/routing",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, dict)
+
+
+def test_api_config_routing_post(api_key):
+    """POST /api/config/routing updates and returns config."""
+    response = client.post(
+        "/api/config/routing",
+        json={"intent_classification": "auto"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert "config" in data
+
+
+def test_api_system_status(api_key):
+    """GET /api/system/status returns ollama, backend, frontend status."""
+    response = client.get(
+        "/api/system/status",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "ollama" in data
+    assert "backend" in data
+    assert "frontend" in data
+    assert data["ollama"]["port"] == 11434
+    assert data["backend"]["port"] == 8001
+
+
+def test_api_mcps_authorized(api_key):
+    """GET /api/mcps returns config-driven MCP server list with status."""
+    response = client.get(
+        "/api/mcps",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    for mcp in data:
+        assert "id" in mcp
+        assert "name" in mcp
+        assert "endpoint" in mcp
+        assert "status" in mcp
+        assert "description" in mcp
+        assert mcp["status"] in ("connected", "disconnected", "configured", "error")

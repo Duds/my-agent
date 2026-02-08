@@ -38,18 +38,26 @@ This platform is purpose-built to act as a secure extension of the user. It take
 
 ### Running the Application
 
-**Backend** (FastAPI on port 8001):
+**Option A: Smart script (recommended)**
 ```bash
-source ../my-agent-venv/bin/activate
-PYTHONPATH=. python3 core/main.py
+./manage.sh start          # Start all (Ollama, Backend, Frontend)
+./manage.sh status         # Check what's running
+./manage.sh stop           # Stop all
+./manage.sh start backend  # Start only backend
+./manage.sh stop ollama    # Stop only Ollama
+./manage.sh cleanup       # Remove orphan venvs (../my-agent-venv, etc.)
 ```
-API available at `http://localhost:8001` · Docs at `/docs` and `/redoc`.
 
-**Frontend** (Next.js on port 3000):
+**Option B: Manual**
 ```bash
+# Backend (FastAPI on port 8001)
+source ../my-agent-venv/bin/activate
+PYTHONPATH=. python3 -m core.main
+
+# Frontend (Next.js on port 3000) – in another terminal
 cd frontend && npm run dev
 ```
-Dashboard at `http://localhost:3000`. Ensure the backend is running for full functionality.
+API at `http://localhost:8001` · Docs at `/docs` · Dashboard at `http://localhost:3000`
 
 ### Optional
 - Pull Ollama models: `ollama pull llama3` and `ollama pull mistral`

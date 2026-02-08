@@ -17,6 +17,9 @@ import {
   Activity,
   Power,
   RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,6 +39,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api-client';
 import { useEffect } from 'react';
 import type { Model, Skill, MCP, Integration } from '@/lib/store';
@@ -48,6 +79,8 @@ interface SettingsPanelProps {
   mcps: MCP[];
   integrations: Integration[];
   onToggleSkill: (id: string) => void;
+  /** Called when AI service is connected/disconnected so parent can refetch models */
+  onServiceChanged?: () => void;
 }
 
 export function SettingsPanel({
@@ -58,24 +91,43 @@ export function SettingsPanel({
   mcps,
   integrations,
   onToggleSkill,
+  onServiceChanged,
 }: SettingsPanelProps) {
-  const [activeTab, setActiveTab] = useState('routing');
+  const [activeTab, setActiveTab] = useState('ai');
   const [routingConfig, setRoutingConfig] = useState<Record<string, string>>(
     {}
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [advancedRoutingOpen, setAdvancedRoutingOpen] = useState(false);
+  const [advancedSystemOpen, setAdvancedSystemOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState<{
     ollama: { status: string; port: number };
     backend: { status: string; port: number };
     frontend: { status: string; port: number };
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isOllamaAction, setIsOllamaAction] = useState(false);
+  const [isBackendAction, setIsBackendAction] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
+  const [mcpAddDialogOpen, setMcpAddDialogOpen] = useState(false);
+  const [aiServices, setAiServices] = useState<
+    { provider: string; display_name: string; connected: boolean; model_count: number }[]
+  >([]);
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  const [connectDialogProvider, setConnectDialogProvider] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [connectDialogApiKey, setConnectDialogApiKey] = useState('');
+  const [connectDialogError, setConnectDialogError] = useState<string | null>(null);
+  const [connectDialogLoading, setConnectDialogLoading] = useState(false);
 
   const fetchStatus = async () => {
     try {
       setIsRefreshing(true);
       const status = await api.getSystemStatus();
       setSystemStatus(status);
+      setLastCheckedAt(new Date());
     } catch (err) {
       console.error('Failed to fetch system status:', err);
     } finally {
@@ -93,19 +145,37 @@ export function SettingsPanel({
 
   const handleStartOllama = async () => {
     try {
+      setIsOllamaAction(true);
       await api.startOllama();
       setTimeout(fetchStatus, 2000);
     } catch (err) {
       console.error('Failed to start Ollama:', err);
+    } finally {
+      setIsOllamaAction(false);
     }
   };
 
   const handleStopOllama = async () => {
     try {
+      setIsOllamaAction(true);
       await api.stopOllama();
       setTimeout(fetchStatus, 1000);
     } catch (err) {
       console.error('Failed to stop Ollama:', err);
+    } finally {
+      setIsOllamaAction(false);
+    }
+  };
+
+  const handleStopBackend = async () => {
+    try {
+      setIsBackendAction(true);
+      await api.stopBackend();
+      setTimeout(fetchStatus, 1000);
+    } catch (err) {
+      console.error('Failed to stop backend:', err);
+    } finally {
+      setIsBackendAction(false);
     }
   };
 
@@ -114,6 +184,75 @@ export function SettingsPanel({
       api.getRoutingConfig().then(setRoutingConfig).catch(console.error);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open && activeTab === 'ai') {
+      api.getAIServices().then(setAiServices).catch(console.error);
+    }
+  }, [open, activeTab]);
+
+  const openConnectDialog = (provider: string, name: string) => {
+    setConnectDialogProvider({ id: provider, name });
+    setConnectDialogApiKey('');
+    setConnectDialogError(null);
+    setConnectDialogOpen(true);
+  };
+
+  const closeConnectDialog = () => {
+    setConnectDialogOpen(false);
+    setConnectDialogProvider(null);
+    setConnectDialogApiKey('');
+    setConnectDialogError(null);
+  };
+
+  const handleConnect = async () => {
+    if (!connectDialogProvider) return;
+    const key = connectDialogApiKey.trim();
+    if (!key) {
+      setConnectDialogError('API key is required');
+      return;
+    }
+    setConnectDialogLoading(true);
+    setConnectDialogError(null);
+    try {
+      const res = await api.connectAIService(connectDialogProvider.id, key);
+      if (res.success) {
+        closeConnectDialog();
+        setAiServices((prev) =>
+          prev.map((s) =>
+            s.provider === connectDialogProvider.id
+              ? { ...s, connected: true, model_count: res.models.length }
+              : s
+          )
+        );
+        onServiceChanged?.();
+      } else {
+        setConnectDialogError(res.error || 'Connection failed');
+      }
+    } catch (err) {
+      setConnectDialogError(
+        err instanceof Error ? err.message : 'Connection failed'
+      );
+    } finally {
+      setConnectDialogLoading(false);
+    }
+  };
+
+  const handleDisconnect = async (provider: string) => {
+    try {
+      await api.disconnectAIService(provider);
+      setAiServices((prev) =>
+        prev.map((s) =>
+          s.provider === provider
+            ? { ...s, connected: false, model_count: 0 }
+            : s
+        )
+      );
+      onServiceChanged?.();
+    } catch (err) {
+      console.error('Disconnect failed:', err);
+    }
+  };
 
   const handleUpdateRouting = async (task: string, modelId: string) => {
     const newConfig = { ...routingConfig, [task]: modelId };
@@ -157,21 +296,12 @@ export function SettingsPanel({
         className="flex flex-1 flex-col"
       >
         <div className="px-3 pt-3">
-          <TabsList className="grid h-8 w-full grid-cols-6">
-            <TabsTrigger value="routing" className="text-[10px]">
-              Routing
+          <TabsList className="grid h-8 w-full grid-cols-3">
+            <TabsTrigger value="ai" className="text-[10px]">
+              AI
             </TabsTrigger>
-            <TabsTrigger value="models" className="text-[10px]">
-              Models
-            </TabsTrigger>
-            <TabsTrigger value="skills" className="text-[10px]">
-              Skills
-            </TabsTrigger>
-            <TabsTrigger value="mcps" className="text-[10px]">
-              MCPs
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="text-[10px]">
-              Integrations
+            <TabsTrigger value="extensions" className="text-[10px]">
+              Extensions
             </TabsTrigger>
             <TabsTrigger value="system" className="text-[10px]">
               System
@@ -180,8 +310,136 @@ export function SettingsPanel({
         </div>
 
         <ScrollArea className="flex-1">
-          {/* Routing Tab */}
-          <TabsContent value="routing" className="mt-0 space-y-4 p-3">
+          {/* AI Tab (Models & Services + Routing + Privacy) */}
+          <TabsContent value="ai" className="mt-0 space-y-4 p-3">
+            {/* Models & Services */}
+            <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+              AI Services
+            </p>
+            <p className="text-muted-foreground mb-2 text-[10px]">
+              Connect APIs to discover and use commercial models
+            </p>
+            {aiServices.map((svc) => (
+              <Card key={svc.provider} className="bg-background">
+                <CardContent className="flex items-center justify-between gap-3 p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={cn(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+                        svc.connected ? 'bg-success/15 text-success' : 'bg-muted'
+                      )}
+                    >
+                      <Globe
+                        className={cn(
+                          'h-4 w-4',
+                          svc.connected ? 'text-success' : 'text-muted-foreground'
+                        )}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground text-xs font-medium">
+                          {svc.display_name}
+                        </span>
+                        <span
+                          className={cn(
+                            'h-2 w-2 shrink-0 rounded-full',
+                            svc.connected ? 'bg-success' : 'bg-muted-foreground/40'
+                          )}
+                        />
+                      </div>
+                      <p className="text-muted-foreground text-[10px]">
+                        {svc.connected
+                          ? `${svc.model_count} model${svc.model_count !== 1 ? 's' : ''} available`
+                          : 'Not connected'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    {svc.connected ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 h-7 px-2 text-[10px]"
+                        onClick={() => handleDisconnect(svc.provider)}
+                      >
+                        Disconnect
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-7 px-2 text-[10px]"
+                        onClick={() =>
+                          openConnectDialog(svc.provider, svc.display_name)
+                        }
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            <Dialog open={connectDialogOpen} onOpenChange={(o) => !o && closeConnectDialog()}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Connect {connectDialogProvider?.name}</DialogTitle>
+                  <DialogDescription>
+                    Enter your API key. It will be validated and models will be
+                    discovered automatically. Keys are stored locally in{' '}
+                    <code className="rounded bg-muted px-1">data/credentials.json</code>.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="api-key"
+                      className="text-foreground text-sm font-medium"
+                    >
+                      API Key
+                    </label>
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="sk-..."
+                      value={connectDialogApiKey}
+                      onChange={(e) => {
+                        setConnectDialogApiKey(e.target.value);
+                        setConnectDialogError(null);
+                      }}
+                      className="font-mono text-sm"
+                      autoComplete="off"
+                    />
+                  </div>
+                  {connectDialogError && (
+                    <p className="text-destructive text-sm">{connectDialogError}</p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={closeConnectDialog}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConnect}
+                    disabled={connectDialogLoading}
+                  >
+                    {connectDialogLoading ? (
+                      <>
+                        <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect & Discover'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Separator className="my-6" />
+
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 Meta-Task Assignment
@@ -205,12 +463,6 @@ export function SettingsPanel({
                 name: 'Security Judge',
                 icon: ShieldCheck,
                 description: 'Validates output for safety and leaks',
-              },
-              {
-                id: 'pii_redactor',
-                name: 'PII Redactor',
-                icon: EyeOff,
-                description: 'Masks sensitive personal information',
               },
             ].map((task) => (
               <div key={task.id} className="space-y-2">
@@ -288,14 +540,29 @@ export function SettingsPanel({
                 fractions of a cent per request.
               </p>
             </div>
-          </TabsContent>
 
-          {/* Models Tab */}
-          <TabsContent value="models" className="mt-0 space-y-2 p-3">
-            <p className="text-muted-foreground mb-3 text-[10px] font-medium tracking-wider uppercase">
-              Available Models
-            </p>
-            {models.map((model) => (
+            <Collapsible
+              open={advancedRoutingOpen}
+              onOpenChange={setAdvancedRoutingOpen}
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-foreground flex h-8 w-full items-center justify-between px-0 text-[10px] font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    {advancedRoutingOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    Advanced: Available Models
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 space-y-2">
+                  {models.map((model) => (
               <Card key={model.id} className="bg-background">
                 <CardContent className="flex items-center gap-3 p-3">
                   <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-md">
@@ -344,12 +611,98 @@ export function SettingsPanel({
                 </CardContent>
               </Card>
             ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Separator className="my-6" />
+
+            <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+              PII & Sensitive Data
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <EyeOff className="text-muted-foreground h-3.5 w-3.5" />
+                <span className="text-foreground text-xs font-medium">
+                  PII Redactor
+                </span>
+              </div>
+              <p className="text-muted-foreground ml-0.5 px-5 text-[10px] leading-tight">
+                Masks names, emails, phone numbers and other PII in model
+                responses before display.
+              </p>
+              <div className="mt-1 px-5">
+                <Select
+                  value={routingConfig.pii_redactor || 'auto'}
+                  onValueChange={(val) =>
+                    handleUpdateRouting('pii_redactor', val)
+                  }
+                >
+                  <SelectTrigger className="bg-background h-8 text-[11px]">
+                    <SelectValue placeholder="Select model..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto" className="text-[11px]">
+                      Off (Auto)
+                    </SelectItem>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] font-bold">
+                        Commercial
+                      </SelectLabel>
+                      {models
+                        .filter((m) => m.provider !== 'Ollama (Local)')
+                        .map((m) => (
+                          <SelectItem
+                            key={m.id}
+                            value={m.id}
+                            className="text-[11px]"
+                          >
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px]">
+                        Local (Ollama)
+                      </SelectLabel>
+                      {models
+                        .filter((m) => m.provider === 'Ollama (Local)')
+                        .map((m) => (
+                          <SelectItem
+                            key={m.id}
+                            value={m.id}
+                            className="text-[11px]"
+                          >
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="bg-muted/40 border-border/50 mt-4 rounded-md border p-3">
+              <div className="mb-1.5 flex items-center gap-2">
+                <Lock className="text-primary h-3.5 w-3.5" />
+                <span className="text-[10px] font-semibold tracking-tight uppercase">
+                  Privacy Vault
+                </span>
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                  Coming soon
+                </Badge>
+              </div>
+              <p className="text-muted-foreground text-[10px] leading-relaxed">
+                Local-only storage for sensitive data (PBI-030).
+              </p>
+            </div>
           </TabsContent>
 
-          {/* Skills Tab */}
-          <TabsContent value="skills" className="mt-0 space-y-2 p-3">
-            <p className="text-muted-foreground mb-3 text-[10px] font-medium tracking-wider uppercase">
-              Agent Capabilities
+          {/* Extensions Tab (Skills + MCPs + Integrations) */}
+          <TabsContent value="extensions" className="mt-0 space-y-4 p-3">
+            <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+              Skills
             </p>
             {skills.map((skill) => (
               <Card key={skill.id} className="bg-background">
@@ -378,22 +731,64 @@ export function SettingsPanel({
                 </CardContent>
               </Card>
             ))}
-          </TabsContent>
 
-          {/* MCPs Tab */}
-          <TabsContent value="mcps" className="mt-0 space-y-2 p-3">
-            <div className="mb-3 flex items-center justify-between">
+            <Separator className="my-4" />
+
+            <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 MCP Servers
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 bg-transparent text-[10px]"
-              >
-                <Plug className="mr-1 h-3 w-3" />
-                Add
-              </Button>
+              <AlertDialog open={mcpAddDialogOpen} onOpenChange={setMcpAddDialogOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 bg-transparent text-[10px]"
+                      onClick={() => setMcpAddDialogOpen(true)}
+                    >
+                      <Plug className="mr-1 h-3 w-3" />
+                      Add
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add MCP server via config</p>
+                    <p className="text-muted-foreground text-xs">
+                      Edit data/mcp_servers.json
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Add MCP Server</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-2 text-left">
+                        <p>
+                          Add MCP (Model Context Protocol) servers by editing the
+                          config file:
+                        </p>
+                        <code className="block rounded bg-muted px-2 py-1.5 text-xs font-mono">
+                          data/mcp_servers.json
+                        </code>
+                        <p>
+                          Add entries to the <code className="rounded bg-muted px-1">servers</code> array
+                          with <code className="rounded bg-muted px-1">id</code>,{' '}
+                          <code className="rounded bg-muted px-1">name</code>,{' '}
+                          <code className="rounded bg-muted px-1">endpoint</code>, and{' '}
+                          <code className="rounded bg-muted px-1">description</code>.
+                          Restart the backend to load changes. See docs/MCP_CONFIG.md
+                          for the full format.
+                        </p>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setMcpAddDialogOpen(false)}>
+                      Got it
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
             {mcps.map((mcp) => (
               <Card key={mcp.id} className="bg-background">
@@ -405,7 +800,9 @@ export function SettingsPanel({
                         ? 'bg-success/10'
                         : mcp.status === 'error'
                           ? 'bg-destructive/10'
-                          : 'bg-muted'
+                          : mcp.status === 'configured'
+                            ? 'bg-primary/10'
+                            : 'bg-muted'
                     )}
                   >
                     <Plug
@@ -415,7 +812,9 @@ export function SettingsPanel({
                           ? 'text-success'
                           : mcp.status === 'error'
                             ? 'text-destructive'
-                            : 'text-muted-foreground'
+                            : mcp.status === 'configured'
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
                       )}
                     />
                   </div>
@@ -432,7 +831,9 @@ export function SettingsPanel({
                             ? 'text-success border-success/30'
                             : mcp.status === 'error'
                               ? 'text-destructive border-destructive/30'
-                              : 'text-muted-foreground'
+                              : mcp.status === 'configured'
+                                ? 'text-primary border-primary/30'
+                                : 'text-muted-foreground'
                         )}
                       >
                         {mcp.status}
@@ -445,17 +846,19 @@ export function SettingsPanel({
                 </CardContent>
               </Card>
             ))}
-          </TabsContent>
 
-          {/* Integrations Tab */}
-          <TabsContent value="integrations" className="mt-0 space-y-2 p-3">
-            <p className="text-muted-foreground mb-3 text-[10px] font-medium tracking-wider uppercase">
+            <Separator className="my-6" />
+
+            <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
               Connected Services
+            </p>
+            <p className="text-muted-foreground mb-2 text-[10px]">
+              Status only — connect flows coming soon
             </p>
             {integrations.map((integration) => (
               <Card
                 key={integration.id}
-                className="bg-background hover:bg-accent cursor-pointer transition-colors"
+                className="bg-background cursor-default transition-colors"
               >
                 <CardContent className="flex items-center gap-3 p-3">
                   <div
@@ -516,117 +919,253 @@ export function SettingsPanel({
               <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 Daemon Management
               </p>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={fetchStatus}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={cn('h-3 w-3', isRefreshing && 'animate-spin')}
-                />
-              </Button>
+              <div className="flex items-center gap-2">
+                {lastCheckedAt && (
+                  <span className="text-muted-foreground text-[9px]">
+                    {lastCheckedAt.toLocaleTimeString()}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={fetchStatus}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw
+                    className={cn('h-3 w-3', isRefreshing && 'animate-spin')}
+                  />
+                </Button>
+              </div>
             </div>
 
-            {[
-              {
-                id: 'ollama',
-                name: 'Ollama Service',
-                icon: Cpu,
-                status: systemStatus?.ollama.status,
-                port: 11434,
-                canControl: true,
-              },
-              {
-                id: 'backend',
-                name: 'Backend API',
-                icon: Activity,
-                status: systemStatus?.backend.status,
-                port: 8001,
-                canControl: false,
-              },
-              {
-                id: 'frontend',
-                name: 'Frontend Web',
-                icon: Globe,
-                status: systemStatus?.frontend.status,
-                port: 3000,
-                canControl: false,
-              },
-            ].map((daemon) => (
-              <Card key={daemon.id} className="bg-background">
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'bg-muted flex h-8 w-8 items-center justify-center rounded-md',
-                          daemon.status === 'online'
-                            ? 'text-success'
-                            : 'text-muted-foreground'
-                        )}
-                      >
-                        <daemon.icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-foreground text-xs font-medium">
-                            {daemon.name}
-                          </span>
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              daemon.status === 'online'
-                                ? 'bg-success'
-                                : 'bg-destructive animate-pulse'
-                            )}
-                          />
-                        </div>
-                        <p className="text-muted-foreground text-[10px]">
-                          Port {daemon.port} • {daemon.status || 'Checking...'}
-                        </p>
-                      </div>
+            {/* Ollama */}
+            <Card className="bg-background">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded-md',
+                        systemStatus?.ollama.status === 'online'
+                          ? 'bg-success/15 text-success'
+                          : 'bg-destructive/10 text-destructive'
+                      )}
+                    >
+                      <Cpu className="h-4 w-4" />
                     </div>
-
-                    {daemon.canControl && (
-                      <div className="flex gap-1">
-                        {daemon.status !== 'online' ? (
-                          <Button
-                            size="sm"
-                            className="h-7 px-2 text-[10px]"
-                            onClick={handleStartOllama}
-                            disabled={isRefreshing}
-                          >
-                            <Power className="mr-1 h-3 w-3" />
-                            Start
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:bg-destructive/10 h-7 px-2 text-[10px]"
-                            onClick={handleStopOllama}
-                            disabled={isRefreshing}
-                          >
-                            <X className="mr-1 h-3 w-3" />
-                            Kill
-                          </Button>
-                        )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground text-xs font-medium">
+                          Ollama Service
+                        </span>
+                        <span
+                          className={cn(
+                            'h-2 w-2 shrink-0 rounded-full',
+                            systemStatus?.ollama.status === 'online'
+                              ? 'bg-success'
+                              : 'bg-destructive animate-pulse'
+                          )}
+                        />
                       </div>
+                      <p className="text-muted-foreground text-[10px]">
+                        Port 11434 •{' '}
+                        {systemStatus?.ollama.status || 'Checking...'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {systemStatus?.ollama.status !== 'online' ? (
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-[10px]"
+                        onClick={handleStartOllama}
+                        disabled={isRefreshing || isOllamaAction}
+                      >
+                        {isOllamaAction ? (
+                          <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Power className="mr-1 h-3 w-3" />
+                        )}
+                        Start
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 h-7 px-2 text-[10px]"
+                        onClick={handleStopOllama}
+                        disabled={isRefreshing || isOllamaAction}
+                      >
+                        {isOllamaAction ? (
+                          <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <X className="mr-1 h-3 w-3" />
+                        )}
+                        Stop
+                      </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="bg-muted/40 border-border/50 mt-2 rounded-md border p-3">
-              <p className="text-muted-foreground text-[10px] leading-relaxed">
-                Management of core platform daemons. Use the root{' '}
-                <code className="bg-background px-1">manage.sh</code> script for
-                full platform lifecycle control.
-              </p>
-            </div>
+            {/* Backend */}
+            <Card className="bg-background">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded-md',
+                        systemStatus?.backend.status === 'online'
+                          ? 'bg-success/15 text-success'
+                          : 'bg-destructive/10 text-destructive'
+                      )}
+                    >
+                      <Activity className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground text-xs font-medium">
+                          Backend API
+                        </span>
+                        <span
+                          className={cn(
+                            'h-2 w-2 shrink-0 rounded-full',
+                            systemStatus?.backend.status === 'online'
+                              ? 'bg-success'
+                              : 'bg-destructive animate-pulse'
+                          )}
+                        />
+                      </div>
+                      <p className="text-muted-foreground text-[10px]">
+                        Port 8001 •{' '}
+                        {systemStatus?.backend.status || 'Checking...'}
+                      </p>
+                      {systemStatus?.backend.status !== 'online' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-muted-foreground mt-1 cursor-help text-[9px] underline decoration-dotted">
+                              Run ./manage.sh start backend
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-48">
+                            Start the backend from terminal: ./manage.sh start
+                            backend
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
+                  {systemStatus?.backend.status === 'online' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10 h-7 px-2 text-[10px]"
+                      onClick={handleStopBackend}
+                      disabled={isRefreshing || isBackendAction}
+                    >
+                      {isBackendAction ? (
+                        <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <X className="mr-1 h-3 w-3" />
+                      )}
+                      Stop
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Frontend */}
+            <Card className="bg-background">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-md',
+                      systemStatus?.frontend.status === 'online'
+                        ? 'bg-success/15 text-success'
+                        : 'bg-destructive/10 text-destructive'
+                    )}
+                  >
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-foreground text-xs font-medium">
+                        Frontend Web
+                      </span>
+                      <span className="text-muted-foreground font-normal text-[9px]">
+                        (status only)
+                      </span>
+                      <span
+                        className={cn(
+                          'h-2 w-2 shrink-0 rounded-full',
+                          systemStatus?.frontend.status === 'online'
+                            ? 'bg-success'
+                            : 'bg-destructive animate-pulse'
+                        )}
+                      />
+                    </div>
+                    <p className="text-muted-foreground text-[10px]">
+                      Port 3000 •{' '}
+                      {systemStatus?.frontend.status || 'Checking...'}
+                    </p>
+                    {systemStatus?.frontend.status !== 'online' && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-muted-foreground mt-1 cursor-help text-[9px] underline decoration-dotted">
+                            Run ./manage.sh start frontend
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-48">
+                          Start the frontend from terminal: ./manage.sh start
+                          frontend
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Collapsible
+              open={advancedSystemOpen}
+              onOpenChange={setAdvancedSystemOpen}
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-foreground flex h-8 w-full items-center justify-between px-0 text-[10px] font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    {advancedSystemOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    Advanced: Lifecycle Control
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="bg-muted/40 border-border/50 mt-2 rounded-md border p-3 space-y-2">
+                  <p className="text-muted-foreground text-[10px] leading-relaxed">
+                    Full lifecycle control via{' '}
+                    <code className="bg-background px-1">manage.sh</code>:
+                  </p>
+                  <p className="text-muted-foreground font-mono text-[9px] leading-relaxed">
+                    ./manage.sh start [ollama|backend|frontend|all]
+                    <br />
+                    ./manage.sh stop [ollama|backend|frontend|all]
+                    <br />
+                    ./manage.sh status
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
         </ScrollArea>
       </Tabs>

@@ -1,0 +1,42 @@
+{
+  "id": "PBI-035",
+  "title": "Agent Template & Conformance Framework",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Define the agent template and conformance rules that LLM-generated custom agents must follow. Agents must be able to call Skills, MCPs, and Capabilities via an injectable AgentContext. Ensures generated code conforms to platform standards before registration.",
+    "affected_files": [
+      "core/agent_template.py (new)",
+      "core/agent_context.py (new)",
+      "core/agent_validator.py (new)",
+      "data/agent_rules.json (new)",
+      "docs/AGENT_TEMPLATE.md (new)"
+    ],
+    "solution": "1. Define AgentTemplate: base class with run(ctx: AgentContext), get_info(). 2. AgentContext: injectable runtime providing call_skill(id, **kwargs), call_mcp(mcp_id, tool_name, **kwargs), use_capability(id, **kwargs). 3. Agent registry entry includes skillIds, mcpServerIds, capabilityIds (what this agent is allowed to use). 4. agent_rules.json: allowed imports, forbidden patterns. 5. AgentValidator: AST checks. 6. Document template + context API in AGENT_TEMPLATE.md."
+  },
+  "acceptance_criteria": [
+    "AgentTemplate base class defines run(ctx: AgentContext), get_info()",
+    "AgentContext provides call_skill(skill_id, **kwargs) invoking Skills Registry",
+    "AgentContext provides call_mcp(mcp_id, tool_name, **kwargs) invoking MCP servers",
+    "AgentContext provides use_capability(capability_id, **kwargs) for capabilities",
+    "Agent registry entry specifies skillIds, mcpServerIds, capabilityIds (allowed subset)",
+    "Context enforces per-agent permissions (only allowed skills/MCPs/capabilities)",
+    "agent_rules.json specifies allowed imports, forbidden patterns",
+    "AgentValidator validates AST; Documentation (AGENT_TEMPLATE.md) for LLM"
+  ],
+  "user_stories": [
+    {"story": "As a developer, I want generated agents to conform to platform security standards."},
+    {"story": "As a developer, I want agents to call skills (web search, code exec, etc.) via the framework."},
+    {"story": "As a developer, I want agents to call MCP servers (filesystem, GitHub, etc.) via the framework."},
+    {"story": "As a developer, I want agents to use capabilities through a standard interface."}
+  ],
+  "technical_notes": {
+    "current_issue": "No framework for agents to access skills, MCPs, or capabilities",
+    "risk": "MEDIUM - Generated code could be unsafe; context must enforce permissions",
+    "estimated_effort": "Medium (3-4 days)",
+    "dependencies": ["PBI-026 Skills Registry", "PBI-027 MCP Server Discovery"],
+    "conformance_rules": "Align with operation_rules.md, style_guide.md"
+  }
+}

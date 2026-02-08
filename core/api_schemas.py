@@ -20,6 +20,9 @@ class ModelInfo(BaseModel):
     id: str
     name: str
     provider: str
+    type: Optional[str] = None  # 'commercial' | 'ollama' | 'local'
+    status: Optional[str] = None  # 'online' | 'offline' | 'loading'
+    contextWindow: Optional[str] = None
 
 class ModelsResponse(BaseModel):
     remote: List[ModelInfo]
@@ -51,6 +54,30 @@ class IntegrationInfo(BaseModel):
     type: str
     status: str
     description: str
+
+
+class ConnectServiceBody(BaseModel):
+    """Body for POST /api/integrations/{provider}/connect."""
+
+    api_key: str
+
+
+class ConnectServiceResponse(BaseModel):
+    """Response from connect and discover."""
+
+    success: bool
+    provider: str
+    models: List[dict] = []
+    error: Optional[str] = None
+
+
+class AIServiceStatus(BaseModel):
+    """Status of an AI provider (Anthropic, Mistral, Moonshot)."""
+
+    provider: str
+    display_name: str
+    connected: bool
+    model_count: int
 
 class ProjectInfo(BaseModel):
     id: str

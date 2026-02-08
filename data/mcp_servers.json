@@ -1,0 +1,16 @@
+{
+  "servers": [
+    {
+      "id": "filesystem",
+      "name": "Filesystem",
+      "endpoint": "stdio://fs-server",
+      "description": "Local filesystem access"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "endpoint": "stdio://gh-server",
+      "description": "GitHub repository operations"
+    }
+  ]
+}

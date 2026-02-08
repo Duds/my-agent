@@ -1,0 +1,5 @@
+{
+  "intent_classification": "auto",
+  "pii_redactor": "auto",
+  "security_judge": "mistral-small"
+}

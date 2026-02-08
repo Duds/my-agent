@@ -17,12 +17,28 @@ except ImportError:
 from .config import settings
 from .utils import retry
 from .exceptions import AdapterError
+from . import credentials
 
 logger = logging.getLogger(__name__)
 
+
+def _get_key(provider: str) -> str | None:
+    """Get API key from credentials store or env."""
+    key = credentials.get_api_key(provider)
+    if key:
+        return key
+    if provider == "anthropic":
+        return settings.anthropic_api_key
+    if provider == "mistral":
+        return settings.mistral_api_key
+    if provider == "moonshot":
+        return settings.moonshot_api_key
+    return None
+
+
 class AnthropicAdapter(ModelAdapter):
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or settings.anthropic_api_key
+        self.api_key = api_key or _get_key("anthropic")
         self.model = model or settings.anthropic_model
         
         if not self.api_key:
@@ -37,16 +53,19 @@ class AnthropicAdapter(ModelAdapter):
         self.name = "Anthropic"
 
     @retry((Exception,), tries=3, delay=1, backoff=2)
-    async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
         if not self.client:
             raise AdapterError("Anthropic API not configured.")
-        
+        model = model_override or self.model
         try:
-            # Simple message format
             messages = [{"role": "user", "content": prompt}]
-            
             response = await self.client.messages.create(
-                model=self.model,
+                model=model,
                 max_tokens=settings.anthropic_max_tokens,
                 messages=messages
             )
@@ -60,7 +79,7 @@ class AnthropicAdapter(ModelAdapter):
 
 class MoonshotAdapter(ModelAdapter):
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or settings.moonshot_api_key
+        self.api_key = api_key or _get_key("moonshot")
         self.base_url = base_url or settings.moonshot_base_url
         self.model = model or settings.moonshot_model
         
@@ -76,14 +95,19 @@ class MoonshotAdapter(ModelAdapter):
         self.name = "Moonshot"
 
     @retry((Exception,), tries=3, delay=1, backoff=2)
-    async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
         if not self.client:
             raise AdapterError("Moonshot API not configured.")
-
+        model = model_override or self.model
         try:
             messages = [{"role": "user", "content": prompt}]
             response = await self.client.chat.completions.create(
-                model=self.model,
+                model=model,
                 messages=messages,
                 temperature=settings.moonshot_temperature,
             )
@@ -105,7 +129,7 @@ class MistralAdapter(ModelAdapter):
         base_url: Optional[str] = None,
         model: Optional[str] = None,
     ):
-        self.api_key = api_key or settings.mistral_api_key
+        self.api_key = api_key or _get_key("mistral")
         self.base_url = base_url or settings.mistral_base_url
         self.model = model or settings.mistral_model
         
@@ -124,14 +148,19 @@ class MistralAdapter(ModelAdapter):
         self.name = "Mistral"
 
     @retry((Exception,), tries=3, delay=1, backoff=2)
-    async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
         if not self.client:
             raise AdapterError("Mistral API not configured.")
-
+        model = model_override or self.model
         try:
             messages = [{"role": "user", "content": prompt}]
             response = await self.client.chat.completions.create(
-                model=self.model,
+                model=model,
                 messages=messages,
                 temperature=settings.mistral_temperature,
             )

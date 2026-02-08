@@ -1,0 +1,41 @@
+{
+  "id": "PBI-036",
+  "title": "Agent Code Generation & Registration",
+  "priority": "S",
+  "phase": "Reconciled Scaffold Features",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "LLM generates custom agent code from natural language (e.g. 'create an agent to look up weather from BOM'). Generated code is validated against PBI-035 framework, then registered and added to the Automation Hub background agents list. The solution generates code—not a form—and ensures it conforms before registration.",
+    "affected_files": [
+      "core/agent_generator.py (new)",
+      "core/main.py",
+      "core/router.py",
+      "agents/ (new directory for custom agents)",
+      "data/agents.json"
+    ],
+    "solution": "1. Add create_agent intent to router. 2. AgentGenerator: invoke LLM with agent_rules + AGENT_TEMPLATE.md + available skills/MCPs/capabilities + user request; produce Python agent code using ctx.call_skill, ctx.call_mcp, ctx.use_capability. 3. Run AgentValidator on generated code. 4. If valid: write to agents/{slug}.py, add entry to data/agents.json (including skillIds, mcpServerIds, capabilityIds). 5. Populate /api/agent-processes from agents.json. 6. Return confirmation + agent appears in Automation Hub."
+  },
+  "acceptance_criteria": [
+    "User query 'create an agent to look up weather from BOM' triggers agent generation flow",
+    "LLM generates Python agent code following AGENT_TEMPLATE conventions (using ctx.call_skill, ctx.call_mcp, ctx.use_capability)",
+    "Generated code validated against PBI-035 framework before registration",
+    "Valid code written to agents/ and registered in data/agents.json",
+    "New agent appears in Automation Hub (Background Agents list)",
+    "Invalid code returns validation errors; user can retry or edit",
+    "Agent metadata (name, description, source, skillIds, mcpServerIds, capabilityIds) stored in agents.json"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to say 'create an agent to fetch weather from BOM' and have the system generate and register a custom agent."},
+    {"story": "As a user, I want generated agents to conform to platform standards before being added."},
+    {"story": "As a user, I want new agents to appear in the Automation Hub background agents list."},{"story":"As a user, I want generated agents to use skills (e.g. web search) and MCPs (e.g. BOM API) to fulfil their task."}
+  ],
+  "technical_notes": {
+    "current_issue": "Natural language agent creation returns raw code; no validation or registration",
+    "risk": "MEDIUM - LLM may generate unsafe code; validation is critical",
+    "estimated_effort": "Medium (3-4 days)",
+    "dependencies": [
+      "PBI-035 Agent Template & Conformance Framework"
+    ]
+  }
+}

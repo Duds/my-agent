@@ -1,0 +1,28 @@
+{
+  "id": "PBI-033",
+  "title": "Model Metadata in API",
+  "priority": "S",
+  "phase": "Quick Wins",
+  "status": "done",
+  "detailed_design": {
+    "module": "core + frontend",
+    "description": "Add type, status, contextWindow to /api/models response so Chat model selector and Settings panel work correctly. Frontend filters by model.type (commercial/ollama/local); without it manual model override was broken.",
+    "affected_files": ["core/main.py", "core/api_schemas.py", "frontend/src/lib/api-client.ts"],
+    "solution": "1. Add optional type, status, contextWindow to ModelInfo schema. 2. Populate in list_models: remote → type=commercial, local → type=ollama, status=online. 3. Add defensive transform in api-client for backwards compatibility."
+  },
+  "acceptance_criteria": [
+    "Backend /api/models returns type, status, contextWindow for each model",
+    "Chat model selector shows Commercial and Ollama options",
+    "Settings panel Advanced section displays model type badge correctly",
+    "Status bar shows correct model type when overridden"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to manually select a model from the chat input when Auto routing is not desired."}
+  ],
+  "technical_notes": {
+    "current_issue": "Model selector broken - backend returned id/name/provider only",
+    "risk": "LOW",
+    "estimated_effort": "Small (1 hour)",
+    "dependencies": []
+  }
+}

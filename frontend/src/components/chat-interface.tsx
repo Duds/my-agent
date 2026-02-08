@@ -12,6 +12,7 @@ import {
   Copy,
   RotateCcw,
   X,
+  Activity,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -40,6 +41,8 @@ interface ChatInterfaceProps {
   selectedModelId?: string
   onSelectMode?: (id: string) => void
   onSelectModel?: (id: string) => void
+  agenticMode?: boolean
+  onToggleAgenticMode?: () => void
 }
 
 export function ChatInterface({
@@ -53,6 +56,8 @@ export function ChatInterface({
   selectedModelId = "",
   onSelectMode = () => {},
   onSelectModel = () => {},
+  agenticMode = true,
+  onToggleAgenticMode = () => {},
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -142,27 +147,7 @@ export function ChatInterface({
       {/* Input area - always visible per plan (empty state controls) */}
       <div className="border-t border-border bg-card p-4">
         <div className="mx-auto max-w-3xl">
-          {/* Mode and Model controls - bottom-left of input */}
-          <div className="flex items-center gap-1 mb-2">
-            {modes.length > 0 && (
-              <ModeSelector
-                modes={modes}
-                selectedModeId={selectedModeId}
-                onSelectMode={onSelectMode}
-              />
-            )}
-            {models.length > 0 && (
-              <>
-                <span className="text-border text-[10px]">|</span>
-                <ChatInputModelSelector
-                  models={models}
-                  selectedModelId={selectedModelId}
-                  onSelectModel={onSelectModel}
-                />
-              </>
-            )}
-          </div>
-          <div className="relative rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring/20 transition-all">
+          <div className="flex flex-col rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring/20 transition-all overflow-hidden">
             <textarea
               ref={textareaRef}
               value={input}
@@ -171,26 +156,77 @@ export function ChatInterface({
               placeholder="Message, @ for context, / for commands"
               rows={1}
               disabled={!hasConversation}
-              className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
+              className="min-h-[52px] w-full resize-none bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
             />
-            <Button
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "absolute bottom-2 right-2 h-7 w-7 transition-colors",
-                input.trim()
-                  ? "text-primary hover:text-primary hover:bg-primary/10"
-                  : "text-muted-foreground"
-              )}
-              onClick={handleSubmit}
-              disabled={!input.trim() || isStreaming || !hasConversation}
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+            {/* Footer bar: Agentic, Mode, Model on left; Send on right */}
+            <div className="flex shrink-0 items-center justify-between border-t border-border px-3 py-2">
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={agenticMode ? "secondary" : "ghost"}
+                      size="sm"
+                      className={cn(
+                        "h-7 gap-1.5 px-2 text-xs font-medium transition-all",
+                        agenticMode
+                          ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      onClick={onToggleAgenticMode}
+                    >
+                      <Activity className="h-3 w-3" />
+                      <span>Agentic</span>
+                      {agenticMode && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-dot" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {agenticMode
+                      ? "Agentic mode: AI auto-selects the best model per task"
+                      : "Click to enable agentic model selection"}
+                  </TooltipContent>
+                </Tooltip>
+                {modes.length > 0 && (
+                  <>
+                    <span className="text-border text-[10px]">|</span>
+                    <ModeSelector
+                      modes={modes}
+                      selectedModeId={selectedModeId}
+                      onSelectMode={onSelectMode}
+                    />
+                  </>
+                )}
+                {models.length > 0 && (
+                  <>
+                    <span className="text-border text-[10px]">|</span>
+                    <ChatInputModelSelector
+                      models={models}
+                      selectedModelId={selectedModelId}
+                      onSelectModel={onSelectModel}
+                    />
+                  </>
+                )}
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  "h-7 w-7 transition-colors",
+                  input.trim()
+                    ? "text-primary hover:text-primary hover:bg-primary/10"
+                    : "text-muted-foreground"
+                )}
+                onClick={handleSubmit}
+                disabled={!input.trim() || isStreaming || !hasConversation}
+              >
+                {isStreaming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
           <p className="mt-1.5 text-center text-[10px] text-muted-foreground/60">
             Press Enter to send, Shift + Enter for new line

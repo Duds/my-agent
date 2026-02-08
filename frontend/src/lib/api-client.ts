@@ -57,10 +57,18 @@ export type Persona = ModeInfo; // Deprecated, but used in some places
 
 export const api = {
   getModels: () =>
-    fetchApi<ModelsResponse>('/api/models').then((r) => [
-      ...r.remote,
-      ...r.local,
-    ]),
+    fetchApi<ModelsResponse>('/api/models').then((r) => {
+      const withMeta = (m: ModelInfo, type: 'commercial' | 'ollama') => ({
+        ...m,
+        type: m.type ?? type,
+        status: m.status ?? 'online',
+        contextWindow: m.contextWindow ?? '128k',
+      });
+      return [
+        ...r.remote.map((m) => withMeta(m, 'commercial')),
+        ...r.local.map((m) => withMeta(m, 'ollama')),
+      ];
+    }),
   getModes: () => fetchApi<ModeInfo[]>('/api/modes'),
   getSkills: () => fetchApi<SkillInfo[]>('/api/skills'),
   getMcps: () => fetchApi<MCPInfo[]>('/api/mcps'),
@@ -226,4 +234,34 @@ export const api = {
     fetchApi<{ status: string; message: string }>('/api/system/ollama/stop', {
       method: 'POST',
     }),
+
+  stopBackend: () =>
+    fetchApi<{ status: string; message: string }>('/api/system/backend/stop', {
+      method: 'POST',
+    }),
+
+  getAIServices: () =>
+    fetchApi<
+      import('@/types/api').AIServiceStatus[]
+    >('/api/integrations/ai-services'),
+
+  connectAIService: async (
+    provider: string,
+    apiKey: string
+  ): Promise<import('@/types/api').ConnectServiceResponse> => {
+    return fetchApi<import('@/types/api').ConnectServiceResponse>(
+      `/api/integrations/${provider}/connect`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey }),
+      }
+    );
+  },
+
+  disconnectAIService: (provider: string) =>
+    fetchApi<{ success: boolean; provider: string }>(
+      `/api/integrations/${provider}/connect`,
+      { method: 'DELETE' }
+    ),
 };

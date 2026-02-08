@@ -1,0 +1,28 @@
+{
+  "id": "PBI-034",
+  "title": "Automation Hub Empty State",
+  "priority": "S",
+  "phase": "Quick Wins",
+  "status": "done",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Add empty-state messaging when Automation Hub sections (Agents, Cron Jobs, Automations) have no data. Backend returns empty arrays; users saw blank lists with no explanation.",
+    "affected_files": ["frontend/src/components/app-sidebar.tsx"],
+    "solution": "When agentProcesses, cronJobs, or automations are empty (after filter), show italic helper text: 'No X configured. Add from Settings when available.'"
+  },
+  "acceptance_criteria": [
+    "Background Agents section shows message when empty",
+    "Cron Jobs section shows message when empty",
+    "Automations section shows message when empty",
+    "Message is helpful and does not imply error"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to understand why the Automation Hub appears empty."}
+  ],
+  "technical_notes": {
+    "current_issue": "Empty lists with no explanation",
+    "risk": "LOW",
+    "estimated_effort": "Small (30 min)",
+    "dependencies": ["PBI-032 Automation Hub UI"]
+  }
+}

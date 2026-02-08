@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -45,6 +46,9 @@ from core.factory import AdapterFactory
 from core.router import ModelRouter
 from core.security import SecurityValidator
 from core.memory import MemorySystem
+from core import credentials
+from core.model_discovery import discover_models
+from core.model_registry import get_models_for_provider
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +71,42 @@ router = ModelRouter(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure default routing config exists
+    config_dir = os.path.dirname(settings.routing_config_path)
+    config_path = settings.routing_config_path
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+    if not os.path.exists(config_path):
+        try:
+            with open(config_path, "w") as f:
+                json.dump({}, f, indent=2)
+            logger.info("Created default routing config at %s", config_path)
+        except Exception as e:
+            logger.warning("Could not create default routing config: %s", e)
+
+    # Ensure default MCP config exists
+    mcp_path = settings.mcp_config_path
+    if not os.path.exists(mcp_path):
+        try:
+            mcp_dir = os.path.dirname(mcp_path)
+            if mcp_dir:
+                os.makedirs(mcp_dir, exist_ok=True)
+            default_mcp = {
+                "servers": [
+                    {"id": "filesystem", "name": "Filesystem", "endpoint": "stdio://fs-server", "description": "Local filesystem access"},
+                    {"id": "github", "name": "GitHub", "endpoint": "stdio://gh-server", "description": "GitHub repository operations"},
+                ]
+            }
+            with open(mcp_path, "w") as f:
+                json.dump(default_mcp, f, indent=2)
+            logger.info("Created default MCP config at %s", mcp_path)
+        except Exception as e:
+            logger.warning("Could not create default MCP config: %s", e)
+
     models = await OllamaAdapter.get_available_models()
     logger.info("Startup: Discovered local models: %s", models)
     router.available_models = models
+    router._load_routing_config()  # Reload after models discovered
     yield
 
 
@@ -187,21 +224,27 @@ async def list_models(
     api_key: str = Depends(get_api_key),
 ):
     """Returns a list of all models (local and remote) available to the user."""
+    from core.model_registry import get_models_for_provider
+
     all_remote_adapters = adapter_factory.get_all_remote_adapters()
-    
-    remote_models = [
-        {"id": "claude-sonnet", "name": "Anthropic Claude 3.5 Sonnet", "provider": "Anthropic"}
-        if "anthropic" in all_remote_adapters else None,
-        {"id": "mistral-small", "name": "Mistral Small", "provider": "Mistral"}
-        if "mistral" in all_remote_adapters else None,
-        {"id": "moonshot-v1", "name": "Moonshot V1", "provider": "Moonshot"}
-        if "moonshot" in all_remote_adapters else None
-    ]
-    # Filter out None values
-    remote_models = [m for m in remote_models if m is not None]
+    remote_models = []
+    for provider in ("anthropic", "mistral", "moonshot"):
+        if provider not in all_remote_adapters:
+            continue
+        provider_display = {"anthropic": "Anthropic", "mistral": "Mistral", "moonshot": "Moonshot"}[provider]
+        for m in get_models_for_provider(provider):
+            remote_models.append({
+                "id": m["id"],
+                "name": m["name"],
+                "provider": provider_display,
+                "type": "commercial",
+                "status": "online",
+                "contextWindow": m["contextWindow"],
+            })
     
     local_models_list = [
-        {"id": name, "name": name, "provider": "Ollama (Local)"}
+        {"id": name, "name": name, "provider": "Ollama (Local)",
+         "type": "ollama", "status": "online", "contextWindow": "128k"}
         for name in (router.available_models or [])
     ]
     
@@ -282,13 +325,50 @@ async def patch_skill(skill_id: str, body: SkillPatch):
     raise HTTPException(status_code=404, detail="Skill not found")
 
 
+def _load_mcp_servers() -> list[dict]:
+    """Load MCP servers from config file."""
+    path = settings.mcp_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data.get("servers", [])
+    except Exception as e:
+        logger.warning("Failed to load MCP config from %s: %s", path, e)
+        return []
+
+
+async def _check_mcp_status(endpoint: str) -> str:
+    """Check MCP server status. stdio endpoints return 'configured'; HTTP endpoints are probed."""
+    if endpoint.startswith("stdio://"):
+        return "configured"
+    if endpoint.startswith(("http://", "https://")):
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(endpoint, timeout=2.0)
+                return "connected" if resp.status_code < 500 else "disconnected"
+        except Exception:
+            return "disconnected"
+    return "configured"
+
+
 @app.get("/api/mcps", summary="List MCP servers", response_model=list[schemas.MCPInfo], dependencies=[Depends(get_api_key)])
 async def list_mcps():
-    """Return MCP (Model Context Protocol) server connections."""
-    return [
-        {"id": "filesystem", "name": "Filesystem", "endpoint": "stdio://fs-server", "status": "connected", "description": "Local filesystem access"},
-        {"id": "github", "name": "GitHub", "endpoint": "stdio://gh-server", "status": "connected", "description": "GitHub repository operations"},
-    ]
+    """Return MCP (Model Context Protocol) server connections from config."""
+    servers = _load_mcp_servers()
+    result = []
+    for s in servers:
+        sid = s.get("id", "unknown")
+        status = await _check_mcp_status(s.get("endpoint", ""))
+        result.append({
+            "id": sid,
+            "name": s.get("name", sid),
+            "endpoint": s.get("endpoint", ""),
+            "status": status,
+            "description": s.get("description", ""),
+        })
+    return result
 
 
 @app.get("/api/system/status", summary="Get system status", dependencies=[Depends(get_api_key)])
@@ -348,18 +428,153 @@ async def stop_ollama_daemon():
         raise HTTPException(status_code=500, detail=f"Failed to stop Ollama: {str(e)}")
 
 
+@app.post("/api/system/backend/stop", summary="Stop backend daemon", dependencies=[Depends(get_api_key)])
+async def stop_backend_daemon():
+    """Gracefully shut down the backend. Client receives response before process exits."""
+    async def shutdown_after_response():
+        await asyncio.sleep(0.5)
+        os._exit(0)
+
+    asyncio.create_task(shutdown_after_response())
+    return {"status": "success", "message": "Backend shutdown initiated"}
+
+
 @app.get("/api/integrations", summary="List integrations", response_model=list[schemas.IntegrationInfo], dependencies=[Depends(get_api_key)])
 async def list_integrations():
-    """Return third-party integrations. Includes Google when credentials available."""
+    """Return third-party integrations. Includes Google when credentials available, Telegram when token configured."""
     integrations = [
         {"id": "vercel", "name": "Vercel", "type": "Deployment", "status": "active", "description": "Deploy and manage applications"},
         {"id": "supabase", "name": "Supabase", "type": "Database", "status": "active", "description": "PostgreSQL database and auth"},
     ]
+    # Telegram: status based on TELEGRAM_BOT_TOKEN (config via .env; see TELEGRAM_SETUP.md)
+    _telegram_token = settings.telegram_bot_token
+    _telegram_configured = bool(_telegram_token and _telegram_token != "your_telegram_bot_token_here")
+    integrations.append({
+        "id": "telegram",
+        "name": "Telegram",
+        "type": "Messaging",
+        "status": "active" if _telegram_configured else "inactive",
+        "description": "Chat with your agent via Telegram. Configure token in .env (see TELEGRAM_SETUP.md)",
+    })
     # Wire Google adapter when credentials present (adapters/google_adapter.py)
     _google_creds = os.getenv("GOOGLE_CREDENTIALS_PATH") or os.path.join(os.path.dirname(__file__), "..", "credentials.json")
     if os.path.isfile(_google_creds):
-        integrations.append({"id": "google", "name": "Google Workspace", "type": "Productivity", "status": "configured", "description": "Gmail, Calendar, Drive"})
+        integrations.append({"id": "google", "name": "Google Workspace", "type": "Productivity", "status": "active", "description": "Gmail, Calendar, Drive"})
     return integrations
+
+
+# --- AI Services: connect, discover, disconnect ---
+
+AI_PROVIDERS = ("anthropic", "mistral", "moonshot")
+AI_PROVIDER_DISPLAY = {"anthropic": "Anthropic", "mistral": "Mistral", "moonshot": "Moonshot"}
+
+
+class ConnectBody(BaseModel):
+    """Body for POST /api/integrations/{provider}/connect."""
+
+    api_key: str
+
+
+@app.post(
+    "/api/integrations/{provider}/connect",
+    summary="Connect AI service with API key",
+    response_model=schemas.ConnectServiceResponse,
+    dependencies=[Depends(get_api_key)],
+)
+async def connect_ai_service(provider: str, body: ConnectBody):
+    """Validate API key via discovery, save credentials, and reinitialize adapters."""
+    provider = provider.lower()
+    if provider not in AI_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+
+    api_key = (body.api_key or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key is required")
+
+    try:
+        discovered = await discover_models(provider, api_key)
+    except ValueError as e:
+        return {"success": False, "provider": provider, "models": [], "error": str(e)}
+    except Exception as e:
+        logger.exception("Connect discovery failed for %s: %s", provider, e)
+        return {"success": False, "provider": provider, "models": [], "error": str(e)}
+
+    try:
+        credentials.save_api_key(provider, api_key)
+    except Exception as e:
+        logger.exception("Failed to save credentials for %s: %s", provider, e)
+        return {"success": False, "provider": provider, "models": [], "error": str(e)}
+
+    adapter_factory.reinitialize_remotes()
+    models = get_models_for_provider(provider)
+    return {
+        "success": True,
+        "provider": provider,
+        "models": [{"id": m["id"], "name": m["name"], "contextWindow": m["contextWindow"]} for m in models],
+        "error": None,
+    }
+
+
+@app.post(
+    "/api/integrations/{provider}/discover",
+    summary="Discover models (validate key without saving)",
+    dependencies=[Depends(get_api_key)],
+)
+async def discover_ai_models(provider: str, body: ConnectBody):
+    """Validate API key and return discovered models. Does not save credentials."""
+    provider = provider.lower()
+    if provider not in AI_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+
+    api_key = (body.api_key or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key is required")
+
+    try:
+        models = await discover_models(provider, api_key)
+        return {"success": True, "provider": provider, "models": models}
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        logger.exception("Discover failed for %s: %s", provider, e)
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.delete(
+    "/api/integrations/{provider}/connect",
+    summary="Disconnect AI service",
+    dependencies=[Depends(get_api_key)],
+)
+async def disconnect_ai_service(provider: str):
+    """Remove stored API key for provider and reinitialize adapters."""
+    provider = provider.lower()
+    if provider not in AI_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+
+    credentials.remove_api_key(provider)
+    adapter_factory.reinitialize_remotes()
+    return {"success": True, "provider": provider}
+
+
+@app.get(
+    "/api/integrations/ai-services",
+    summary="List AI service connection status",
+    response_model=list[schemas.AIServiceStatus],
+    dependencies=[Depends(get_api_key)],
+)
+async def list_ai_services():
+    """Return status of Anthropic, Mistral, Moonshot (connected/disconnected, model count)."""
+    result = []
+    for p in AI_PROVIDERS:
+        connected = credentials.has_api_key(p)
+        models = get_models_for_provider(p)
+        result.append({
+            "provider": p,
+            "display_name": AI_PROVIDER_DISPLAY[p],
+            "connected": connected,
+            "model_count": len(models),
+        })
+    return result
 
 
 # In-memory stores for projects and conversations (file-backed in PBI-029, PBI-012)

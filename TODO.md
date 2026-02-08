@@ -12,6 +12,10 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 | Date       | Item                                        | Notes                                                                                                                                                                                                                                                                                                                             |
 | :--------- | :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 08/02/2026 | **UX/UI Review & Gap Analysis**             | Identified model selector broken (missing type/status), Automation Hub empty state, dead components. See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md).                                                                                                                                           |
+| 08/02/2026 | **Model Metadata in API** (PBI-033)         | Added type, status, contextWindow to /api/models. Chat model selector and Settings panel now work for manual model override.                                                                                                                                                                                                      |
+| 08/02/2026 | **Automation Hub Empty State** (PBI-034)     | Added helpful empty-state messages when Agents, Cron Jobs, or Automations lists are empty.                                                                                                                                                                                                                                       |
+| 08/02/2026 | **MCP Server Discovery** (PBI-027)           | Config-driven MCP list from data/mcp_servers.json, status check (HTTP probe / stdio=configured), Add button with config instructions, docs/MCP_CONFIG.md.                                                                                                                                                                       |
 | 07/02/2026 | **Router Initialization Bug Fix** (PBI-002) | Fixed router initialization order bug in `core/main.py`.                                                                                                                                                                                                                                                                          |
 | 07/02/2026 | **Codebase Review Plan Implementation**     | Mode-only UX: integrated Mode/Model controls in chat input, StatusBar model only when overridden, /api/modes, query params (model_id, mode_id, session_id), skills PATCH, projects/conversations CRUD (in-memory), Automation Hub section, context-display, automation placeholders. PBIs 023, 025, 026, 028, 029, 032 addressed. |
 | 07/02/2026 | **IDE Workspace Configuration** (PBI-024)   | Updated `.vscode/settings.json` and `.cursorignore`: excluded `my-agent-venv` from explorer/files/search, disabled Python analysis indexing, excluded venvs/node_modules from analysis for better Cursor/VS Code performance.                                                                                                     |
@@ -134,11 +138,13 @@ _Priority: MEDIUM - Complete MVP features_
 
 ### 🧹 Quick Wins (High Impact, Low Effort)
 
-| Priority | Feature               | Description                                                          | Backlog ID |
-| :------- | :-------------------- | :------------------------------------------------------------------- | :--------- |
-| **S**    | **Code Cleanup**      | Remove duplicate Telegram adapter, add `.temp/` to `.gitignore`.     | PBI-017    |
-| ✅       | **Port Mismatch Fix** | Fix frontend port mismatch (8000 vs 8001).                           | PBI-018    |
-| **S**    | **Frontend Metadata** | Update frontend metadata in layout.tsx, remove default Next.js text. | PBI-019    |
+| Priority | Feature                       | Description                                                          | Backlog ID |
+| :------- | :---------------------------- | :------------------------------------------------------------------- | :--------- |
+| **S**    | **Code Cleanup**              | Remove duplicate Telegram adapter, add `.temp/` to `.gitignore`.       | PBI-017    |
+| ✅       | **Port Mismatch Fix**         | Fix frontend port mismatch (8000 vs 8001).                           | PBI-018    |
+| **S**    | **Frontend Metadata**         | Update frontend metadata in layout.tsx, remove default Next.js text. | PBI-019    |
+| ✅       | **Model Metadata in API**     | Add type, status, contextWindow so model selector works.              | PBI-033    |
+| ✅       | **Automation Hub Empty State**| Helpful messages when Agents/Cron/Automations lists are empty.       | PBI-034    |
 
 ### 🎨 Phase 4: UI Components for Missing Capabilities
 
@@ -158,11 +164,51 @@ _Priority: LOW - Advanced features_
 | :------- | :---------------------------- | :--------------------------------------------------------------------------------- | :--------- |
 | **S**    | ~~**Modes from config**~~     | ~~Move personas to modes from config.~~ **Done** — /api/modes, mode_id in query.   | PBI-025 ✅ |
 | **S**    | ~~**Skills Registry**~~       | ~~Promote PBI-SR; backend + persistence.~~ **Done** — PATCH /api/skills/:id.       | PBI-026 ✅ |
-| **S**    | **MCP Server discovery**      | Backend API + Settings UI.                                                         | PBI-027    |
+| **S**    | ~~**MCP Server discovery**~~  | ~~Backend API + Settings UI.~~ **Done** — config-driven, status check, Add dialog. | PBI-027 ✅ |
 | **S**    | ~~**Integrations API**~~      | ~~Wire Google, Pinterest, etc.~~ **Done** — Google wired when credentials present. | PBI-028 ✅ |
 | **S**    | ~~**Projects persistence**~~  | ~~CRUD, conversation association.~~ **Done** — in-memory CRUD + conversation link. | PBI-029 ✅ |
-| **S**    | **Privacy Vault UI**          | Indicator and basic management.                                                    | PBI-030    |
-| **C**    | **Approval UX design system** | Shared approve/reject/undo for Sentinel + HITL.                                    | PBI-031    |
+| **S**    | **Agent Template & Conformance**    | Framework + rules so generated agents conform to platform standards.        | PBI-035    |
+| **S**    | **Agent Code Generation**           | LLM generates custom agent code; validate, register, add to Automation Hub.| PBI-036    |
+| **S**    | **Privacy Vault UI**                | Indicator and basic management.                                            | PBI-030    |
+| **C**    | **Approval UX design system**       | Shared approve/reject/undo for Sentinel + HITL.                             | PBI-031    |
+| **C**    | **Agent Creation Review UI**        | Review/edit generated code before registering.                            | PBI-037    |
+
+---
+
+### 🤖 Agent Creation (Code Generation + Conformance + Registration)
+
+_The solution generates custom agent code from natural language. Rules/framework ensure conformity; generated agents are registered and added to the Automation Hub._
+
+| Priority | Feature                             | Description                                                                 | Backlog ID |
+| :------- | :---------------------------------- | :-------------------------------------------------------------------------- | :--------- |
+| **S**    | **Agent Template & Conformance**   | Template, rules (agent_rules.json), validator; generated code must conform. | PBI-035    |
+| **S**    | **Agent Code Generation**          | LLM generates agent code; validate → register → add to Automation Hub.      | PBI-036    |
+| **C**    | **Agent Creation Review UI**       | Optional UI to review/edit generated code before approving registration.    | PBI-037    |
+
+---
+
+## 📋 UX Review: Next Priorities (from gap analysis)
+
+See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md) for full analysis.
+
+### Short-term (1–2 weeks)
+
+| Item | Backlog | Notes |
+| :--- | :------ | :--- |
+| **MCP Server Discovery** | PBI-027 | Config-driven MCP list; enable Add button or document config. |
+| **ContextDisplay** | — | Wire when Window Poller exists; currently blocked. |
+| **Project management UI** | New | Add "New project" and basic CRUD in sidebar. |
+
+### Medium-term (aligned with roadmap)
+
+| Item | Backlog | Notes |
+| :--- | :------ | :--- |
+| **Agent Template & Conformance** | PBI-035 | Template, rules, validator for generated agent code. |
+| **Agent Code Generation** | PBI-036 | LLM generates code; validate, register, add to Automation Hub. |
+| **Privacy Vault UI** | PBI-030 | After vault API exists. |
+| **Sentinel Review Queue** | PBI-022 | Use ApprovalCard; depends on File Watchdog + Content Classifier. |
+| **Automation Hub APIs** | — | Replace stubs with config-driven agent/cron/automation data. |
+| **ScriptsList, StatusLogs, ErrorReports** | PBI-032 | Add Automation Hub detail view; wire components. |
 
 ---
 

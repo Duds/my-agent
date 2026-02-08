@@ -145,3 +145,17 @@ export interface HealthResponse {
   status: string;
   service: string;
 }
+
+export interface AIServiceStatus {
+  provider: string;
+  display_name: string;
+  connected: boolean;
+  model_count: number;
+}
+
+export interface ConnectServiceResponse {
+  success: boolean;
+  provider: string;
+  models: { id: string; name: string; contextWindow?: string }[];
+  error?: string;
+}

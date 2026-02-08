@@ -5,8 +5,24 @@ from .adapters_base import ModelAdapter
 from .adapters_local import OllamaAdapter
 from .adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
 from .config import settings
+from . import credentials
 
 logger = logging.getLogger(__name__)
+
+
+def _get_provider_key(provider: str) -> str | None:
+    """Get API key for provider (credentials file or env)."""
+    key = credentials.get_api_key(provider)
+    if key:
+        return key
+    if provider == "anthropic":
+        return settings.anthropic_api_key
+    if provider == "mistral":
+        return settings.mistral_api_key
+    if provider == "moonshot":
+        return settings.moonshot_api_key
+    return None
+
 
 class AdapterFactory:
     """
@@ -24,25 +40,31 @@ class AdapterFactory:
         if self._initialized:
             return
 
-        if settings.anthropic_api_key:
+        if _get_provider_key("anthropic"):
             adapter = AnthropicAdapter()
             if adapter.client:
                 self._remote_instances["anthropic"] = adapter
                 logger.debug("Anthropic adapter initialized in factory")
 
-        if settings.mistral_api_key:
+        if _get_provider_key("mistral"):
             adapter = MistralAdapter()
             if adapter.client:
                 self._remote_instances["mistral"] = adapter
                 logger.debug("Mistral adapter initialized in factory")
 
-        if settings.moonshot_api_key:
+        if _get_provider_key("moonshot"):
             adapter = MoonshotAdapter()
             if adapter.client:
                 self._remote_instances["moonshot"] = adapter
                 logger.debug("Moonshot adapter initialized in factory")
 
         self._initialized = True
+
+    def reinitialize_remotes(self):
+        """Re-initialize remote adapters (e.g. after credentials change)."""
+        self._remote_instances.clear()
+        self._initialized = False
+        self.initialize_remotes()
 
     def get_local_adapter(self, model_name: str) -> OllamaAdapter:
         """Get or create a pooled OllamaAdapter for the given model_name."""

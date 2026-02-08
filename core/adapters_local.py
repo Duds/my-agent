@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import httpx
 
@@ -16,7 +16,12 @@ class OllamaAdapter(ModelAdapter):
         self.model_name = model_name
         self.base_url = base_url or settings.ollama_base_url
 
-    async def generate(self, prompt: str, context: List[Dict[str, str]] = None) -> str:
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
         url = f"{self.base_url}/api/generate"
         payload = {
             "model": self.model_name,

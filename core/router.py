@@ -54,27 +54,37 @@ class ModelRouter:
 
     def _apply_routing_config(self):
         """Applies task assignments to classifier and security judge."""
+        # "auto" or empty = use default; skip _resolve_model_to_adapter
+        def _resolve_if_not_auto(val: str | None) -> "ModelAdapter | None":
+            if not val or val.strip().lower() == "auto":
+                return None
+            adapter, _ = self._resolve_model_to_adapter(val)
+            return adapter
+
         # Intent Classifier
         classifier_model = self.routing_config.get("intent_classification")
         if classifier_model:
-            adapter = self._resolve_model_to_adapter(classifier_model)
+            adapter = _resolve_if_not_auto(classifier_model)
             self.intent_classifier.set_adapter(adapter)
-        
+
         # Security Validator
         security_model = self.routing_config.get("security_judge")
         if security_model and self.security_validator:
-            adapter = self._resolve_model_to_adapter(security_model)
+            adapter = _resolve_if_not_auto(security_model)
             self.security_validator.set_judge_adapter(adapter)
 
         # PII Redactor
         pii_model = self.routing_config.get("pii_redactor")
         if pii_model:
             from .security import PIIRedactor
-            adapter = self._resolve_model_to_adapter(pii_model)
-            if not self.pii_redactor:
-                self.pii_redactor = PIIRedactor(adapter)
+            adapter = _resolve_if_not_auto(pii_model)
+            if adapter:
+                if not self.pii_redactor:
+                    self.pii_redactor = PIIRedactor(adapter)
+                else:
+                    self.pii_redactor.set_adapter(adapter)
             else:
-                self.pii_redactor.set_adapter(adapter)
+                self.pii_redactor = None
 
     def update_config(self, new_config: dict):
         """Updates and persists new routing configuration."""
@@ -102,23 +112,32 @@ class ModelRouter:
                     return model
         return default
 
-    def _resolve_model_to_adapter(self, model_id: str) -> "ModelAdapter | None":
-        """Resolve model_id to adapter (Ollama or remote)."""
-        # Try remote first
-        remote_adapter = self.adapter_factory.get_remote_adapter(model_id)
-        if remote_adapter:
-            return remote_adapter
-        
-        # Legacy mapping for Sonnet/Moonshot explicitly
-        if model_id in ("claude-sonnet", "anthropic"):
-            return self.adapter_factory.get_remote_adapter("anthropic")
-        if model_id in ("moonshot-v1", "moonshot"):
-            return self.adapter_factory.get_remote_adapter("moonshot")
-        if model_id in ("mistral-small", "mistral"):
-            return self.adapter_factory.get_remote_adapter("mistral")
+    def _resolve_model_to_adapter(
+        self, model_id: str
+    ) -> Tuple["ModelAdapter | None", str | None]:
+        """Resolve model_id to (adapter, api_model_override)."""
+        from .model_registry import get_provider_and_api_model
 
-        # Fallback to local
-        return self.adapter_factory.get_local_adapter(model_id)
+        # Commercial models from registry
+        provider, api_model = get_provider_and_api_model(model_id)
+        if provider:
+            adapter = self.adapter_factory.get_remote_adapter(provider)
+            if adapter:
+                return adapter, api_model
+
+        # Legacy aliases
+        if model_id in ("claude-sonnet", "anthropic"):
+            a = self.adapter_factory.get_remote_adapter("anthropic")
+            return a, None
+        if model_id in ("moonshot-v1", "moonshot"):
+            a = self.adapter_factory.get_remote_adapter("moonshot")
+            return a, None
+        if model_id in ("mistral-small", "mistral"):
+            a = self.adapter_factory.get_remote_adapter("mistral")
+            return a, None
+
+        # Local Ollama
+        return self.adapter_factory.get_local_adapter(model_id), None
 
     async def route_request(
         self,
@@ -162,9 +181,10 @@ class ModelRouter:
 
         adapter = None
         adapter_name = "local-default"
+        model_override: str | None = None
 
         if model_id:
-            adapter = self._resolve_model_to_adapter(model_id)
+            adapter, model_override = self._resolve_model_to_adapter(model_id)
             adapter_name = model_id
         elif intent == Intent.CODING:
             model_name = self._find_best_local_model(
@@ -201,7 +221,7 @@ class ModelRouter:
             adapter_name = "local-default"
 
         try:
-            answer = await adapter.generate(user_input)
+            answer = await adapter.generate(user_input, model_override=model_override)
         except AdapterError as e:
             logger.warning(f"Primary adapter {adapter_name} failed: {e}. Falling back to local.")
             adapter = self.local_client
@@ -248,6 +268,7 @@ class ModelRouter:
         adapter: ModelAdapter | None = None
         adapter_name: str = ""
         routing_meta: Dict[str, Any] = {}
+        model_override: str | None = None
 
         intent = await self.classify_intent(user_input)
 
@@ -264,7 +285,7 @@ class ModelRouter:
                 "requires_privacy": True,
             }
         elif model_id:
-            adapter = self._resolve_model_to_adapter(model_id)
+            adapter, model_override = self._resolve_model_to_adapter(model_id)
             adapter_name = model_id
             routing_meta = {
                 "intent": "manual",
@@ -321,8 +342,38 @@ class ModelRouter:
 
         from .adapters_local import OllamaAdapter
         if isinstance(adapter, OllamaAdapter) and hasattr(adapter, "generate_stream"):
+            # Buffer full response for security/PII; then yield processed result
+            chunks: List[str] = []
             async for chunk in adapter.generate_stream(user_input):
-                yield (chunk, routing_meta)
+                chunks.append(chunk)
+            answer = "".join(chunks)
+
+            # Security check (skip for PRIVATE/NSFW - already local)
+            security_verdict = {"is_safe": True}
+            if intent not in [Intent.PRIVATE, Intent.NSFW] and self.security_validator:
+                security_verdict = await self.security_validator.check_output(
+                    user_input, answer
+                )
+                if not security_verdict["is_safe"]:
+                    answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
+
+            # PII Redaction
+            if security_verdict["is_safe"] and self.pii_redactor:
+                answer = await self.pii_redactor.redact(answer)
+
+            yield (answer, routing_meta)
         else:
-            answer = await adapter.generate(user_input)
+            # Remote model: non-streaming response - apply security and PII
+            answer = await adapter.generate(user_input, model_override=model_override)
+            security_verdict = {"is_safe": True}
+            if intent not in [Intent.PRIVATE, Intent.NSFW] and self.security_validator:
+                security_verdict = await self.security_validator.check_output(
+                    user_input, answer
+                )
+                if not security_verdict["is_safe"]:
+                    answer = f"[SECURITY BLOCK] {security_verdict['reason']}"
+
+            if security_verdict["is_safe"] and self.pii_redactor:
+                answer = await self.pii_redactor.redact(answer)
+
             yield (answer, routing_meta)

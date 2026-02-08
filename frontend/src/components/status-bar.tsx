@@ -97,7 +97,10 @@ export function StatusBar({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Agentic mode: Model selection handled automatically
+                  <p className="font-medium">Status: Agentic mode active</p>
+                  <p className="text-muted-foreground">
+                    Model selection handled automatically. Toggle in chat input.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </>
@@ -128,11 +131,13 @@ export function StatusBar({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="font-medium">Privacy Vault</p>
+              <p className="font-medium">
+                Status: {activeModel?.type !== 'commercial' ? 'Local data only' : 'Cloud API in use'}
+              </p>
               <p className="text-muted-foreground">
                 {activeModel?.type !== 'commercial'
-                  ? 'Local-only mode active. Sensitive data stays on device.'
-                  : 'Cloud API in use. Check Privacy settings for data handling.'}
+                  ? 'Sensitive data stays on device. Configure in Settings → AI.'
+                  : 'Check Settings → AI for data handling.'}
               </p>
             </TooltipContent>
           </Tooltip>

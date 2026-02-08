@@ -1,8 +1,8 @@
-"""Tests for SecurityValidator."""
+"""Tests for SecurityValidator and PIIRedactor."""
 
 import pytest
 
-from core.security import SecurityValidator
+from core.security import SecurityValidator, PIIRedactor
 
 
 class MockAdapter:
@@ -60,3 +60,47 @@ async def test_llm_validation_passes_safe():
     validator = SecurityValidator(judge_adapter=MockAdapter(response="Verdict: SAFE\nReason: No threats detected"))
     result = await validator.check_output("Query", "Benign response")
     assert result["is_safe"] is True
+
+
+# --- PIIRedactor tests ---
+
+
+class MockRedactorAdapter:
+    """Mock adapter for PII redactor."""
+
+    def __init__(self, response: str = "This is [REDACTED_NAME] from [REDACTED_EMAIL]."):
+        self.response = response
+
+    async def generate(self, prompt: str, context=None):
+        return self.response
+
+
+@pytest.mark.asyncio
+async def test_pii_redactor_returns_text_when_no_adapter():
+    """PII redactor returns original text when no adapter configured."""
+    redactor = PIIRedactor(redactor_adapter=None)
+    result = await redactor.redact("John Doe lives at jane@example.com")
+    assert result == "John Doe lives at jane@example.com"
+
+
+@pytest.mark.asyncio
+async def test_pii_redactor_redacts_with_adapter():
+    """PII redactor returns redacted text when adapter is configured."""
+    redactor = PIIRedactor(redactor_adapter=MockRedactorAdapter())
+    result = await redactor.redact("Contact John at jane@example.com")
+    assert "[REDACTED" in result
+
+
+@pytest.mark.asyncio
+async def test_pii_redactor_returns_original_on_failure():
+    """PII redactor returns original text when adapter fails."""
+
+    async def raiser(*args, **kwargs):
+        raise Exception("Adapter error")
+
+    fail_adapter = MockRedactorAdapter()
+    fail_adapter.generate = raiser
+    redactor = PIIRedactor(redactor_adapter=fail_adapter)
+    original = "Sensitive: 555-1234"
+    result = await redactor.redact(original)
+    assert result == original

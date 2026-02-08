@@ -25,5 +25,8 @@ Thumbs.db
 .coverage
 logs/
 
+# Sensitive data
+data/credentials.json
+
 # Docs (excluded from repo)
 docs/

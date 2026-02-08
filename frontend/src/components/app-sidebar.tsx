@@ -348,14 +348,26 @@ export function AppSidebar({
                       !searchQuery ||
                       a.name.toLowerCase().includes(searchQuery.toLowerCase())
                   )
-                  .map((agent) => (
-                    <AgentItem
-                      key={agent.id}
-                      agent={agent}
-                      projects={projects}
-                      formatDuration={formatDuration}
-                    />
-                  ))}
+                  .length > 0 ? (
+                  agentProcesses
+                    .filter(
+                      (a) =>
+                        !searchQuery ||
+                        a.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((agent) => (
+                      <AgentItem
+                        key={agent.id}
+                        agent={agent}
+                        projects={projects}
+                        formatDuration={formatDuration}
+                      />
+                    ))
+                ) : (
+                  <p className="px-2 py-3 text-[10px] text-muted-foreground italic">
+                    No agents configured. Add from Settings when available.
+                  </p>
+                )}
               </div>
             )}
 
@@ -378,14 +390,26 @@ export function AppSidebar({
                       !searchQuery ||
                       c.name.toLowerCase().includes(searchQuery.toLowerCase())
                   )
-                  .map((cron) => (
-                    <CronItem
-                      key={cron.id}
-                      cron={cron}
-                      projects={projects}
-                      formatTime={formatTime}
-                    />
-                  ))}
+                  .length > 0 ? (
+                  cronJobs
+                    .filter(
+                      (c) =>
+                        !searchQuery ||
+                        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((cron) => (
+                      <CronItem
+                        key={cron.id}
+                        cron={cron}
+                        projects={projects}
+                        formatTime={formatTime}
+                      />
+                    ))
+                ) : (
+                  <p className="px-2 py-3 text-[10px] text-muted-foreground italic">
+                    No cron jobs configured. Add from Settings when available.
+                  </p>
+                )}
               </div>
             )}
 
@@ -408,14 +432,26 @@ export function AppSidebar({
                       !searchQuery ||
                       a.name.toLowerCase().includes(searchQuery.toLowerCase())
                   )
-                  .map((auto) => (
-                    <AutomationItem
-                      key={auto.id}
-                      automation={auto}
-                      projects={projects}
-                      formatTime={formatTime}
-                    />
-                  ))}
+                  .length > 0 ? (
+                  automations
+                    .filter(
+                      (a) =>
+                        !searchQuery ||
+                        a.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((auto) => (
+                      <AutomationItem
+                        key={auto.id}
+                        automation={auto}
+                        projects={projects}
+                        formatTime={formatTime}
+                      />
+                    ))
+                ) : (
+                  <p className="px-2 py-3 text-[10px] text-muted-foreground italic">
+                    No automations configured. Add from Settings when available.
+                  </p>
+                )}
               </div>
             )}
           </div>

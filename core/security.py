@@ -69,8 +69,7 @@ class SecurityValidator:
             
             try:
                 verdict_text = await self.judge_adapter.generate(security_prompt)
-                logger.debug("Security Judge Verdict: %s", verdict_text)
-                
+                # Do not log verdict_text - may contain excerpts of user/model content (PII)
                 if "Verdict: UNSAFE" in verdict_text:
                     is_safe = False
                     # Extract reason from verdict text
@@ -117,5 +116,5 @@ class PIIRedactor:
             redacted = await self.redactor_adapter.generate(prompt)
             return redacted.strip()
         except Exception as e:
-            logger.error(f"PII Redaction failed: {e}")
+            logger.error("PII Redaction failed: %s", e)  # Do not log text - may contain PII
             return text
