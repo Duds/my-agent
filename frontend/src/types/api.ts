@@ -9,6 +9,14 @@ export interface ModelInfo {
   type?: 'commercial' | 'local' | 'ollama';
   contextWindow?: string;
   status?: 'online' | 'offline' | 'loading';
+  /** Tags for filtering and quick scanning (e.g. coding, fast, privacy) */
+  tags?: string[];
+  /** Strengths of this model */
+  pros?: string[];
+  /** Limitations to consider */
+  cons?: string[];
+  /** One-line summary of when to use */
+  benefits?: string;
 }
 
 export interface ModelsResponse {

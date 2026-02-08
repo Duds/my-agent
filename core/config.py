@@ -7,6 +7,7 @@ Uses Pydantic BaseSettings for type-safe, validated configuration from environme
 import os
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,6 +49,16 @@ class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: str | None = None
     telegram_allowed_users: List[str] = []
+    telegram_primary_chat_id: str | None = None  # Chat ID for proactive messages
+    telegram_primary_chat_file: str = "data/telegram_primary_chat_id.txt"
+
+    @field_validator("telegram_allowed_users", mode="before")
+    @classmethod
+    def parse_telegram_allowed_users(cls, v):
+        """Parse comma-separated user IDs from env, e.g. TELEGRAM_ALLOWED_USERS=123456,789012."""
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v if v is not None else []
 
     # Security
     api_key: str | None = None
@@ -69,6 +80,10 @@ class Settings(BaseSettings):
 
     # MCP (Model Context Protocol) Servers
     mcp_config_path: str = "data/mcp_servers.json"
+
+    # Custom Agents
+    agents_config_path: str = "data/agents.json"
+    agents_module_path: str = "agents"
 
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""

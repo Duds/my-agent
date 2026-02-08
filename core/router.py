@@ -9,6 +9,7 @@ from .memory import MemorySystem
 from .exceptions import AdapterError
 from .schema import Intent
 from .intent_classifier import IntentClassifier
+from .utils import clean_model_placeholders
 import json
 import os
 
@@ -55,34 +56,34 @@ class ModelRouter:
     def _apply_routing_config(self):
         """Applies task assignments to classifier and security judge."""
         # "auto" or empty = use default; skip _resolve_model_to_adapter
-        def _resolve_if_not_auto(val: str | None) -> "ModelAdapter | None":
+        def _resolve_if_not_auto(val: str | None) -> "tuple[ModelAdapter | None, str | None]":
             if not val or val.strip().lower() == "auto":
-                return None
-            adapter, _ = self._resolve_model_to_adapter(val)
-            return adapter
+                return None, None
+            adapter, api_model = self._resolve_model_to_adapter(val)
+            return adapter, api_model
 
         # Intent Classifier
         classifier_model = self.routing_config.get("intent_classification")
         if classifier_model:
-            adapter = _resolve_if_not_auto(classifier_model)
-            self.intent_classifier.set_adapter(adapter)
+            adapter, api_model = _resolve_if_not_auto(classifier_model)
+            self.intent_classifier.set_adapter(adapter, api_model)
 
         # Security Validator
         security_model = self.routing_config.get("security_judge")
         if security_model and self.security_validator:
-            adapter = _resolve_if_not_auto(security_model)
-            self.security_validator.set_judge_adapter(adapter)
+            adapter, api_model = _resolve_if_not_auto(security_model)
+            self.security_validator.set_judge_adapter(adapter, api_model)
 
         # PII Redactor
         pii_model = self.routing_config.get("pii_redactor")
         if pii_model:
             from .security import PIIRedactor
-            adapter = _resolve_if_not_auto(pii_model)
+            adapter, api_model = _resolve_if_not_auto(pii_model)
             if adapter:
                 if not self.pii_redactor:
-                    self.pii_redactor = PIIRedactor(adapter)
+                    self.pii_redactor = PIIRedactor(adapter, api_model)
                 else:
-                    self.pii_redactor.set_adapter(adapter)
+                    self.pii_redactor.set_adapter(adapter, api_model)
             else:
                 self.pii_redactor = None
 
@@ -243,6 +244,9 @@ class ModelRouter:
         if security_verdict["is_safe"] and self.pii_redactor:
             answer = await self.pii_redactor.redact(answer)
 
+        # Remove model placeholder artifacts (e.g. [GLOBAL_LOCATION])
+        answer = clean_model_placeholders(answer)
+
         if session_id and self.memory_system:
             await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})
             await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": answer})
@@ -361,6 +365,7 @@ class ModelRouter:
             if security_verdict["is_safe"] and self.pii_redactor:
                 answer = await self.pii_redactor.redact(answer)
 
+            answer = clean_model_placeholders(answer)
             yield (answer, routing_meta)
         else:
             # Remote model: non-streaming response - apply security and PII
@@ -376,4 +381,5 @@ class ModelRouter:
             if security_verdict["is_safe"] and self.pii_redactor:
                 answer = await self.pii_redactor.redact(answer)
 
+            answer = clean_model_placeholders(answer)
             yield (answer, routing_meta)

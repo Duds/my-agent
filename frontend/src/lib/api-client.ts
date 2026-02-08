@@ -264,4 +264,14 @@ export const api = {
       `/api/integrations/${provider}/connect`,
       { method: 'DELETE' }
     ),
+
+  getTelegramPrimaryChat: () =>
+    fetchApi<{ chat_id: string | null }>('/api/telegram/primary'),
+
+  sendToTelegram: (message: string) =>
+    fetchApi<{ status: string; chat_id: string }>('/api/telegram/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    }),
 };

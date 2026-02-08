@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip"
+import { ModelInfoCard } from "@/components/model-info-card"
 import type { Model } from "@/lib/store"
 
 interface ModelSelectorProps {
@@ -117,12 +119,17 @@ export function ModelSelector({
                 )}
               </div>
             </TooltipTrigger>
-            <TooltipContent>
-              <p className="font-medium">Agentic Model Selection</p>
-              <p className="text-muted-foreground">
-                Currently using {selectedModel?.name}. Model is automatically
-                selected based on task complexity.
-              </p>
+            <TooltipContent side="bottom" className="max-w-xs p-0">
+              {selectedModel ? (
+                <ModelInfoCard model={selectedModel} variant="compact" />
+              ) : (
+                <>
+                  <p className="font-medium">Agentic Model Selection</p>
+                  <p className="text-muted-foreground text-xs">
+                    Model is automatically selected based on task complexity.
+                  </p>
+                </>
+              )}
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -144,13 +151,29 @@ export function ModelSelector({
                     Commercial API
                   </SelectLabel>
                   {commercial.map((m) => (
-                    <SelectItem key={m.id} value={m.id} disabled={m.status === "offline"}>
-                      <div className="flex items-center gap-2">
-                        <span className={cn("h-1.5 w-1.5 rounded-full", getStatusColor(m.status))} />
-                        <span>{m.name}</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
-                      </div>
-                    </SelectItem>
+                    <Tooltip key={m.id}>
+                      <TooltipTrigger asChild>
+                        <SelectItem value={m.id} disabled={m.status === "offline"}>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", getStatusColor(m.status))} />
+                            <span>{m.name}</span>
+                            {(m.tags ?? []).length > 0 && (
+                              <span className="flex gap-0.5 shrink-0">
+                                {(m.tags ?? []).slice(0, 2).map((t) => (
+                                  <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                    {t}
+                                  </Badge>
+                                ))}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
+                          </div>
+                        </SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs p-0">
+                        <ModelInfoCard model={m} variant="compact" />
+                      </TooltipContent>
+                    </Tooltip>
                   ))}
                 </SelectGroup>
               )}
@@ -163,13 +186,29 @@ export function ModelSelector({
                       Ollama
                     </SelectLabel>
                     {ollama.map((m) => (
-                      <SelectItem key={m.id} value={m.id} disabled={m.status === "offline"}>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("h-1.5 w-1.5 rounded-full", getStatusColor(m.status))} />
-                          <span>{m.name}</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
-                        </div>
-                      </SelectItem>
+                      <Tooltip key={m.id}>
+                        <TooltipTrigger asChild>
+                          <SelectItem value={m.id} disabled={m.status === "offline"}>
+                            <div className="flex items-center gap-2">
+                              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", getStatusColor(m.status))} />
+                              <span>{m.name}</span>
+                              {(m.tags ?? []).length > 0 && (
+                                <span className="flex gap-0.5 shrink-0">
+                                  {(m.tags ?? []).slice(0, 2).map((t) => (
+                                    <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
+                            </div>
+                          </SelectItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs p-0">
+                          <ModelInfoCard model={m} variant="compact" />
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </SelectGroup>
                 </>
@@ -183,13 +222,29 @@ export function ModelSelector({
                       Local
                     </SelectLabel>
                     {local.map((m) => (
-                      <SelectItem key={m.id} value={m.id} disabled={m.status === "offline"}>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("h-1.5 w-1.5 rounded-full", getStatusColor(m.status))} />
-                          <span>{m.name}</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
-                        </div>
-                      </SelectItem>
+                      <Tooltip key={m.id}>
+                        <TooltipTrigger asChild>
+                          <SelectItem value={m.id} disabled={m.status === "offline"}>
+                            <div className="flex items-center gap-2">
+                              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", getStatusColor(m.status))} />
+                              <span>{m.name}</span>
+                              {(m.tags ?? []).length > 0 && (
+                                <span className="flex gap-0.5 shrink-0">
+                                  {(m.tags ?? []).slice(0, 2).map((t) => (
+                                    <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground ml-auto">{m.contextWindow}</span>
+                            </div>
+                          </SelectItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs p-0">
+                          <ModelInfoCard model={m} variant="compact" />
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </SelectGroup>
                 </>

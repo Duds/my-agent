@@ -1,0 +1,66 @@
+---
+description: Checks suggested features against roadmap and backlog; performs impact analysis for new features
+alwaysApply: true
+---
+
+# Feature Suggestion & Roadmap Check
+
+When the user suggests a feature, enhancement, or capability, **before** implementing or drafting a PBI:
+
+## 1. Search for Similar Existing Items
+
+Consult these sources for overlapping or similar work:
+
+- **`backlog/backlog.json`** — Master index of PBIs (id, title, status, phase, priority)
+- **`TODO.md`** — Roadmap by capability, MoSCoW priorities, and phase
+- **`backlog/pbi-*.json`** — Individual PBIs with `detailed_design`, `user_stories`, `acceptance_criteria`
+
+Compare the user's suggestion semantically: titles, descriptions, capability areas (context_awareness, automation_engine, sentinel, knowledge_graph, distributed_mesh, foundation).
+
+## 2. If a Similar Feature/PBI Exists
+
+Respond with:
+
+1. **Concise summary** of the existing item:
+   - PBI ID and title
+   - Status and phase
+   - One-sentence description from the PBI or roadmap
+2. **Ask**: "Would you like to update this existing PBI/feature, or is your suggestion distinct enough to warrant a new item?"
+
+## 3. If No Similar Feature Is on the Roadmap
+
+**Do not suggest creating a new PBI immediately.** First perform an **impact analysis** covering:
+
+### A. Solution Impact
+
+- Which modules/components would change? (`core/`, `frontend/`, `adapters/`, etc.)
+- Does it require new infrastructure (Event Bus, Vector Store, etc.)?
+- Does it fit the current architecture (see `ARCHITECTURE.md`)?
+
+### B. Other Features
+
+- **Dependencies**: Does it depend on unfinished PBIs?
+- **Overlaps**: Does it duplicate or overlap with another capability?
+- **Conflicts**: Would it contradict or complicate an existing design?
+
+### C. Principles & Vision
+
+Check against:
+
+- **`VISION.md`**: Does it advance Operational Independence, Hybrid Intelligence, Security Assurance, or Neuro-Supportive objectives?
+- **`operating_principles.md`**:
+  - Local-First, Cloud-Optional
+  - Principle of Least Privilege (AI)
+  - Trust but Verify
+  - Neuro-Affirmative Design
+  - Vendor Independence
+
+Note any alignment or tension (e.g. "Aligns with Local-First; consider Least Privilege for sensitive data").
+
+## 4. After Impact Analysis
+
+Present the impact analysis in a brief, structured format, then ask:
+
+- "Based on this analysis, would you like me to draft a new PBI for this feature?"
+
+If yes, use the structure in `backlog/pbi-*.json` and the conventions in `.agent/rules/backlog_management.md` when drafting.

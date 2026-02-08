@@ -12,6 +12,7 @@ class IntentClassifier:
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
         self.classification_adapter = None
+        self.model_override = None
         # Predefined exemplars for each intent
         self.exemplars: Dict[Intent, List[str]] = {
             Intent.PRIVATE: [
@@ -70,9 +71,10 @@ class IntentClassifier:
             
         logger.info("IntentClassifier initialized with model: %s", model_name)
 
-    def set_adapter(self, adapter):
-        """Sets the LLM adapter for classification."""
+    def set_adapter(self, adapter, model_override: str | None = None):
+        """Sets the LLM adapter for classification. model_override for commercial APIs."""
         self.classification_adapter = adapter
+        self.model_override = model_override
         if adapter:
             logger.info("IntentClassifier now using LLM adapter for classification")
         else:
@@ -97,7 +99,9 @@ class IntentClassifier:
         Respond ONLY with the category name.
         """
         try:
-            response = await self.classification_adapter.generate(prompt)
+            response = await self.classification_adapter.generate(
+                prompt, model_override=self.model_override
+            )
             result = response.strip().upper()
             for intent in Intent:
                 if intent.value.upper() in result:

@@ -1,0 +1,222 @@
+{
+  "$schema": "Model metadata for informed model selection. tags: use-case, characteristic, cost. Benefits: one-line summary.",
+  "models": {
+    "claude-haiku": {
+      "tags": ["fast", "cost-effective", "general"],
+      "pros": ["Very fast response times", "Lower cost per token", "Strong for simple tasks"],
+      "cons": ["Less capable on complex reasoning", "Smaller context than Sonnet"],
+      "benefits": "Best for quick questions and high-volume, low-complexity tasks."
+    },
+    "claude-sonnet": {
+      "tags": ["balanced", "general", "reasoning"],
+      "pros": ["Excellent balance of speed and capability", "Strong reasoning", "200k context"],
+      "cons": ["Higher cost than Haiku", "Slower than Haiku"],
+      "benefits": "Recommended default for most tasks; great all-rounder."
+    },
+    "claude-opus": {
+      "tags": ["powerful", "reasoning", "creative"],
+      "pros": ["Most capable Claude model", "Exceptional reasoning", "Best for complex tasks"],
+      "cons": ["Higher cost", "Slower response times"],
+      "benefits": "Use for difficult analysis, creative writing, and nuanced reasoning."
+    },
+    "claude-sonnet-4": {
+      "tags": ["balanced", "general", "reasoning", "recommended"],
+      "pros": ["Latest Sonnet generation", "Improved reasoning", "200k context"],
+      "cons": ["Higher cost than Haiku"],
+      "benefits": "Best Claude option for most daily tasks."
+    },
+    "claude-haiku-4": {
+      "tags": ["fast", "cost-effective", "general"],
+      "pros": ["Fastest Claude model", "Cost-efficient", "Good for simple tasks"],
+      "cons": ["Less capable than Sonnet/Opus"],
+      "benefits": "Ideal for quick, simple queries and high throughput."
+    },
+    "claude-opus-4": {
+      "tags": ["powerful", "reasoning", "large-context"],
+      "pros": ["Top-tier capability", "1M token context", "Best for complex work"],
+      "cons": ["Highest cost", "Slower"],
+      "benefits": "For demanding reasoning, long documents, and creative excellence."
+    },
+    "mistral-small": {
+      "tags": ["fast", "general", "cost-effective"],
+      "pros": ["Fast and efficient", "Good multilingual support", "Competitive pricing"],
+      "cons": ["Less capable than Large models"],
+      "benefits": "Solid choice for everyday tasks and multilingual use."
+    },
+    "mistral-small-3": {
+      "tags": ["fast", "general", "multilingual"],
+      "pros": ["Improved over Small", "Strong multilingual", "128k context"],
+      "cons": ["Newer, less battle-tested"],
+      "benefits": "Upgraded Mistral Small for general use."
+    },
+    "mistral-medium": {
+      "tags": ["balanced", "reasoning", "general"],
+      "pros": ["Strong reasoning", "128k context", "Good balance"],
+      "cons": ["Higher cost than Small"],
+      "benefits": "Middle-ground Mistral for moderate complexity."
+    },
+    "mistral-large": {
+      "tags": ["powerful", "reasoning", "general"],
+      "pros": ["Most capable Mistral", "Strong reasoning", "128k context"],
+      "cons": ["Highest Mistral cost"],
+      "benefits": "Best Mistral model for complex tasks."
+    },
+    "devstral-2": {
+      "tags": ["coding", "developer", "specialist"],
+      "pros": ["Purpose-built for code", "Strong completion", "128k context"],
+      "cons": ["Less general-purpose"],
+      "benefits": "Optimised for coding, refactoring, and dev workflows."
+    },
+    "codestral": {
+      "tags": ["coding", "developer", "large-context"],
+      "pros": ["Excellent code generation", "256k context", "Fill-in-the-middle"],
+      "cons": ["Specialist model"],
+      "benefits": "Best Mistral model for serious coding tasks."
+    },
+    "kimi-k2-turbo": {
+      "tags": ["fast", "general", "long-context"],
+      "pros": ["Very fast", "128k context", "Good for Chinese"],
+      "cons": ["Less capable than K2.5"],
+      "benefits": "Quick responses with long context support."
+    },
+    "kimi-k2-thinking": {
+      "tags": ["reasoning", "chain-of-thought", "complex"],
+      "pros": ["Extended reasoning", "Chain-of-thought", "262k context"],
+      "cons": ["Slower due to reasoning steps"],
+      "benefits": "Use when you need step-by-step problem solving."
+    },
+    "kimi-k2.5": {
+      "tags": ["powerful", "multimodal", "general"],
+      "pros": ["Multimodal (text + image)", "262k context", "Strong reasoning"],
+      "cons": ["Higher cost", "Slower"],
+      "benefits": "Best Kimi model; supports images and complex tasks."
+    },
+    "moonshot-v1-8k": {
+      "tags": ["general", "small-context"],
+      "pros": ["Lightweight", "8k context"],
+      "cons": ["Limited context"],
+      "benefits": "Legacy Moonshot for short context tasks."
+    },
+    "moonshot-v1-32k": {
+      "tags": ["general", "mid-context"],
+      "pros": ["32k context", "Good for Chinese"],
+      "cons": ["Older model"],
+      "benefits": "Moonshot with 32k context."
+    },
+    "moonshot-v1-128k": {
+      "tags": ["general", "long-context"],
+      "pros": ["128k context", "Long document support"],
+      "cons": ["Slower", "Higher cost"],
+      "benefits": "Moonshot with 128k context for long documents."
+    },
+    "moonshot-v1": {
+      "tags": ["general", "small-context"],
+      "pros": ["Lightweight", "8k context"],
+      "cons": ["Limited context"],
+      "benefits": "Legacy Moonshot; alias for 8k."
+    },
+    "kimi-k2-0905": {
+      "tags": ["general", "long-context"],
+      "pros": ["262k context", "Strong reasoning"],
+      "cons": ["Newer variant"],
+      "benefits": "Kimi K2 with 262k context."
+    },
+    "kimi-k2-0711": {
+      "tags": ["general", "long-context"],
+      "pros": ["128k context", "Stable"],
+      "cons": ["Less context than 0905"],
+      "benefits": "Kimi K2 with 128k context."
+    },
+    "magistral-medium": {
+      "tags": ["general", "balanced"],
+      "pros": ["Mistral-based", "128k context"],
+      "cons": ["Newer model"],
+      "benefits": "Magistral Medium for general tasks."
+    },
+    "mistral-large-2": {
+      "tags": ["powerful", "reasoning", "general"],
+      "pros": ["Strong reasoning", "128k context", "Proven"],
+      "cons": ["Older than Mistral Large 3"],
+      "benefits": "Previous-gen Mistral Large; still capable."
+    }
+  },
+  "ollama_patterns": [
+    {
+      "pattern": "mistral",
+      "tags": ["fast", "general", "privacy", "free"],
+      "pros": ["Fast inference", "Runs locally", "No data leaves your machine"],
+      "cons": ["Smaller than commercial models", "7B parameter limit"],
+      "benefits": "Good local default for general chat; fast and private."
+    },
+    {
+      "pattern": "mistral:7b-instruct",
+      "tags": ["fast", "general", "instruct-tuned", "privacy"],
+      "pros": ["Instruction-tuned for chat", "Fast", "Local privacy"],
+      "cons": ["7B only", "Less capable than larger models"],
+      "benefits": "Best Mistral variant for chat; follows instructions well."
+    },
+    {
+      "pattern": "codellama",
+      "tags": ["coding", "developer", "privacy", "free"],
+      "pros": ["Code-specialised", "Runs locally", "Good completion"],
+      "cons": ["Instruct model smaller than base", "7B limit"],
+      "benefits": "Strong local option for coding; no code leaves your machine."
+    },
+    {
+      "pattern": "deepseek-coder",
+      "tags": ["coding", "developer", "privacy", "free"],
+      "pros": ["Excellent code generation", "Trained on code", "Local"],
+      "cons": ["7B size", "Less general"],
+      "benefits": "One of the best local coding models available."
+    },
+    {
+      "pattern": "llama3",
+      "tags": ["general", "fast", "privacy", "free"],
+      "pros": ["Strong general-purpose", "8B capable", "Meta-backed"],
+      "cons": ["8B uses more VRAM than 3B"],
+      "benefits": "Solid local general model; good for most tasks."
+    },
+    {
+      "pattern": "llama3.2",
+      "tags": ["fast", "general", "privacy", "small"],
+      "pros": ["3B fits low-end hardware", "Fast", "Good for simple tasks"],
+      "cons": ["Less capable than 8B models"],
+      "benefits": "Best for constrained hardware; quick responses."
+    },
+    {
+      "pattern": "hermes-roleplay",
+      "tags": ["roleplay", "creative", "uncensored", "privacy"],
+      "pros": ["Tuned for roleplay", "Creative", "Uncensored local"],
+      "cons": ["Specialist use", "Not for general Q&A"],
+      "benefits": "Use for creative writing and roleplay; fully private."
+    },
+    {
+      "pattern": "hermes",
+      "tags": ["general", "creative", "privacy"],
+      "pros": ["Versatile", "Good instruction following", "Local"],
+      "cons": ["Varies by variant"],
+      "benefits": "OpenHermes family; good for general and creative tasks."
+    },
+    {
+      "pattern": "openhermes",
+      "tags": ["general", "instruct", "privacy"],
+      "pros": ["Well instruction-tuned", "Mistral-based", "Local"],
+      "cons": ["7B only"],
+      "benefits": "Strong instruct model; follows system prompts well."
+    },
+    {
+      "pattern": "vicuna",
+      "tags": ["general", "chat", "privacy"],
+      "pros": ["Chat-optimised", "Good conversation", "Local"],
+      "cons": ["Older architecture"],
+      "benefits": "Classic chat model; decent for conversation."
+    },
+    {
+      "pattern": "airoboros",
+      "tags": ["general", "reasoning", "privacy"],
+      "pros": ["Strong reasoning", "Dataset-diverse", "Local"],
+      "cons": ["7B limit"],
+      "benefits": "Good for reasoning and varied tasks locally."
+    }
+  ]
+}

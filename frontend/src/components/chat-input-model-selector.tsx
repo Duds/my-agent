@@ -2,6 +2,7 @@
 
 import { ChevronDown, Cpu, Globe, Server } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip"
+import { ModelInfoCard } from "@/components/model-info-card"
 import type { Model } from "@/lib/store"
 
 interface ChatInputModelSelectorProps {
@@ -76,13 +78,19 @@ export function ChatInputModelSelector({
               <ChevronDown className="h-3 w-3 ml-0.5 opacity-50" />
             </SelectTrigger>
           </TooltipTrigger>
-          <TooltipContent side="top">
-            <p className="font-medium">{isAuto ? "Auto" : "Pinned model"}</p>
-            <p className="text-muted-foreground text-xs">
-              {isAuto
-                ? "Best-fit routing; model selected per message"
-                : `${selectedModel?.name ?? ""} — manually overridden`}
-            </p>
+          <TooltipContent side="top" className={!isAuto && selectedModel ? "max-w-xs p-0" : undefined}>
+            {!isAuto && selectedModel ? (
+              <ModelInfoCard model={selectedModel} variant="compact" />
+            ) : (
+              <>
+                <p className="font-medium">{isAuto ? "Auto" : "Pinned model"}</p>
+                <p className="text-muted-foreground text-xs">
+                  {isAuto
+                    ? "Best-fit routing; model selected per message"
+                    : `${selectedModel?.name ?? ""} — manually overridden`}
+                </p>
+              </>
+            )}
           </TooltipContent>
         </Tooltip>
         <SelectContent>
@@ -96,12 +104,28 @@ export function ChatInputModelSelector({
                 Commercial
               </SelectLabel>
               {commercial.map((m) => (
-                <SelectItem key={m.id} value={m.id} className="text-xs">
-                  <div className="flex items-center gap-2">
-                    {getTypeIcon(m.type)}
-                    <span>{m.name}</span>
-                  </div>
-                </SelectItem>
+                <Tooltip key={m.id}>
+                  <TooltipTrigger asChild>
+                    <SelectItem value={m.id} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        {getTypeIcon(m.type)}
+                        <span>{m.name}</span>
+                        {(m.tags ?? []).length > 0 && (
+                          <span className="flex gap-0.5">
+                            {(m.tags ?? []).slice(0, 2).map((t) => (
+                              <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                {t}
+                              </Badge>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs p-0">
+                    <ModelInfoCard model={m} variant="compact" />
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </SelectGroup>
           )}
@@ -113,12 +137,28 @@ export function ChatInputModelSelector({
                   Ollama
                 </SelectLabel>
                 {ollama.map((m) => (
-                  <SelectItem key={m.id} value={m.id} className="text-xs">
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(m.type)}
-                      <span>{m.name}</span>
-                    </div>
-                  </SelectItem>
+                  <Tooltip key={m.id}>
+                    <TooltipTrigger asChild>
+                      <SelectItem value={m.id} className="text-xs">
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(m.type)}
+                          <span>{m.name}</span>
+                          {(m.tags ?? []).length > 0 && (
+                            <span className="flex gap-0.5">
+                              {(m.tags ?? []).slice(0, 2).map((t) => (
+                                <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                  {t}
+                                </Badge>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs p-0">
+                      <ModelInfoCard model={m} variant="compact" />
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </SelectGroup>
             </>
@@ -131,12 +171,28 @@ export function ChatInputModelSelector({
                   Local
                 </SelectLabel>
                 {local.map((m) => (
-                  <SelectItem key={m.id} value={m.id} className="text-xs">
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(m.type)}
-                      <span>{m.name}</span>
-                    </div>
-                  </SelectItem>
+                  <Tooltip key={m.id}>
+                    <TooltipTrigger asChild>
+                      <SelectItem value={m.id} className="text-xs">
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(m.type)}
+                          <span>{m.name}</span>
+                          {(m.tags ?? []).length > 0 && (
+                            <span className="flex gap-0.5">
+                              {(m.tags ?? []).slice(0, 2).map((t) => (
+                                <Badge key={t} variant="outline" className="text-[8px] px-1 py-0 font-normal">
+                                  {t}
+                                </Badge>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs p-0">
+                      <ModelInfoCard model={m} variant="compact" />
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </SelectGroup>
             </>

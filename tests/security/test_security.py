@@ -10,7 +10,7 @@ class MockAdapter:
     def __init__(self, response="Verdict: SAFE\nReason: No threats detected"):
         self.response = response
 
-    async def generate(self, prompt: str, context=None):
+    async def generate(self, prompt: str, context=None, model_override=None):
         return self.response
 
 
@@ -71,7 +71,7 @@ class MockRedactorAdapter:
     def __init__(self, response: str = "This is [REDACTED_NAME] from [REDACTED_EMAIL]."):
         self.response = response
 
-    async def generate(self, prompt: str, context=None):
+    async def generate(self, prompt: str, context=None, model_override=None):
         return self.response
 
 

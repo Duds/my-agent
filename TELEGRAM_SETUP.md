@@ -15,6 +15,12 @@
    TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
    ```
 
+6. (Optional) Restrict access to specific users. Add comma-separated Telegram user IDs:
+   ```
+   TELEGRAM_ALLOWED_USERS=123456789,987654321
+   ```
+   Leave empty or omit to allow any user who finds the bot.
+
 ### 2. Start the Telegram Bot
 
 ```bash
@@ -31,12 +37,27 @@ PYTHONPATH=. python3 core/telegram_bot.py
 1. Open Telegram
 2. Search for your bot's username
 3. Send `/start` to begin
-4. Try these test messages:
+4. Try these commands and messages:
+   - `/start` — Welcome message
+   - `/help` — List commands and how routing works
+   - `/status` — Check if Ollama (local models) is running
+   - `private: What's my password?` → Forces local-only routing regardless of intent
    - "Help me with a private matter" → Routes to hermes-roleplay (local)
    - "Write a Python function" → Routes to codellama
    - "Quick question about weather" → Routes to fast model (mistral)
 
 ## ✨ Features
+
+### Commands
+- `/start` — Welcome message with routing overview
+- `/help` — Available commands and how routing works
+- `/status` — Check if local models (Ollama) are online and list available models
+- `/setmychat` — Designate this chat as the primary chat for proactive messages (used by API and notifications)
+
+### Forced Local Routing
+Prefix any message with `private:` to force local-only processing:
+- `private: What's my password?` → Never leaves your machine
+- `private: Tell me a secret` → Uses hermes-roleplay (or similar local model)
 
 ### Fast Presence Model
 - **Instant acknowledgment** (<500ms) with mistral

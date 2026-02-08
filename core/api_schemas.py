@@ -23,6 +23,11 @@ class ModelInfo(BaseModel):
     type: Optional[str] = None  # 'commercial' | 'ollama' | 'local'
     status: Optional[str] = None  # 'online' | 'offline' | 'loading'
     contextWindow: Optional[str] = None
+    # Metadata for informed model selection
+    tags: Optional[List[str]] = None
+    pros: Optional[List[str]] = None
+    cons: Optional[List[str]] = None
+    benefits: Optional[str] = None
 
 class ModelsResponse(BaseModel):
     remote: List[ModelInfo]
@@ -54,6 +59,13 @@ class IntegrationInfo(BaseModel):
     type: str
     status: str
     description: str
+
+
+class TelegramSendBody(BaseModel):
+    """Body for POST /api/telegram/send. Send message to primary chat."""
+
+    message: Optional[str] = None
+    text: Optional[str] = None  # Alias for message
 
 
 class ConnectServiceBody(BaseModel):

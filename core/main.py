@@ -225,6 +225,7 @@ async def list_models(
 ):
     """Returns a list of all models (local and remote) available to the user."""
     from core.model_registry import get_models_for_provider
+    from core.model_metadata import merge_metadata_into_model
 
     all_remote_adapters = adapter_factory.get_all_remote_adapters()
     remote_models = []
@@ -233,20 +234,29 @@ async def list_models(
             continue
         provider_display = {"anthropic": "Anthropic", "mistral": "Mistral", "moonshot": "Moonshot"}[provider]
         for m in get_models_for_provider(provider):
-            remote_models.append({
+            model = {
                 "id": m["id"],
                 "name": m["name"],
                 "provider": provider_display,
                 "type": "commercial",
                 "status": "online",
                 "contextWindow": m["contextWindow"],
-            })
-    
-    local_models_list = [
-        {"id": name, "name": name, "provider": "Ollama (Local)",
-         "type": "ollama", "status": "online", "contextWindow": "128k"}
-        for name in (router.available_models or [])
-    ]
+            }
+            merge_metadata_into_model(model, m["id"], "commercial")
+            remote_models.append(model)
+
+    local_models_list = []
+    for name in (router.available_models or []):
+        model = {
+            "id": name,
+            "name": name,
+            "provider": "Ollama (Local)",
+            "type": "ollama",
+            "status": "online",
+            "contextWindow": "128k",
+        }
+        merge_metadata_into_model(model, name, "ollama")
+        local_models_list.append(model)
     
     return {
         "remote": remote_models,
@@ -461,6 +471,39 @@ async def list_integrations():
     if os.path.isfile(_google_creds):
         integrations.append({"id": "google", "name": "Google Workspace", "type": "Productivity", "status": "active", "description": "Gmail, Calendar, Drive"})
     return integrations
+
+
+@app.get("/api/telegram/primary", summary="Get primary Telegram chat ID", dependencies=[Depends(get_api_key)])
+async def get_telegram_primary():
+    """
+    Return the primary chat ID set via /setmychat or TELEGRAM_PRIMARY_CHAT_ID.
+    Use this to confirm which chat the web UI will send messages to.
+    """
+    from core.adapters_telegram import get_primary_chat_id
+    chat_id = get_primary_chat_id()
+    return {"chat_id": chat_id}
+
+
+@app.post("/api/telegram/send", summary="Send message to primary Telegram chat", dependencies=[Depends(get_api_key)])
+async def send_telegram_to_primary(body: schemas.TelegramSendBody):
+    """
+    Send a message to the designated primary Telegram chat.
+    Run /setmychat in your Telegram bot first to set the primary chat.
+    """
+    from core.adapters_telegram import send_telegram_message, get_primary_chat_id
+    msg = (body.message or body.text or "").strip()
+    if not msg:
+        raise HTTPException(status_code=400, detail="Provide 'message' or 'text' in body")
+    chat_id = get_primary_chat_id()
+    if not chat_id:
+        raise HTTPException(
+            status_code=400,
+            detail="No primary chat configured. Send /setmychat from your Telegram bot first.",
+        )
+    ok = await send_telegram_message(chat_id, msg)
+    if not ok:
+        raise HTTPException(status_code=502, detail="Failed to send Telegram message")
+    return {"status": "sent", "chat_id": chat_id}
 
 
 # --- AI Services: connect, discover, disconnect ---
@@ -690,10 +733,37 @@ async def patch_conversation(conversation_id: str, body: ConversationPatch):
     raise HTTPException(status_code=404, detail="Conversation not found")
 
 
+def _load_agents() -> list:
+    """Load agents from data/agents.json."""
+    path = settings.agents_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        agents = data.get("agents", [])
+        return [
+            {
+                "id": a.get("id", "unknown"),
+                "name": a.get("name", "Unknown Agent"),
+                "status": a.get("status", "idle"),
+                "type": a.get("type", "internal"),
+                "model": a.get("model", ""),
+                "projectId": a.get("projectId"),
+                "startedAt": a.get("startedAt"),
+                "description": a.get("description"),
+            }
+            for a in agents
+        ]
+    except Exception as e:
+        logger.warning("Failed to load agents from %s: %s", path, e)
+        return []
+
+
 @app.get("/api/agent-processes", summary="List agent processes", response_model=list[schemas.AgentProcessInfo], dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
-    """Return background agent processes. Stubbed until Automation Hub API."""
-    return []  # Stub: returns empty; backend will add config-driven data in PBI-032
+    """Return background agent processes from data/agents.json."""
+    return _load_agents()
 
 
 @app.get("/api/cron-jobs", summary="List cron jobs", response_model=list[schemas.CronJobInfo], dependencies=[Depends(get_api_key)])

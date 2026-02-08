@@ -11,6 +11,7 @@ from core.router import ModelRouter
 from core.adapters_base import ModelAdapter
 from core.factory import AdapterFactory
 from core import config as config_module
+from core import model_registry as model_registry_module
 
 
 class MockAdapter:
@@ -19,7 +20,7 @@ class MockAdapter:
     def __init__(self, name: str = "mock"):
         self.name = name
 
-    async def generate(self, prompt: str, context=None):
+    async def generate(self, prompt: str, context=None, model_override=None):
         return "mock"
 
     def get_model_info(self):
@@ -113,3 +114,40 @@ async def test_update_config_persists_and_reloads(temp_routing_config, mock_fact
         assert json.loads(temp_routing_config.read_text()) == {
             "intent_classification": "llama3:latest",
         }
+
+
+@pytest.mark.asyncio
+async def test_commercial_model_passes_model_override_to_classifier(
+    temp_routing_config, mock_factory
+):
+    """When config has commercial model (e.g. kimi-k2-turbo), model_override is passed."""
+    mock_moonshot = MockAdapter("moonshot")
+    mock_moonshot.generate = AsyncMock(return_value="CODING")
+    mock_factory.get_remote_adapter.side_effect = lambda p: mock_moonshot if p == "moonshot" else None
+
+    temp_routing_config.write_text(
+        json.dumps({"intent_classification": "kimi-k2-turbo"})
+    )
+
+    with patch.object(
+        config_module.settings, "routing_config_path", str(temp_routing_config)
+    ), patch.object(
+        model_registry_module,
+        "get_provider_and_api_model",
+        lambda mid: ("moonshot", "kimi-k2-turbo-preview") if mid == "kimi-k2-turbo" else (None, None),
+    ):
+        router = ModelRouter(
+            local_client=MockAdapter(),
+            adapter_factory=mock_factory,
+            security_validator=None,
+            available_models=[],
+        )
+
+        assert router.intent_classifier.classification_adapter is mock_moonshot
+        assert router.intent_classifier.model_override == "kimi-k2-turbo-preview"
+
+        # Verify generate is called with model_override when classifying
+        intent, _ = await router.intent_classifier.classify_with_llm("write python code")
+        mock_moonshot.generate.assert_called_once()
+        call_kwargs = mock_moonshot.generate.call_args
+        assert call_kwargs[1].get("model_override") == "kimi-k2-turbo-preview"

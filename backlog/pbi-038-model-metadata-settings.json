@@ -1,0 +1,37 @@
+{
+  "id": "PBI-038",
+  "title": "Model Metadata in Solution Settings",
+  "priority": "S",
+  "phase": "UX Enhancement",
+  "status": "done",
+  "detailed_design": {
+    "module": "frontend + core",
+    "description": "Add a dedicated Models tab in Settings for browsing model metadata (tags, pros, cons, benefits). Enables users to make informed model choices when configuring routing and chat.",
+    "affected_files": [
+      "frontend/src/components/settings-panel.tsx",
+      "core/model_metadata.json",
+      "core/model_metadata.py",
+      "core/main.py",
+      "core/api_schemas.py",
+      "frontend/src/components/model-info-card.tsx"
+    ],
+    "solution": "1. Add Models tab to Settings panel. 2. Implement search and tag filter. 3. Show model cards with tags and benefits; HoverCard for full pros/cons. 4. Backend model_metadata.json + merge_metadata_into_model. 5. ModelInfoCard component for consistent display."
+  },
+  "acceptance_criteria": [
+    "Settings has a Models tab",
+    "Models tab shows all models with tags, benefits",
+    "Search by model name or tag",
+    "Filter by tag (coding, fast, privacy, etc.)",
+    "Hover over model card shows full pros/cons",
+    "Info footer explains model_metadata.json location",
+    "Metadata flows from API to all model selectors"
+  ],
+  "user_stories": [
+    {
+      "story": "As a user, I want to browse model metadata in Settings so I can choose the right model for each task."
+    },
+    {
+      "story": "As a user, I want to filter models by tag (e.g. coding, privacy) so I can quickly find suitable options."
+    }
+  ]
+}

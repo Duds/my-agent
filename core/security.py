@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 class SecurityValidator:
     def __init__(self, judge_adapter=None):
         self.judge_adapter = judge_adapter
+        self.judge_model_override = None
 
-    def set_judge_adapter(self, adapter):
-        """Dynamic update of judge adapter."""
+    def set_judge_adapter(self, adapter, model_override: str | None = None):
+        """Dynamic update of judge adapter. model_override for commercial APIs."""
         self.judge_adapter = adapter
+        self.judge_model_override = model_override
 
     async def check_output(self, original_prompt: str, model_output: str) -> Dict[str, Any]:
         """
@@ -68,7 +70,9 @@ class SecurityValidator:
             """
             
             try:
-                verdict_text = await self.judge_adapter.generate(security_prompt)
+                verdict_text = await self.judge_adapter.generate(
+                    security_prompt, model_override=self.judge_model_override
+                )
                 # Do not log verdict_text - may contain excerpts of user/model content (PII)
                 if "Verdict: UNSAFE" in verdict_text:
                     is_safe = False
@@ -89,12 +93,34 @@ class SecurityValidator:
 class PIIRedactor:
     """Handles redaction of PII using an LLM."""
 
-    def __init__(self, redactor_adapter=None):
+    def __init__(self, redactor_adapter=None, model_override: str | None = None):
         self.redactor_adapter = redactor_adapter
+        self.model_override = model_override
+        self._text_to_redact_marker = "TEXT TO REDACT:"
+        self._redacted_text_marker = "REDACTED TEXT:"
 
-    def set_adapter(self, adapter):
-        """Dynamic update of redactor adapter."""
+    def _extract_redacted_output(self, raw: str) -> str:
+        """
+        Extract only the redacted content from the LLM response.
+        Some models return the full prompt template; we want only the redacted text.
+        """
+        if not raw:
+            return raw
+        s = raw.strip()
+        # Prefer content after "REDACTED TEXT:" (the model's actual output)
+        if self._redacted_text_marker in s:
+            idx = s.find(self._redacted_text_marker) + len(self._redacted_text_marker)
+            s = s[idx:].strip()
+        # If the model also echoed "TEXT TO REDACT:" and the original, strip that
+        if self._text_to_redact_marker in s:
+            idx = s.find(self._text_to_redact_marker)
+            s = s[:idx].strip()
+        return s
+
+    def set_adapter(self, adapter, model_override: str | None = None):
+        """Dynamic update of redactor adapter. model_override for commercial APIs."""
         self.redactor_adapter = adapter
+        self.model_override = model_override
 
     async def redact(self, text: str) -> str:
         """Redacts PII from text if an adapter is configured."""
@@ -113,8 +139,10 @@ class PIIRedactor:
         REDACTED TEXT:
         """
         try:
-            redacted = await self.redactor_adapter.generate(prompt)
-            return redacted.strip()
+            redacted = await self.redactor_adapter.generate(
+                prompt, model_override=self.model_override
+            )
+            return self._extract_redacted_output(redacted)
         except Exception as e:
             logger.error("PII Redaction failed: %s", e)  # Do not log text - may contain PII
             return text

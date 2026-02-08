@@ -1,0 +1,39 @@
+{
+  "allowed_imports": [
+    "typing",
+    "collections",
+    "dataclasses",
+    "json",
+    "re",
+    "datetime",
+    "urllib",
+    "urllib.request",
+    "urllib.parse",
+    "httpx",
+    "asyncio",
+    "core.agent_template",
+    "core.agent_context"
+  ],
+  "forbidden_patterns": [
+    "eval(",
+    "exec(",
+    "compile(",
+    "__import__",
+    "open(",
+    "os.system",
+    "subprocess",
+    "os.remove",
+    "os.unlink",
+    "shutil.rmtree",
+    "rm ",
+    "rmdir",
+    "socket.",
+    "pickle.loads",
+    "marshal.loads"
+  ],
+  "required_interface": {
+    "base_class": "AgentTemplate",
+    "required_methods": ["run", "get_info"]
+  },
+  "example_agent": "See docs/AGENT_TEMPLATE.md"
+}

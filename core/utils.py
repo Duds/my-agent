@@ -1,12 +1,31 @@
 """Utility functions for the MyAgent platform."""
 
 import asyncio
+import re
 import functools
 import logging
 import random
 from typing import Any, Callable, Type, Tuple, Union
 
 logger = logging.getLogger(__name__)
+
+# Model placeholder artifacts (e.g. [GLOBAL_LOCATION]) that some models emit
+# Replace with empty or generic text to avoid confusing users
+_MODEL_PLACEHOLDER_PATTERN = re.compile(
+    r"\[(?:GLOBAL_)?(?:LOCATION|USER_NAME|USER_ID|CURRENT_DATE|TIME|PLACEHOLDER)[^\]]*\]",
+    re.IGNORECASE,
+)
+
+
+def clean_model_placeholders(text: str) -> str:
+    """
+    Remove or replace model placeholder artifacts (e.g. [GLOBAL_LOCATION])
+    that some LLMs emit when they lack actual data.
+    """
+    if not text:
+        return text
+    return _MODEL_PLACEHOLDER_PATTERN.sub("", text).replace("  ", " ").strip()
+
 
 def retry(
     exceptions: Union[Type[Exception], Tuple[Type[Exception], ...]],
