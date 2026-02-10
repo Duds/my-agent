@@ -124,6 +124,14 @@ export interface QueryRequest {
   session_id?: string;
 }
 
+/** Present when CREATE_AGENT intent returns valid generated code for review. */
+export interface AgentGeneratedMeta {
+  code: string;
+  agent_id: string;
+  agent_name: string;
+  valid: boolean;
+}
+
 export interface QueryResponse {
   status: string;
   routing: {
@@ -136,6 +144,7 @@ export interface QueryResponse {
     is_safe: boolean;
     reason?: string;
   };
+  agent_generated?: AgentGeneratedMeta;
 }
 
 export interface StreamChunk {
@@ -145,6 +154,7 @@ export interface StreamChunk {
     intent: string;
     adapter: string;
     requires_privacy: boolean;
+    agent_generated?: AgentGeneratedMeta;
   };
   error?: string;
 }

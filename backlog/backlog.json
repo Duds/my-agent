@@ -100,7 +100,7 @@
     {
       "id": "PBI-013",
       "title": "Enhanced Intent Classification",
-      "status": "in-progress",
+      "status": "done",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-013-enhanced-intent-classification.json"
@@ -116,7 +116,7 @@
     {
       "id": "PBI-015",
       "title": "API Documentation",
-      "status": "in-progress",
+      "status": "done",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-015-api-documentation.json"
@@ -124,7 +124,7 @@
     {
       "id": "PBI-016",
       "title": "Monitoring & Observability",
-      "status": "in-progress",
+      "status": "done",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-016-monitoring-observability.json"
@@ -132,7 +132,7 @@
     {
       "id": "PBI-017",
       "title": "Code Cleanup",
-      "status": "ready",
+      "status": "done",
       "priority": "S",
       "phase": "Quick Wins",
       "file": "pbi-017-code-cleanup.json"
@@ -148,7 +148,7 @@
     {
       "id": "PBI-019",
       "title": "Frontend Metadata Update",
-      "status": "ready",
+      "status": "done",
       "priority": "S",
       "phase": "Quick Wins",
       "file": "pbi-019-frontend-metadata.json"
@@ -284,7 +284,7 @@
     {
       "id": "PBI-036",
       "title": "Agent Code Generation & Registration",
-      "status": "ready",
+      "status": "done",
       "priority": "S",
       "phase": "Reconciled Scaffold Features",
       "file": "pbi-036-agent-creation-ui.json"
@@ -296,6 +296,46 @@
       "priority": "C",
       "phase": "Advanced Features",
       "file": "pbi-037-agent-creation-from-natural-language.json"
+    },
+    {
+      "id": "PBI-038",
+      "title": "Model Metadata in Solution Settings",
+      "status": "done",
+      "priority": "S",
+      "phase": "UX Enhancement",
+      "file": "pbi-038-model-metadata-settings.json"
+    },
+    {
+      "id": "PBI-039",
+      "title": "Automation Hub APIs",
+      "status": "done",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-039-automation-hub-apis.json"
+    },
+    {
+      "id": "PBI-040",
+      "title": "Project Management UI",
+      "status": "done",
+      "priority": "S",
+      "phase": "Quick Wins",
+      "file": "pbi-040-project-management-ui.json"
+    },
+    {
+      "id": "PBI-041",
+      "title": "File Watchdog",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Sentinel Foundation",
+      "file": "pbi-041-file-watchdog.json"
+    },
+    {
+      "id": "PBI-042",
+      "title": "Content Classifier",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Sentinel Foundation",
+      "file": "pbi-042-content-classifier.json"
     }
   ]
 }

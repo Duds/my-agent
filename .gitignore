@@ -1,5 +1,6 @@
 # Virtual Environment
 venv/
+.venv/
 ENV/
 env/
 .env
@@ -27,6 +28,3 @@ logs/
 
 # Sensitive data
 data/credentials.json
-
-# Docs (excluded from repo)
-docs/

@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     agents_config_path: str = "data/agents.json"
     agents_module_path: str = "agents"
 
+    # Automation Hub
+    cron_jobs_config_path: str = "data/cron_jobs.json"
+    automations_config_path: str = "data/automations.json"
+
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

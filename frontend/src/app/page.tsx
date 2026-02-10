@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
+import { AgentCodeReviewDialog } from "@/components/automation/agent-code-review-dialog";
 import { StatusBar } from "@/components/status-bar";
 import { SettingsPanel } from "@/components/settings-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -30,6 +31,7 @@ import type {
   Automation,
   MCP,
   Integration,
+  AgentGeneratedMeta,
 } from "@/lib/store";
 
 function parseConversation(c: {
@@ -76,6 +78,8 @@ export default function Page() {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [mcps, setMcps] = useState<MCP[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewDialogMeta, setReviewDialogMeta] = useState<AgentGeneratedMeta | null>(null);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? null;
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? null;
@@ -125,6 +129,22 @@ export default function Page() {
     } catch (err) {
       console.error("Failed to refetch models:", err);
     }
+  }, []);
+
+  const handleReviewAgent = useCallback((meta: AgentGeneratedMeta) => {
+    setReviewDialogMeta(meta);
+    setReviewDialogOpen(true);
+  }, []);
+
+  const handleAgentApprove = useCallback(async (editedCode: string) => {
+    await api.registerAgent(editedCode);
+    const ap = await api.getAgentProcesses();
+    setAgentProcesses(
+      ap.map((a) => ({
+        ...a,
+        startedAt: a.startedAt ? new Date(a.startedAt) : undefined,
+      }))
+    );
   }, []);
 
   const handleSendMessage = useCallback(
@@ -201,6 +221,7 @@ export default function Page() {
                           content: fallback.answer,
                           timestamp: new Date(),
                           model: fallback.routing?.adapter,
+                          agentGenerated: fallback.agent_generated,
                         },
                       ],
                       updatedAt: new Date(),
@@ -234,7 +255,11 @@ export default function Page() {
                   ...c,
                   messages: c.messages.map((m) =>
                     m.id === assistantMsgId
-                      ? { ...m, model: res.routing?.adapter }
+                      ? {
+                          ...m,
+                          model: res.routing?.adapter,
+                          agentGenerated: res.routing?.agent_generated,
+                        }
                       : m
                   ),
                   updatedAt: new Date(),
@@ -407,7 +432,11 @@ export default function Page() {
                   ...c,
                   messages: c.messages.map((m) =>
                     m.id === assistantMsgId
-                      ? { ...m, model: res.routing?.adapter }
+                      ? {
+                          ...m,
+                          model: res.routing?.adapter,
+                          agentGenerated: res.routing?.agent_generated,
+                        }
                       : m
                   ),
                   updatedAt: new Date(),
@@ -516,6 +545,21 @@ export default function Page() {
     }
   }, [skills]);
 
+  const handleCreateProject = useCallback(async (name: string, color?: string) => {
+    const p = await api.createProject({ name, color });
+    setProjects((prev) => [...prev, p]);
+  }, []);
+
+  const handlePatchProject = useCallback(
+    async (id: string, updates: { name?: string; color?: string }) => {
+      const p = await api.patchProject(id, updates);
+      setProjects((prev) =>
+        prev.map((x) => (x.id === id ? { ...x, ...p } : x))
+      );
+    },
+    []
+  );
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -545,6 +589,8 @@ export default function Page() {
             activeConversationId={activeConversationId}
             onSelectConversation={setActiveConversationId}
             onNewConversation={handleNewConversation}
+            onCreateProject={handleCreateProject}
+            onPatchProject={handlePatchProject}
             collapsed={sidebarCollapsed}
             agentProcesses={agentProcesses}
             cronJobs={cronJobs}
@@ -607,6 +653,7 @@ export default function Page() {
                 conversation={activeConversation}
                 onSendMessage={handleSendMessage}
                 onEditAndResend={handleEditAndResend}
+                onReviewAgent={handleReviewAgent}
                 isStreaming={isStreaming}
                 modes={modes}
                 models={models}
@@ -637,6 +684,23 @@ export default function Page() {
           agentProcesses={agentProcesses}
           agenticMode={agenticMode}
         />
+
+        {reviewDialogMeta && (
+          <AgentCodeReviewDialog
+            open={reviewDialogOpen}
+            onClose={() => {
+              setReviewDialogOpen(false);
+              setReviewDialogMeta(null);
+            }}
+            code={reviewDialogMeta.code}
+            agentName={reviewDialogMeta.agent_name}
+            onApprove={handleAgentApprove}
+            onReject={() => {
+              setReviewDialogOpen(false);
+              setReviewDialogMeta(null);
+            }}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

@@ -1,0 +1,14 @@
+{
+  "cronJobs": [
+    {
+      "id": "cron-1",
+      "name": "Daily summary",
+      "schedule": "0 9 * * *",
+      "status": "active",
+      "lastRun": null,
+      "nextRun": "2026-02-10T09:00:00Z",
+      "description": "Generate daily summary of pending items",
+      "model": "llama3:latest"
+    }
+  ]
+}

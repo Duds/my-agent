@@ -23,6 +23,8 @@ import {
   Webhook,
   CalendarClock,
   Radio,
+  MoreVertical,
+  Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -37,6 +39,21 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
 import type {
   Project,
   Conversation,
@@ -51,11 +68,21 @@ interface AppSidebarProps {
   activeConversationId: string | null
   onSelectConversation: (id: string) => void
   onNewConversation: () => void
+  onCreateProject?: (name: string, color?: string) => Promise<void>
+  onPatchProject?: (id: string, updates: { name?: string; color?: string }) => Promise<void>
   collapsed: boolean
   agentProcesses: AgentProcess[]
   cronJobs: CronJob[]
   automations: Automation[]
 }
+
+const PROJECT_COLORS = [
+  "hsl(217, 92%, 60%)",
+  "hsl(142, 76%, 36%)",
+  "hsl(280, 67%, 47%)",
+  "hsl(25, 95%, 53%)",
+  "hsl(199, 89%, 48%)",
+]
 
 export function AppSidebar({
   projects,
@@ -63,6 +90,8 @@ export function AppSidebar({
   activeConversationId,
   onSelectConversation,
   onNewConversation,
+  onCreateProject,
+  onPatchProject,
   collapsed,
   agentProcesses,
   cronJobs,
@@ -76,6 +105,11 @@ export function AppSidebar({
     new Set(["agents", "cron", "automations"])
   )
   const [searchQuery, setSearchQuery] = useState("")
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false)
+  const [editProject, setEditProject] = useState<Project | null>(null)
+  const [projectFormName, setProjectFormName] = useState("")
+  const [projectFormColor, setProjectFormColor] = useState(PROJECT_COLORS[0])
+  const [projectFormLoading, setProjectFormLoading] = useState(false)
 
   const toggleProject = (id: string) => {
     setExpandedProjects((prev) => {
@@ -271,15 +305,29 @@ export function AppSidebar({
               <Plus className="h-3 w-3" />
               New conversation
             </Button>
+            {onCreateProject && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 px-2 py-1.5 h-auto text-xs text-muted-foreground"
+                onClick={() => {
+                  setProjectFormName("")
+                  setProjectFormColor(PROJECT_COLORS[0])
+                  setNewProjectDialogOpen(true)
+                }}
+              >
+                <FolderOpen className="h-3 w-3" />
+                New project
+              </Button>
+            )}
             <Separator className="my-1" />
             {projects.map((project) => {
               const projConvs = getProjectConversations(project)
               const isExpanded = expandedProjects.has(project.id)
               return (
-                <div key={project.id}>
+                <div key={project.id} className="group flex items-center gap-0.5">
                   <button
                     onClick={() => toggleProject(project.id)}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    className="flex flex-1 min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-3 w-3 shrink-0" />
@@ -295,6 +343,32 @@ export function AppSidebar({
                       {projConvs.length}
                     </span>
                   </button>
+                  {onPatchProject && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditProject(project)
+                            setProjectFormName(project.name)
+                            setProjectFormColor(project.color)
+                          }}
+                        >
+                          <Pencil className="h-3 w-3 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   {isExpanded && (
                     <div className="ml-3 space-y-px">
                       {projConvs.map((conv) => (
@@ -457,6 +531,138 @@ export function AppSidebar({
           </div>
         )}
       </ScrollArea>
+
+      {/* New project dialog */}
+      <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New project</DialogTitle>
+            <DialogDescription>
+              Create a project to organise your conversations.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Name</Label>
+              <Input
+                id="project-name"
+                value={projectFormName}
+                onChange={(e) => setProjectFormName(e.target.value)}
+                placeholder="Project name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Colour</Label>
+              <div className="flex gap-2 flex-wrap">
+                {PROJECT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Select colour ${c}`}
+                    className={cn(
+                      "h-6 w-6 rounded-full border-2 transition-colors",
+                      projectFormColor === c
+                        ? "border-foreground"
+                        : "border-transparent hover:border-muted-foreground"
+                    )}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setProjectFormColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setNewProjectDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!projectFormName.trim() || projectFormLoading}
+              onClick={async () => {
+                if (!projectFormName.trim() || !onCreateProject) return
+                setProjectFormLoading(true)
+                try {
+                  await onCreateProject(projectFormName.trim(), projectFormColor)
+                  setNewProjectDialogOpen(false)
+                } finally {
+                  setProjectFormLoading(false)
+                }
+              }}
+            >
+              {projectFormLoading ? "Creating…" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit project dialog */}
+      <Dialog open={!!editProject} onOpenChange={(o) => !o && setEditProject(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit project</DialogTitle>
+            <DialogDescription>
+              Change the project name or colour.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-name">Name</Label>
+              <Input
+                id="edit-project-name"
+                value={projectFormName}
+                onChange={(e) => setProjectFormName(e.target.value)}
+                placeholder="Project name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Colour</Label>
+              <div className="flex gap-2 flex-wrap">
+                {PROJECT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Select colour ${c}`}
+                    className={cn(
+                      "h-6 w-6 rounded-full border-2 transition-colors",
+                      projectFormColor === c
+                        ? "border-foreground"
+                        : "border-transparent hover:border-muted-foreground"
+                    )}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setProjectFormColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditProject(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!projectFormName.trim() || projectFormLoading}
+              onClick={async () => {
+                if (!editProject || !projectFormName.trim() || !onPatchProject) return
+                setProjectFormLoading(true)
+                try {
+                  await onPatchProject(editProject.id, {
+                    name: projectFormName.trim(),
+                    color: projectFormColor,
+                  })
+                  setEditProject(null)
+                } finally {
+                  setProjectFormLoading(false)
+                }
+              }}
+            >
+              {projectFormLoading ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   )
 }

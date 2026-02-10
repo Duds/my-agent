@@ -1,5 +1,5 @@
 {
-  "intent_classification": "claude-haiku",
+  "intent_classification": "auto",
   "pii_redactor": "claude-haiku",
   "security_judge": "mistral-small"
 }

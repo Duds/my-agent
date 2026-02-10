@@ -1,26 +1,28 @@
+"""Test script for verifying core adapter connections and imports."""
 
+import asyncio
+import logging
 import os
 import sys
 
-print("DEBUG: 1. Core library imports start")
-import asyncio
-from dotenv import load_dotenv
-print("DEBUG: 2. Core library imports end")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path
 sys.path.insert(0, os.getcwd())
-print(f"DEBUG: 3. sys.path updated: {os.getcwd()}")
 
-print("DEBUG: 4. Custom adapter import start")
+from dotenv import load_dotenv
+
 from core.adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
-print("DEBUG: 5. Custom adapter import end")
+
 
 async def main():
-    print("DEBUG: 6. Main started")
+    logger.debug("Main started")
     load_dotenv()
-    print("DEBUG: 7. .env loaded")
-    print("DEBUG: 8. Test finished")
+    logger.debug(".env loaded")
+    logger.debug("Test finished")
+
 
 if __name__ == "__main__":
-    print("DEBUG: 9. loop start")
+    logger.debug("Starting event loop")
     asyncio.run(main())

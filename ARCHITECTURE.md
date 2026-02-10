@@ -12,18 +12,18 @@ graph TD
     
     TB & WD --> Controller[Core Controller]
     
-    subgraph "Logic Layer"
+    subgraph logicLayer [Logic Layer]
         Controller --> Router[Model Router]
         Router --> Intent[Intent Classifier]
         Intent --> Security[Security Validator]
     end
     
-    subgraph "Adapter Layer"
+    subgraph adapterLayer [Adapter Layer]
         Router --> Local[Ollama Adapter]
         Router --> Remote[API Adapters]
     end
     
-    subgraph "Infrastructure"
+    subgraph infrastructure [Infrastructure]
         Local --> M1[Mac Mini M1]
         Remote --> Cloud[Anthropic / Moonshot]
         Controller --> Memory[Markdown/JSON Memory]

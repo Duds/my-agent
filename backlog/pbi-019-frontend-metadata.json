@@ -3,7 +3,7 @@
     "title": "Frontend Metadata Update",
     "priority": "S",
     "phase": "Quick Wins",
-    "status": "ready",
+    "status": "done",
     "detailed_design": {
         "module": "frontend",
         "description": "Update frontend metadata in layout.tsx to replace default Next.js text with project-specific information.",

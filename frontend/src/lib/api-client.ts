@@ -20,6 +20,7 @@ import {
   AgentProcessInfo,
   CronJobInfo,
   AutomationInfo,
+  AgentGeneratedMeta,
 } from '@/types/api';
 
 const API_BASE =
@@ -74,10 +75,29 @@ export const api = {
   getMcps: () => fetchApi<MCPInfo[]>('/api/mcps'),
   getIntegrations: () => fetchApi<IntegrationInfo[]>('/api/integrations'),
   getProjects: () => fetchApi<ProjectInfo[]>('/api/projects'),
+  createProject: (body: { name: string; color?: string }) =>
+    fetchApi<ProjectInfo>('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  patchProject: (projectId: string, body: { name?: string; color?: string }) =>
+    fetchApi<ProjectInfo>(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
   getConversations: () => fetchApi<ConversationInfo[]>('/api/conversations'),
   getAgentProcesses: () => fetchApi<AgentProcessInfo[]>('/api/agent-processes'),
   getCronJobs: () => fetchApi<CronJobInfo[]>('/api/cron-jobs'),
   getAutomations: () => fetchApi<AutomationInfo[]>('/api/automations'),
+
+  registerAgent: (code: string) =>
+    fetchApi<AgentProcessInfo>('/api/agents/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }),
 
   postQuery: async (
     text: string,
@@ -113,7 +133,9 @@ export const api = {
       modeId?: string;
       sessionId?: string;
     }
-  ): Promise<{ routing?: { intent: string; adapter: string } }> => {
+  ): Promise<{
+    routing?: { intent: string; adapter: string; agent_generated?: AgentGeneratedMeta };
+  }> => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -139,7 +161,9 @@ export const api = {
     if (!reader) throw new Error('No response body');
     const decoder = new TextDecoder();
     let buffer = '';
-    let routing: { intent: string; adapter: string } | undefined;
+    let routing:
+      | { intent: string; adapter: string; agent_generated?: AgentGeneratedMeta }
+      | undefined;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -156,6 +180,7 @@ export const api = {
               routing = {
                 intent: data.routing.intent,
                 adapter: data.routing.adapter,
+                agent_generated: data.routing.agent_generated,
               };
             }
             if (data.error) throw new Error(data.error);

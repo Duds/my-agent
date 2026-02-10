@@ -1,0 +1,30 @@
+{
+  "id": "PBI-042",
+  "title": "Content Classifier",
+  "priority": "M",
+  "phase": "Sentinel Foundation",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "LLM or rule-based inspection of file contents (and optionally metadata) to produce labels or suggested destination for auto-sorting. Input: path + optional content snippet; output: category or folder suggestion. Integrates with File Watchdog output.",
+    "affected_files": ["core/content_classifier.py", "core/config.py", "data/"],
+    "solution": "1. Accept path and optional content snippet. 2. Use LLM or rules to classify into category/destination. 3. Return suggested category or folder. 4. Configurable or safe defaults; integrate with File Watchdog events."
+  },
+  "acceptance_criteria": [
+    "Classifies a subset of file types",
+    "Returns suggested category or destination",
+    "Configurable or safe defaults",
+    "Integrates with File Watchdog output"
+  ],
+  "user_stories": [
+    {
+      "story": "As a user, I want new files to be automatically suggested for organisation."
+    }
+  ],
+  "technical_notes": {
+    "current_issue": "No content classification for Sentinel",
+    "risk": "LOW",
+    "estimated_effort": "Medium (2–4 days)",
+    "dependencies": ["PBI-041 (File Watchdog); PBI-022 UI can mock this until PBI-042 is implemented"]
+  }
+}

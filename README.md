@@ -51,7 +51,7 @@ This platform is purpose-built to act as a secure extension of the user. It take
 **Option B: Manual**
 ```bash
 # Backend (FastAPI on port 8001)
-source ../my-agent-venv/bin/activate
+source venv/bin/activate
 PYTHONPATH=. python3 -m core.main
 
 # Frontend (Next.js on port 3000) – in another terminal
@@ -62,6 +62,13 @@ API at `http://localhost:8001` · Docs at `/docs` · Dashboard at `http://localh
 ### Optional
 - Pull Ollama models: `ollama pull llama3` and `ollama pull mistral`
 - Copy `.env.example` to `.env` and add API keys for Anthropic, Mistral, and Moonshot
+
+### Testing
+Ensure `./setup.sh` has been run first (venv and dependencies).
+
+- **Backend:** `source venv/bin/activate && PYTHONPATH=. python3 -m pytest tests/ -v`
+- **Coverage (optional):** `PYTHONPATH=. python3 -m pytest tests/ --cov=core --cov-report=term-missing`
+- **Frontend:** `cd frontend && npm test`
 
 ---
 *Created and maintained by the user in partnership with Google Antigravity.*

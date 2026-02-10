@@ -10,11 +10,21 @@ class SecurityInfo(BaseModel):
     is_safe: bool
     reason: Optional[str] = None
 
+class AgentGeneratedMeta(BaseModel):
+    """Present when CREATE_AGENT intent returns valid generated code for review."""
+
+    code: str
+    agent_id: str
+    agent_name: str
+    valid: bool
+
+
 class QueryResponse(BaseModel):
     status: str
     routing: RoutingMeta
     answer: str
     security: SecurityInfo
+    agent_generated: Optional[AgentGeneratedMeta] = None
 
 class ModelInfo(BaseModel):
     id: str

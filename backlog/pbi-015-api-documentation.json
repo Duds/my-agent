@@ -3,7 +3,7 @@
     "title": "API Documentation",
     "priority": "S",
     "phase": "Feature Completion",
-    "status": "ready",
+    "status": "done",
     "detailed_design": {
         "module": "core.main",
         "description": "Add comprehensive API documentation using OpenAPI/Swagger. Currently no API documentation exists. Generate interactive API docs, document all endpoints, add example requests/responses, and include authentication details.",

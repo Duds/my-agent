@@ -1,0 +1,14 @@
+{
+  "automations": [
+    {
+      "id": "auto-1",
+      "name": "New file watcher",
+      "trigger": "file.created",
+      "status": "active",
+      "lastTriggered": null,
+      "runsToday": 0,
+      "description": "Trigger when new file added to watch folder",
+      "type": "watch"
+    }
+  ]
+}

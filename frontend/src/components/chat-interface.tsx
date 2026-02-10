@@ -27,13 +27,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ModeSelector } from "@/components/mode-selector"
 import { ChatInputModelSelector } from "@/components/chat-input-model-selector"
-import type { Message, Conversation, Model } from "@/lib/store"
+import type { Message, Conversation, Model, AgentGeneratedMeta } from "@/lib/store"
 import type { Mode } from "@/lib/api-client"
 
 interface ChatInterfaceProps {
   conversation: Conversation | null
   onSendMessage: (content: string) => void
   onEditAndResend?: (messageId: string, newContent: string) => void
+  onReviewAgent?: (meta: AgentGeneratedMeta) => void
   isStreaming: boolean
   modes?: Mode[]
   models?: Model[]
@@ -49,6 +50,7 @@ export function ChatInterface({
   conversation,
   onSendMessage,
   onEditAndResend,
+  onReviewAgent,
   isStreaming,
   modes = [],
   models = [],
@@ -120,6 +122,7 @@ export function ChatInterface({
               key={message.id}
               message={message}
               onEditAndResend={message.role === "user" ? onEditAndResend : undefined}
+              onReviewAgent={message.role === "assistant" ? onReviewAgent : undefined}
               isStreaming={isStreaming}
             />
           ))}
@@ -219,6 +222,7 @@ export function ChatInterface({
                 )}
                 onClick={handleSubmit}
                 disabled={!input.trim() || isStreaming || !hasConversation}
+                aria-label="Send"
               >
                 {isStreaming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -240,10 +244,12 @@ export function ChatInterface({
 function MessageBubble({
   message,
   onEditAndResend,
+  onReviewAgent,
   isStreaming,
 }: {
   message: Message
   onEditAndResend?: (messageId: string, newContent: string) => void
+  onReviewAgent?: (meta: AgentGeneratedMeta) => void
   isStreaming: boolean
 }) {
   const [copied, setCopied] = useState(false)
@@ -367,8 +373,10 @@ function MessageBubble({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
+                            type="button"
                             onClick={handleCopy}
                             className="text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={copied ? "Copied!" : "Copy code"}
                           >
                             <Copy className="h-3 w-3" />
                           </button>
@@ -434,8 +442,10 @@ function MessageBubble({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
+                            type="button"
                             onClick={handleCopy}
                             className="text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={copied ? "Copied!" : "Copy code"}
                           >
                             <Copy className="h-3 w-3" />
                           </button>
@@ -501,6 +511,19 @@ function MessageBubble({
                 </Badge>
               ))}
             </div>
+          )}
+
+          {/* Agent review: show when CREATE_AGENT returned valid code */}
+          {isAssistant && message.agentGenerated?.valid && onReviewAgent && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5"
+              onClick={() => onReviewAgent(message.agentGenerated!)}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Review and register
+            </Button>
           )}
         </div>
       </div>

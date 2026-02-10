@@ -12,6 +12,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 | Date       | Item                                        | Notes                                                                                                                                                                                                                                                                                                                             |
 | :--------- | :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 09/02/2026 | **Roadmap Plan Implementation**             | PBI-016, 039, 040, 036: Complete. PBI-014: E2E tests (projects CRUD, agent-processes, conversations); frontend Jest + RTL setup; Button and utils component tests.                                                                                                                                 |
 | 08/02/2026 | **UX/UI Review & Gap Analysis**             | Identified model selector broken (missing type/status), Automation Hub empty state, dead components. See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md).                                                                                                                                           |
 | 08/02/2026 | **Model Metadata in API** (PBI-033)         | Added type, status, contextWindow to /api/models. Chat model selector and Settings panel now work for manual model override.                                                                                                                                                                                                      |
 | 08/02/2026 | **Automation Hub Empty State** (PBI-034)     | Added helpful empty-state messages when Agents, Cron Jobs, or Automations lists are empty.                                                                                                                                                                                                                                       |
@@ -131,20 +132,23 @@ _Priority: MEDIUM - Complete MVP features_
 
 | Priority | Feature                            | Description                                                             | Backlog ID |
 | :------- | :--------------------------------- | :---------------------------------------------------------------------- | :--------- |
-| **S**    | **Enhanced Intent Classification** | Replace keyword matching with ML-based approach, add confidence scores. | PBI-013    |
+| **S**    | ~~**Enhanced Intent Classification**~~ | ~~Keyword matching.~~ **Done** — SentenceTransformer-based, confidence scores. | PBI-013 ✅ |
 | **S**    | **Comprehensive Testing**          | Add adapter tests, integration tests, E2E tests, frontend tests.        | PBI-014    |
-| **S**    | **API Documentation**              | Add OpenAPI/Swagger docs, document all endpoints with examples.         | PBI-015    |
-| **S**    | **Monitoring & Observability**     | Add health checks, metrics collection, request tracing.                 | PBI-016    |
+| **S**    | ~~**API Documentation**~~           | ~~OpenAPI/Swagger.~~ **Done** — /docs, /redoc via FastAPI.              | PBI-015 ✅ |
+| **S**    | ~~**Monitoring & Observability**~~ | ~~/health, /ready.~~ **Done** — /metrics Prometheus endpoint added. | PBI-016 ✅ |
 
 ### 🧹 Quick Wins (High Impact, Low Effort)
 
 | Priority | Feature                       | Description                                                          | Backlog ID |
 | :------- | :---------------------------- | :------------------------------------------------------------------- | :--------- |
-| **S**    | **Code Cleanup**              | Remove duplicate Telegram adapter, add `.temp/` to `.gitignore`.       | PBI-017    |
+| ✅       | **Code Cleanup**              | Remove duplicate Telegram adapter, add `.temp/` to `.gitignore`.       | PBI-017    |
 | ✅       | **Port Mismatch Fix**         | Fix frontend port mismatch (8000 vs 8001).                           | PBI-018    |
-| **S**    | **Frontend Metadata**         | Update frontend metadata in layout.tsx, remove default Next.js text. | PBI-019    |
+| ✅       | **Frontend Metadata**         | Update frontend metadata in layout.tsx, remove default Next.js text. | PBI-019    |
 | ✅       | **Model Metadata in API**     | Add type, status, contextWindow so model selector works.              | PBI-033    |
 | ✅       | **Automation Hub Empty State**| Helpful messages when Agents/Cron/Automations lists are empty.       | PBI-034    |
+| ✅       | **Model Metadata in Settings**| Models tab in Settings with tags, benefits, HoverCard pros/cons.      | PBI-038    |
+| ✅       | **Automation Hub APIs**       | Config-driven cron/automations from data/*.json.                       | PBI-039    |
+| ✅       | **Project Management UI**     | New project, edit project (name, colour) in sidebar.                   | PBI-040    |
 
 ### 🎨 Phase 4: UI Components for Missing Capabilities
 
@@ -168,7 +172,7 @@ _Priority: LOW - Advanced features_
 | **S**    | ~~**Integrations API**~~      | ~~Wire Google, Pinterest, etc.~~ **Done** — Google wired when credentials present. | PBI-028 ✅ |
 | **S**    | ~~**Projects persistence**~~  | ~~CRUD, conversation association.~~ **Done** — in-memory CRUD + conversation link. | PBI-029 ✅ |
 | **S**    | **Agent Template & Conformance**    | Framework + rules so generated agents conform to platform standards.        | PBI-035    |
-| **S**    | **Agent Code Generation**           | LLM generates custom agent code; validate, register, add to Automation Hub.| PBI-036    |
+| **S**    | ~~**Agent Code Generation**~~       | ~~LLM generates code; validate, register.~~ **Done** — /query with create_agent intent. | PBI-036 ✅ |
 | **S**    | **Privacy Vault UI**                | Indicator and basic management.                                            | PBI-030    |
 | **C**    | **Approval UX design system**       | Shared approve/reject/undo for Sentinel + HITL.                             | PBI-031    |
 | **C**    | **Agent Creation Review UI**        | Review/edit generated code before registering.                            | PBI-037    |
@@ -195,9 +199,11 @@ See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.m
 
 | Item | Backlog | Notes |
 | :--- | :------ | :--- |
+| **Monitoring /metrics** | PBI-016 | Add Prometheus metrics endpoint to complete observability. |
+| **Automation Hub APIs** | PBI-039 | Config-driven cron jobs and automations from JSON. |
+| **Project management UI** | PBI-040 | Add "New project" and basic CRUD in sidebar. |
 | **MCP Server Discovery** | PBI-027 | Config-driven MCP list; enable Add button or document config. |
 | **ContextDisplay** | — | Wire when Window Poller exists; currently blocked. |
-| **Project management UI** | New | Add "New project" and basic CRUD in sidebar. |
 
 ### Medium-term (aligned with roadmap)
 
@@ -207,7 +213,6 @@ See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.m
 | **Agent Code Generation** | PBI-036 | LLM generates code; validate, register, add to Automation Hub. |
 | **Privacy Vault UI** | PBI-030 | After vault API exists. |
 | **Sentinel Review Queue** | PBI-022 | Use ApprovalCard; depends on File Watchdog + Content Classifier. |
-| **Automation Hub APIs** | — | Replace stubs with config-driven agent/cron/automation data. |
 | **ScriptsList, StatusLogs, ErrorReports** | PBI-032 | Add Automation Hub detail view; wire components. |
 
 ---

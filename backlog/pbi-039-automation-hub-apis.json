@@ -1,0 +1,36 @@
+{
+  "id": "PBI-039",
+  "title": "Automation Hub APIs",
+  "priority": "S",
+  "phase": "Feature Completion",
+  "status": "done",
+  "detailed_design": {
+    "module": "core",
+    "description": "Implement config-driven APIs for cron jobs and automations. Currently /api/cron-jobs and /api/automations return empty lists. Populate from data/cron_jobs.json and data/automations.json.",
+    "affected_files": [
+      "core/config.py",
+      "core/main.py",
+      "data/cron_jobs.json",
+      "data/automations.json"
+    ],
+    "solution": "1. Add cron_jobs_config_path and automations_config_path to config.py. 2. Create data/cron_jobs.json and data/automations.json with sample schema. 3. Implement _load_cron_jobs() and _load_automations() following _load_agents() pattern. 4. Wire list_cron_jobs and list_automations to load from config."
+  },
+  "acceptance_criteria": [
+    "/api/cron-jobs returns config-driven data from data/cron_jobs.json",
+    "/api/automations returns config-driven data from data/automations.json",
+    "Schemas match existing CronJobInfo and AutomationInfo in api_schemas.py",
+    "API client already calls these endpoints; backend populates them",
+    "Empty or missing config files return empty list"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to see my configured cron jobs in the Automation Hub."},
+    {"story": "As a user, I want to see my configured automations in the Automation Hub."},
+    {"story": "As a developer, I want cron/automation config in JSON files for easy editing."}
+  ],
+  "technical_notes": {
+    "current_issue": "cron-jobs and automations endpoints return empty stubs",
+    "risk": "LOW",
+    "estimated_effort": "Medium (2-3 days)",
+    "dependencies": ["PBI-032 Automation Hub UI"]
+  }
+}

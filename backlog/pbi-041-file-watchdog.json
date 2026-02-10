@@ -1,0 +1,30 @@
+{
+  "id": "PBI-041",
+  "title": "File Watchdog",
+  "priority": "M",
+  "phase": "Sentinel Foundation",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Service that monitors configurable directories (e.g. ~/Downloads, ~/Projects) for new/changed files; emits events (path, event type) for downstream Content Classifier or Event Bus. Options: polling, or inotify/watchdog (Python watchdog). Config: list of paths and optionally patterns.",
+    "affected_files": ["core/file_watchdog.py", "core/config.py", "data/"],
+    "solution": "1. Add config for watch paths and optional patterns. 2. Use Python watchdog or polling to detect create/change events. 3. Emit events (path, event_type) for downstream consumers. 4. Minimal performance impact; document config."
+  },
+  "acceptance_criteria": [
+    "Configurable watch paths",
+    "Events on file create and change",
+    "Minimal performance impact",
+    "Documentation or config example"
+  ],
+  "user_stories": [
+    {
+      "story": "As a user, I want the system to detect new files in my Downloads so they can be classified."
+    }
+  ],
+  "technical_notes": {
+    "current_issue": "No file watch capability for Sentinel",
+    "risk": "LOW",
+    "estimated_effort": "Small–Medium (2–3 days)",
+    "dependencies": ["PBI-022 (Sentinel Review Queue UI) can stub events for UI work until this is done"]
+  }
+}

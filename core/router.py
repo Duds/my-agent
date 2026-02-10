@@ -180,6 +180,43 @@ class ModelRouter:
                 await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": answer})
             return result
 
+        # CREATE_AGENT: Generate and register custom agent from natural language
+        if intent == Intent.CREATE_AGENT:
+            from .agent_generator import generate_and_register_agent
+
+            gen_adapter = self.adapter_factory.get_remote_adapter("anthropic")
+            if not gen_adapter:
+                gen_adapter = self.adapter_factory.get_remote_adapter("mistral")
+            if not gen_adapter:
+                gen_adapter = self.local_client
+
+            success, message, metadata = await generate_and_register_agent(
+                user_request=user_input,
+                adapter=gen_adapter,
+                model_override=None,
+                dry_run=True,
+            )
+            adapter_name = "agent-generator"
+            if session_id and self.memory_system:
+                await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})
+                await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": message})
+            result = {
+                "intent": intent.value,
+                "adapter": adapter_name,
+                "answer": message,
+                "model_info": gen_adapter.get_model_info(),
+                "requires_privacy": False,
+                "security": {"is_safe": True},
+            }
+            if success and metadata and metadata.get("valid"):
+                result["agent_generated"] = {
+                    "code": metadata["code"],
+                    "agent_id": metadata["agent_id"],
+                    "agent_name": metadata["agent_name"],
+                    "valid": True,
+                }
+            return result
+
         adapter = None
         adapter_name = "local-default"
         model_override: str | None = None
@@ -288,6 +325,35 @@ class ModelRouter:
                 "adapter": adapter_name,
                 "requires_privacy": True,
             }
+        elif intent == Intent.CREATE_AGENT:
+            from .agent_generator import generate_and_register_agent
+
+            gen_adapter = self.adapter_factory.get_remote_adapter("anthropic")
+            if not gen_adapter:
+                gen_adapter = self.adapter_factory.get_remote_adapter("mistral")
+            if not gen_adapter:
+                gen_adapter = self.local_client
+
+            success, message, metadata = await generate_and_register_agent(
+                user_request=user_input,
+                adapter=gen_adapter,
+                model_override=None,
+                dry_run=True,
+            )
+            routing_meta = {
+                "intent": intent.value,
+                "adapter": "agent-generator",
+                "requires_privacy": False,
+            }
+            if success and metadata and metadata.get("valid"):
+                routing_meta["agent_generated"] = {
+                    "code": metadata["code"],
+                    "agent_id": metadata["agent_id"],
+                    "agent_name": metadata["agent_name"],
+                    "valid": True,
+                }
+            yield (message, routing_meta)
+            return
         elif model_id:
             adapter, model_override = self._resolve_model_to_adapter(model_id)
             adapter_name = model_id

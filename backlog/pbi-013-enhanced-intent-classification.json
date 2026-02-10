@@ -3,7 +3,7 @@
     "title": "Enhanced Intent Classification",
     "priority": "S",
     "phase": "Feature Completion",
-    "status": "ready",
+    "status": "done",
     "detailed_design": {
         "module": "core.router",
         "description": "Replace brittle keyword-based intent classification with ML-based approach. Currently uses simple keyword matching which is easy to bypass and inflexible. Implement ML-based classification with confidence scores, fallback strategies, and support for multiple intents.",

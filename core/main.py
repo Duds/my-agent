@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import subprocess
+import time
 import httpx
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -16,14 +17,32 @@ from core.logging_config import setup_logging
 
 # Configure logging before other imports
 setup_logging()
-from fastapi import FastAPI, Header, HTTPException, Security, Depends
+from fastapi import FastAPI, Header, HTTPException, Security, Depends, Request
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 import uvicorn
 import json
 from . import api_schemas as schemas
+
+try:
+    from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+    _http_requests_total = Counter(
+        "http_requests_total",
+        "Total HTTP requests",
+        ["method", "path", "status"],
+    )
+    _http_request_duration_seconds = Histogram(
+        "http_request_duration_seconds",
+        "HTTP request latency in seconds",
+        ["path"],
+        buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    )
+    _PROMETHEUS_AVAILABLE = True
+except ImportError:
+    _PROMETHEUS_AVAILABLE = False
 
 # Security scheme
 API_KEY_NAME = "X-API-Key"
@@ -128,6 +147,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Record request count and latency for Prometheus."""
+    start = time.time()
+    response = await call_next(request)
+    duration = time.time() - start
+    if _PROMETHEUS_AVAILABLE:
+        path = request.url.path
+        status = response.status_code
+        _http_requests_total.labels(method=request.method, path=path, status=status).inc()
+        _http_request_duration_seconds.labels(path=path).observe(duration)
+    return response
+
+
 class UserQuery(BaseModel):
     """User query payload. Per research: mode_id replaces persona_id."""
 
@@ -157,7 +191,7 @@ async def handle_query(
     except Exception as e:
         logger.exception("Query failed: %s", e)
         raise HTTPException(status_code=500, detail="Query processing failed") from e
-    return {
+    out = {
         "status": "success",
         "routing": {
             "intent": routing_info["intent"],
@@ -167,6 +201,9 @@ async def handle_query(
         "answer": routing_info["answer"],
         "security": routing_info["security"]
     }
+    if routing_info.get("agent_generated"):
+        out["agent_generated"] = routing_info["agent_generated"]
+    return out
 
 
 async def _stream_query_generator(query: UserQuery):
@@ -214,6 +251,21 @@ async def health_check():
 async def readiness_check():
     """Readiness probe for orchestration (e.g. Kubernetes)."""
     return {"status": "ready"}
+
+
+@app.get("/metrics", summary="Prometheus metrics")
+async def metrics():
+    """Prometheus metrics endpoint for observability."""
+    if not _PROMETHEUS_AVAILABLE:
+        return Response(
+            content="# prometheus_client not installed\n",
+            media_type="text/plain",
+            status_code=503,
+        )
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 # --- UI API endpoints (for Command Center frontend) ---
@@ -760,22 +812,105 @@ def _load_agents() -> list:
         return []
 
 
+# Placeholder for cron nextRun when missing from JSON (deterministic; do not use utcnow()).
+_CRON_NEXT_RUN_UNSET = "1970-01-01T00:00:00.000Z"
+
+
+def _load_cron_jobs() -> list:
+    """Load cron jobs from data/cron_jobs.json."""
+    path = settings.cron_jobs_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        jobs = data.get("cronJobs", [])
+        return [
+            {
+                "id": j.get("id", "unknown"),
+                "name": j.get("name", "Unnamed"),
+                "schedule": j.get("schedule", ""),
+                "status": j.get("status", "paused"),
+                "lastRun": j.get("lastRun"),
+                "nextRun": j.get("nextRun") or _CRON_NEXT_RUN_UNSET,
+                "projectId": j.get("projectId"),
+                "description": j.get("description", ""),
+                "model": j.get("model"),
+            }
+            for j in jobs
+        ]
+    except Exception as e:
+        logger.warning("Failed to load cron jobs from %s: %s", path, e)
+        return []
+
+
+def _load_automations() -> list:
+    """Load automations from data/automations.json."""
+    path = settings.automations_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        autos = data.get("automations", [])
+        return [
+            {
+                "id": a.get("id", "unknown"),
+                "name": a.get("name", "Unnamed"),
+                "trigger": a.get("trigger", ""),
+                "status": a.get("status", "paused"),
+                "lastTriggered": a.get("lastTriggered"),
+                "runsToday": a.get("runsToday", 0),
+                "projectId": a.get("projectId"),
+                "description": a.get("description", ""),
+                "type": a.get("type", "event"),
+            }
+            for a in autos
+        ]
+    except Exception as e:
+        logger.warning("Failed to load automations from %s: %s", path, e)
+        return []
+
+
 @app.get("/api/agent-processes", summary="List agent processes", response_model=list[schemas.AgentProcessInfo], dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
     """Return background agent processes from data/agents.json."""
     return _load_agents()
 
 
+class AgentRegisterBody(BaseModel):
+    """Body for POST /api/agents/register."""
+
+    code: str
+
+
+@app.post(
+    "/api/agents/register",
+    summary="Register agent code from Review UI",
+    dependencies=[Depends(get_api_key)],
+)
+async def register_agent(body: AgentRegisterBody):
+    """
+    Validate and register agent code (e.g. after user approves from the Review dialog).
+    Returns 200 with agent metadata or 400 with validation errors.
+    """
+    from core.agent_generator import register_agent_code
+    success, entry, error = register_agent_code(body.code)
+    if not success:
+        raise HTTPException(status_code=400, detail=error or "Validation failed")
+    return entry
+
+
 @app.get("/api/cron-jobs", summary="List cron jobs", response_model=list[schemas.CronJobInfo], dependencies=[Depends(get_api_key)])
 async def list_cron_jobs():
-    """Return cron jobs. Stubbed until Automation Hub API."""
-    return []  # Stub: returns empty; backend will add config-driven data in PBI-032
+    """Return cron jobs from data/cron_jobs.json."""
+    return _load_cron_jobs()
 
 
 @app.get("/api/automations", summary="List automations", response_model=list[schemas.AutomationInfo], dependencies=[Depends(get_api_key)])
 async def list_automations():
-    """Return automations. Stubbed until Automation Hub API."""
-    return []  # Stub: returns empty; backend will add config-driven data in PBI-032
+    """Return automations from data/automations.json."""
+    return _load_automations()
 
 
 if __name__ == "__main__":

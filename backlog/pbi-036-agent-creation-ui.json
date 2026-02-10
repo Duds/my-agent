@@ -3,7 +3,7 @@
   "title": "Agent Code Generation & Registration",
   "priority": "S",
   "phase": "Reconciled Scaffold Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "core",
     "description": "LLM generates custom agent code from natural language (e.g. 'create an agent to look up weather from BOM'). Generated code is validated against PBI-035 framework, then registered and added to the Automation Hub background agents list. The solution generates code—not a form—and ensures it conforms before registration.",

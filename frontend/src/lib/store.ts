@@ -51,6 +51,14 @@ export interface Automation {
   type: "webhook" | "event" | "schedule" | "watch";
 }
 
+/** Agent generated meta for review UI (CREATE_AGENT intent). */
+export interface AgentGeneratedMeta {
+  code: string;
+  agent_id: string;
+  agent_name: string;
+  valid: boolean;
+}
+
 /** Message with parsed Date for UI. */
 export interface Message {
   id: string;
@@ -59,6 +67,8 @@ export interface Message {
   timestamp: Date;
   model?: string;
   toolCalls?: { name: string; status: "running" | "complete" | "error" }[];
+  /** Set when CREATE_AGENT intent returns valid code for review. */
+  agentGenerated?: AgentGeneratedMeta;
 }
 
 /** Conversation with parsed Date fields for UI. */

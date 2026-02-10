@@ -1,0 +1,35 @@
+{
+  "id": "PBI-040",
+  "title": "Project Management UI",
+  "priority": "S",
+  "phase": "Quick Wins",
+  "status": "done",
+  "detailed_design": {
+    "module": "frontend",
+    "description": "Add New project and basic project CRUD in sidebar. Backend has POST/PATCH /api/projects but frontend has no UI to create or edit projects.",
+    "affected_files": [
+      "frontend/src/lib/api-client.ts",
+      "frontend/src/components/app-sidebar.tsx",
+      "frontend/src/app/page.tsx"
+    ],
+    "solution": "1. Add createProject and patchProject to api-client. 2. Add New project button in Chats tab of AppSidebar. 3. Create project modal/dialog (name, optional color). 4. Edit project via context menu or inline (rename, change colour). 5. Wire onNewProject, onPatchProject callbacks from page.tsx; refresh projects list after create/update."
+  },
+  "acceptance_criteria": [
+    "New project button in Chats tab of app-sidebar.tsx",
+    "Create project modal/dialog (name, optional color)",
+    "Edit project (rename, change color) via context menu or inline",
+    "createProject and patchProject in api-client.ts",
+    "Refresh projects list after create/update"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to create a new project from the sidebar."},
+    {"story": "As a user, I want to rename or change the colour of a project."},
+    {"story": "As a user, I want new conversations to be assignable to the right project."}
+  ],
+  "technical_notes": {
+    "current_issue": "Backend has project CRUD; frontend has no New project or edit UI",
+    "risk": "LOW",
+    "estimated_effort": "Small (1-2 days)",
+    "dependencies": ["PBI-029 Projects Persistence"]
+  }
+}

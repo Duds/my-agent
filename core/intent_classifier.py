@@ -61,7 +61,16 @@ class IntentClassifier:
                 "mathematical proofs and complex logic",
                 "deep dive into this topic",
                 "thorough and high quality response"
-            ]
+            ],
+            Intent.CREATE_AGENT: [
+                "create an agent to look up weather from BOM",
+                "build an agent that fetches weather",
+                "generate an agent to search the web",
+                "make an agent that monitors my files",
+                "create a custom agent for",
+                "build me an agent that",
+                "generate agent code for",
+            ],
         }
         
         # Pre-compute embeddings for exemplars
@@ -92,6 +101,7 @@ class IntentClassifier:
         - CODING: Programming help, debugging, or script writing.
         - FINANCE: Budgeting, investments, or financial planning.
         - QUALITY: Requests for deep analysis, long explanations, or complex logic.
+        - CREATE_AGENT: Requests to create, build, or generate a custom agent (e.g. "create an agent to fetch weather").
         - SPEED: Simple questions or brief requests.
 
         USER INPUT: {user_input}
