@@ -1,0 +1,29 @@
+{
+  "id": "PBI-047",
+  "title": "WebSocket or SSE for real-time status",
+  "priority": "C",
+  "phase": "OpenClaw Recommendations",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Optional WebSocket or long-lived SSE endpoint for the dashboard: live model status, Ollama availability, automation/cron updates. Improves observability without committing to a full OpenClaw-style gateway.",
+    "affected_files": ["core/main.py", "frontend/src/", "core/config.py"],
+    "solution": "1. Add GET /api/status/stream (SSE) or a WebSocket endpoint that pushes status events. 2. Events: model list or Ollama reachability change, cron/automation run completion, or periodic heartbeat with /api/system/status payload. 3. Frontend: optional subscription on dashboard or Automation Hub to show live updates. 4. Keep implementation minimal; no full gateway protocol."
+  },
+  "acceptance_criteria": [
+    "An SSE or WebSocket endpoint streams status-related events to clients",
+    "At least: periodic or on-change model/Ollama status, optional automation events",
+    "Dashboard or Automation Hub can optionally subscribe and show live updates",
+    "No breaking changes to existing REST API"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want the dashboard to reflect current Ollama and model status without refreshing."},
+    {"story": "As a user, I want to see automation or cron run completion in real time in the Automation Hub."}
+  ],
+  "technical_notes": {
+    "current_issue": "Status is polled only; no real-time push",
+    "risk": "LOW",
+    "estimated_effort": "Medium (3–5 days)",
+    "dependencies": ["/health, /ready, /api/system/status"]
+  }
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-
+import Link from "next/link"
 import { useState } from "react"
 import {
   Plus,
@@ -25,6 +25,7 @@ import {
   Radio,
   MoreVertical,
   Pencil,
+  FileCode,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -528,6 +529,17 @@ export function AppSidebar({
                 )}
               </div>
             )}
+
+            <Separator className="my-1.5" />
+
+            {/* Scripts & logs detail */}
+            <Link
+              href="/automation"
+              className="flex items-center gap-2 rounded-md px-2 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            >
+              <FileCode className="h-3.5 w-3.5 shrink-0" />
+              Scripts & logs
+            </Link>
           </div>
         )}
       </ScrollArea>

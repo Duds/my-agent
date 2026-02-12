@@ -78,10 +78,12 @@ export default function Page() {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [mcps, setMcps] = useState<MCP[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [sessions, setSessions] = useState<{ id: string; label: string }[]>([]);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewDialogMeta, setReviewDialogMeta] = useState<AgentGeneratedMeta | null>(null);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? null;
+  const sessionLabel = sessions.find((s) => s.id === (activeConversation?.sessionId ?? "main"))?.label ?? "Main";
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? null;
   const isModelOverridden = !!selectedModelId && selectedModelId !== "auto";
 
@@ -90,7 +92,7 @@ export default function Page() {
       setLoading(true);
       setError(null);
       try {
-        const [m, mo, s, proj, conv, ap, cj, auto, mcpsRes, intRes] = await Promise.all([
+        const [m, mo, s, proj, conv, ap, cj, auto, mcpsRes, intRes, sessionsRes] = await Promise.all([
           api.getModels(),
           api.getModes(),
           api.getSkills(),
@@ -101,6 +103,7 @@ export default function Page() {
           api.getAutomations(),
           api.getMcps(),
           api.getIntegrations(),
+          api.getSessions(),
         ]);
         setModels(m);
         setModes(mo);
@@ -112,6 +115,7 @@ export default function Page() {
         setAutomations(auto.map((a) => ({ ...a, lastTriggered: a.lastTriggered ? new Date(a.lastTriggered) : null })));
         setMcps(mcpsRes);
         setIntegrations(intRes);
+        setSessions(sessionsRes);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -173,7 +177,7 @@ export default function Page() {
         const opts = {
           modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
           modeId: selectedModeId || undefined,
-          sessionId: activeConversationId || undefined,
+          sessionId: activeConversationId || 'main',
         };
 
         let res: { routing?: { adapter: string } };
@@ -351,7 +355,7 @@ export default function Page() {
         const opts = {
           modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
           modeId: selectedModeId || undefined,
-          sessionId: activeConversationId || undefined,
+          sessionId: activeConversationId || 'main',
         };
 
         let res: { routing?: { adapter: string } };
@@ -651,6 +655,7 @@ export default function Page() {
             <div className="flex flex-1 overflow-hidden">
               <ChatInterface
                 conversation={activeConversation}
+                sessionLabel={sessionLabel}
                 onSendMessage={handleSendMessage}
                 onEditAndResend={handleEditAndResend}
                 onReviewAgent={handleReviewAgent}

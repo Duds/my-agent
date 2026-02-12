@@ -1,0 +1,30 @@
+{
+  "id": "PBI-043",
+  "title": "CLI for power users and scripting",
+  "priority": "S",
+  "phase": "OpenClaw Recommendations",
+  "status": "done",
+  "detailed_design": {
+    "module": "cli",
+    "description": "Add a thin CLI that calls the existing REST API. Commands: query (submit text, optional model_id/mode_id/session_id), send (send message to primary Telegram chat). Enables scripting, cron, and terminal workflows without opening the web UI. No gateway required; FastAPI remains the single backend.",
+    "affected_files": ["scripts/cli.py", "core/main.py", "pyproject.toml or setup.py", "README.md"],
+    "solution": "1. Add a CLI entry point (e.g. via Click or argparse) in scripts/ or a new cli/ package. 2. Implement 'query' subcommand: POST /query with UserQuery payload, print answer or stream. 3. Implement 'send' subcommand: POST /api/telegram/send with message body. 4. Read API base URL and X-API-Key from env or config. 5. Document in README and USER_GUIDE."
+  },
+  "acceptance_criteria": [
+    "CLI can be invoked (e.g. python -m myagent query '…' or myagent query '…')",
+    "query subcommand calls POST /query and prints response",
+    "send subcommand calls POST /api/telegram/send",
+    "API key and base URL configurable via env or config",
+    "Documentation updated"
+  ],
+  "user_stories": [
+    {"story": "As a power user, I want to run queries from the terminal so I can script and automate."},
+    {"story": "As a user, I want to send a message to my primary Telegram chat from the command line."}
+  ],
+  "technical_notes": {
+    "current_issue": "No CLI; API-only access for automation",
+    "risk": "LOW",
+    "estimated_effort": "Medium (3–5 days)",
+    "dependencies": ["Existing REST API (core/main.py)"]
+  }
+}

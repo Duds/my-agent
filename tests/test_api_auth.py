@@ -1,5 +1,6 @@
+import json
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from core.main import app
 from core.config import settings
@@ -33,6 +34,48 @@ def test_metrics_endpoint():
     assert response.status_code in (200, 503)
     if response.status_code == 200:
         assert "http_requests_total" in response.text or "python" in response.text
+
+
+def test_commands_endpoint(api_key):
+    """GET /api/commands returns structured chat commands (PBI-049)."""
+    response = client.get(
+        "/api/commands",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    names = [c["name"] for c in data]
+    assert "status" in names
+    assert "reset" in names
+    assert "think" in names
+    for c in data:
+        assert "name" in c
+        assert "description" in c
+        assert "usage" in c
+
+
+def test_doctor_endpoint(api_key):
+    """GET /api/system/doctor returns structured config and connectivity checks (PBI-044)."""
+    response = client.get(
+        "/api/system/doctor",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "checks" in data
+    assert "overall" in data
+    assert data["overall"] in ("ok", "warn", "error")
+    assert isinstance(data["checks"], list)
+    names = [c["name"] for c in data["checks"]]
+    assert "api_key" in names
+    assert "cors" in names
+    assert "routing_config" in names
+    assert "mcp_config" in names
+    assert "ollama" in names
+    for c in data["checks"]:
+        assert c["status"] in ("ok", "warn", "error")
+        assert "message" in c
 
 
 def test_api_cron_jobs(api_key):
@@ -104,6 +147,37 @@ def test_query_authorized(api_key, monkeypatch):
     )
     assert response.status_code == 200
     assert response.json()["answer"] == "Mocked response"
+
+
+def test_query_returns_agent_generated_when_create_agent(api_key, monkeypatch):
+    """When router returns agent_generated, response includes it (PBI-037)."""
+    async def mock_route(*args, **kwargs):
+        return {
+            "intent": "create_agent",
+            "adapter": "agent-generator",
+            "answer": "Agent 'Test' is ready for review.",
+            "requires_privacy": False,
+            "security": {"is_safe": True},
+            "agent_generated": {
+                "code": "class Test(AgentTemplate): pass",
+                "agent_id": "test-id",
+                "agent_name": "Test",
+                "valid": True,
+            },
+        }
+    from core.router import ModelRouter
+    monkeypatch.setattr(ModelRouter, "route_request", mock_route)
+    response = client.post(
+        "/query",
+        json={"text": "Create an agent"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["routing"]["intent"] == "create_agent"
+    assert "agent_generated" in data
+    assert data["agent_generated"]["agent_id"] == "test-id"
+    assert data["agent_generated"]["valid"] is True
 
 def test_api_models_unauthorized(api_key):
     """UI API endpoints should be secured."""
@@ -426,7 +500,7 @@ def test_api_telegram_send_empty_message(api_key):
 
 def test_api_telegram_send_no_primary_chat(api_key):
     """POST /api/telegram/send with no primary chat configured returns 400."""
-    with patch("core.main.get_primary_chat_id", return_value=None):
+    with patch("core.adapters_telegram.get_primary_chat_id", return_value=None):
         response = client.post(
             "/api/telegram/send",
             json={"message": "Hello"},
@@ -454,3 +528,193 @@ def test_api_integrations_disconnect_invalid_provider(api_key):
         headers={"X-API-Key": api_key},
     )
     assert response.status_code == 400
+
+
+# --- POST /api/agents/register (PBI-037) ---
+
+
+def test_api_agents_register_success(api_key, monkeypatch):
+    """POST /api/agents/register with valid code returns 200 and agent metadata."""
+    mock_entry = {
+        "id": "test-agent-1",
+        "name": "Test Agent",
+        "status": "idle",
+        "type": "internal",
+        "model": "",
+        "description": "Registered via Review UI",
+        "source": "agents/test-agent-1.py",
+        "skillIds": [],
+        "mcpServerIds": [],
+        "capabilityIds": [],
+    }
+
+    def mock_register_agent_code(code: str):
+        return True, mock_entry, None
+
+    monkeypatch.setattr("core.agent_generator.register_agent_code", mock_register_agent_code)
+    response = client.post(
+        "/api/agents/register",
+        json={"code": "class Foo(AgentTemplate): pass"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "test-agent-1"
+    assert data["name"] == "Test Agent"
+    assert data["source"] == "agents/test-agent-1.py"
+
+
+def test_api_agents_register_validation_fails(api_key, monkeypatch):
+    """POST /api/agents/register with invalid code returns 400."""
+    def mock_register_agent_code(code: str):
+        return False, None, "Agent must inherit from AgentTemplate"
+
+    monkeypatch.setattr("core.agent_generator.register_agent_code", mock_register_agent_code)
+    response = client.post(
+        "/api/agents/register",
+        json={"code": "print('not an agent')"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 400
+    assert "detail" in response.json()
+
+
+def test_api_agents_register_missing_code_returns_422(api_key):
+    """POST /api/agents/register without code field returns 422."""
+    response = client.post(
+        "/api/agents/register",
+        json={},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 422
+
+
+def test_query_stream_returns_done_with_routing(api_key, monkeypatch):
+    """POST /query/stream yields done event with routing (and optional agent_generated)."""
+    async def mock_stream(*args, **kwargs):
+        yield "Streamed answer", {"intent": "quality", "adapter": "test", "requires_privacy": False}
+
+    from core.router import ModelRouter
+    monkeypatch.setattr(ModelRouter, "route_request_stream", mock_stream)
+    response = client.post(
+        "/query/stream",
+        json={"text": "Hello"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    text = response.text
+    # Response is SSE: "data: {...}\n\n"
+    data_events = [s.strip().replace("data: ", "") for s in text.split("\n\n") if s.strip().startswith("data:")]
+    assert len(data_events) >= 1
+    last = json.loads(data_events[-1])
+    assert last.get("done") is True
+    assert "routing" in last
+    assert last["routing"]["intent"] == "quality"
+
+
+def test_query_stream_handles_router_exception(api_key, monkeypatch):
+    """When route_request_stream raises during iteration, stream yields an error event."""
+    async def _async_gen_that_raises():
+        raise RuntimeError("Router failed")
+        yield  # make this an async generator
+
+    def mock_stream_raise(*args, **kwargs):
+        return _async_gen_that_raises()
+
+    from core.router import ModelRouter
+    monkeypatch.setattr(ModelRouter, "route_request_stream", mock_stream_raise)
+    response = client.post(
+        "/query/stream",
+        json={"text": "Hello"},
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    text = response.text
+    data_events = [s.strip().replace("data: ", "") for s in text.split("\n\n") if s.strip().startswith("data:")]
+    assert len(data_events) >= 1
+    last = json.loads(data_events[-1])
+    assert "error" in last
+    assert "Router failed" in last["error"]
+
+
+# --- New main.py routes: sessions, ollama, backend stop ---
+
+
+def test_api_sessions(api_key):
+    """GET /api/sessions returns main plus project-scoped sessions."""
+    response = client.get(
+        "/api/sessions",
+        headers={"X-API-Key": api_key},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert any(s.get("id") == "main" for s in data)
+    for s in data:
+        assert "id" in s and "label" in s
+
+
+def test_api_system_ollama_start(api_key):
+    """POST /api/system/ollama/start returns success; does not run real ollama."""
+    resp_404 = MagicMock(status_code=404)
+    mock_get = AsyncMock(return_value=resp_404)
+    mock_context = MagicMock()
+    mock_context.get = mock_get
+    with patch("core.main.httpx.AsyncClient") as mock_client:
+        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_context)
+        mock_client.return_value.__aexit__ = AsyncMock(return_value=None)
+        with patch("subprocess.Popen", return_value=None):
+            response = client.post(
+                "/api/system/ollama/start",
+                headers={"X-API-Key": api_key},
+            )
+    assert response.status_code == 200
+    data = response.json()
+    assert data.get("status") == "success"
+    assert "message" in data
+
+
+def test_api_system_ollama_start_already_running(api_key):
+    """POST /api/system/ollama/start when Ollama already running returns success."""
+    resp_200 = MagicMock(status_code=200)
+    mock_get = AsyncMock(return_value=resp_200)
+    mock_context = MagicMock()
+    mock_context.get = mock_get
+    with patch("core.main.httpx.AsyncClient") as mock_client:
+        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_context)
+        mock_client.return_value.__aexit__ = AsyncMock(return_value=None)
+        response = client.post(
+            "/api/system/ollama/start",
+            headers={"X-API-Key": api_key},
+        )
+    assert response.status_code == 200
+    assert "already running" in response.json().get("message", "").lower()
+
+
+def test_api_system_ollama_stop(api_key):
+    """POST /api/system/ollama/stop returns success; does not run real pkill."""
+    with patch("subprocess.run", return_value=None):
+        response = client.post(
+            "/api/system/ollama/stop",
+            headers={"X-API-Key": api_key},
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data.get("status") == "success"
+    assert "message" in data
+
+
+def test_api_system_backend_stop(api_key):
+    """POST /api/system/backend/stop returns success; must not actually exit process."""
+    # Patch os._exit so the shutdown task does not exit the process. Do not patch
+    # asyncio.create_task, so the shutdown coroutine is scheduled and awaited by the
+    # event loop, avoiding "coroutine was never awaited" RuntimeWarning.
+    with patch("os._exit"):
+        response = client.post(
+            "/api/system/backend/stop",
+            headers={"X-API-Key": api_key},
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data.get("status") == "success"
+    assert "shutdown" in data.get("message", "").lower()

@@ -80,6 +80,8 @@ class TelegramAdapter:
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("status", self.status_command))
+        self.application.add_handler(CommandHandler("reset", self.reset_command))
+        self.application.add_handler(CommandHandler("think", self.think_command))
         self.application.add_handler(CommandHandler("setmychat", self.setmychat_command))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
@@ -137,6 +139,30 @@ class TelegramAdapter:
             msg = f"Status check failed: {e}"
         await update.message.reply_text(msg)
 
+    async def reset_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /reset command - clear conversation context and start fresh."""
+        if await self._reject_unauthorized(update):
+            return
+        # Clear any per-chat context (e.g. user_data)
+        context.user_data.clear()
+        await update.message.reply_text("Conversation reset. Starting fresh.")
+
+    async def think_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /think command - set thinking level (brief or deep)."""
+        if await self._reject_unauthorized(update):
+            return
+        args = context.args or []
+        arg = str(args[0]).lower() if args else "brief"
+        if arg in ("deep", "brief"):
+            context.user_data["think_level"] = arg
+            await update.message.reply_text(f"Thinking mode set to: {arg}.")
+        else:
+            await update.message.reply_text(
+                "Usage: /think [brief|deep]\n"
+                "• brief – quick responses (default)\n"
+                "• deep – more thorough reasoning (when supported)"
+            )
+
     async def setmychat_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Designate this chat as the primary chat for proactive messages."""
         if await self._reject_unauthorized(update):
@@ -172,6 +198,8 @@ class TelegramAdapter:
             "/start - Welcome message\n"
             "/help - This help message\n"
             "/status - Check if local models (Ollama) are active\n"
+            "/reset - Clear conversation context and start fresh\n"
+            "/think [brief|deep] - Set thinking level\n"
             "/setmychat - Designate this chat for proactive messages\n\n"
             "*How I work:*\n"
             "I analyze your message intent and route to the best model:\n"

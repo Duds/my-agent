@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     telegram_primary_chat_id: str | None = None  # Chat ID for proactive messages
     telegram_primary_chat_file: str = "data/telegram_primary_chat_id.txt"
 
+    # Slack (second channel adapter, PBI-045)
+    slack_bot_token: str | None = None
+    slack_signing_secret: str | None = None
+
     @field_validator("telegram_allowed_users", mode="before")
     @classmethod
     def parse_telegram_allowed_users(cls, v):
@@ -88,6 +92,9 @@ class Settings(BaseSettings):
     # Automation Hub
     cron_jobs_config_path: str = "data/cron_jobs.json"
     automations_config_path: str = "data/automations.json"
+    scripts_config_path: str = "data/scripts.json"
+    execution_logs_config_path: str = "data/execution_logs.json"
+    error_reports_config_path: str = "data/error_reports.json"
 
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""

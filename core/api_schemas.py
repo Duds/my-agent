@@ -119,6 +119,7 @@ class ConversationInfo(BaseModel):
     id: str
     title: str
     projectId: str
+    sessionId: Optional[str] = None  # Default 'main' (PBI-046)
     messages: List[MessageInfo]
     createdAt: str
     updatedAt: str
@@ -155,3 +156,29 @@ class AutomationInfo(BaseModel):
     projectId: Optional[str] = None
     description: str
     type: str
+
+
+class ScriptInfo(BaseModel):
+    id: str
+    name: str
+    type: str
+    status: str
+    lastRun: Optional[str] = None
+    source: Optional[str] = None
+
+
+class ExecutionLogEntry(BaseModel):
+    id: str
+    scriptId: str
+    timestamp: str
+    status: str
+    message: Optional[str] = None
+    durationMs: Optional[int] = None
+
+
+class ErrorReportEntry(BaseModel):
+    id: str
+    scriptId: str
+    timestamp: str
+    message: str
+    severity: Optional[str] = None

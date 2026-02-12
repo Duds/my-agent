@@ -3,7 +3,7 @@
   "title": "Agent Template & Conformance Framework",
   "priority": "S",
   "phase": "Reconciled Scaffold Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "core",
     "description": "Define the agent template and conformance rules that LLM-generated custom agents must follow. Agents must be able to call Skills, MCPs, and Capabilities via an injectable AgentContext. Ensures generated code conforms to platform standards before registration.",

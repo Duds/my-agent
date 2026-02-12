@@ -108,7 +108,7 @@
     {
       "id": "PBI-014",
       "title": "Comprehensive Testing",
-      "status": "in-progress",
+      "status": "done",
       "priority": "S",
       "phase": "Feature Completion",
       "file": "pbi-014-comprehensive-testing.json"
@@ -276,7 +276,7 @@
     {
       "id": "PBI-035",
       "title": "Agent Template & Conformance Framework",
-      "status": "ready",
+      "status": "done",
       "priority": "S",
       "phase": "Reconciled Scaffold Features",
       "file": "pbi-035-agent-creation-backend.json"
@@ -292,7 +292,7 @@
     {
       "id": "PBI-037",
       "title": "Agent Creation Review UI",
-      "status": "ready",
+      "status": "done",
       "priority": "C",
       "phase": "Advanced Features",
       "file": "pbi-037-agent-creation-from-natural-language.json"
@@ -336,6 +336,86 @@
       "priority": "M",
       "phase": "Sentinel Foundation",
       "file": "pbi-042-content-classifier.json"
+    },
+    {
+      "id": "PBI-043",
+      "title": "CLI for power users and scripting",
+      "status": "done",
+      "priority": "S",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-043-cli-power-users.json"
+    },
+    {
+      "id": "PBI-044",
+      "title": "Doctor / health and config check",
+      "status": "done",
+      "priority": "M",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-044-doctor-health-config-check.json"
+    },
+    {
+      "id": "PBI-045",
+      "title": "Second channel adapter",
+      "status": "done",
+      "priority": "S",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-045-second-channel-adapter.json"
+    },
+    {
+      "id": "PBI-046",
+      "title": "Session and conversation continuity",
+      "status": "done",
+      "priority": "S",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-046-session-conversation-continuity.json"
+    },
+    {
+      "id": "PBI-047",
+      "title": "WebSocket or SSE for real-time status",
+      "status": "ready",
+      "priority": "C",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-047-websocket-sse-realtime-status.json"
+    },
+    {
+      "id": "PBI-048",
+      "title": "Skills discovery and install gating",
+      "status": "ready",
+      "priority": "C",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-048-skills-discovery-install-gating.json"
+    },
+    {
+      "id": "PBI-049",
+      "title": "Structured chat commands",
+      "status": "done",
+      "priority": "S",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-049-structured-chat-commands.json"
+    },
+    {
+      "id": "PBI-050",
+      "title": "Voice and TTS",
+      "status": "ready",
+      "priority": "C",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-050-voice-tts.json"
+    },
+    {
+      "id": "PBI-051",
+      "title": "Additional channels",
+      "status": "ready",
+      "priority": "C",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-051-additional-channels.json"
+    },
+    {
+      "id": "PBI-052",
+      "title": "Native apps",
+      "status": "ready",
+      "priority": "W",
+      "phase": "OpenClaw Recommendations",
+      "file": "pbi-052-native-apps.json"
     }
   ]
 }

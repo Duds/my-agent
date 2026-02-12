@@ -1,0 +1,21 @@
+{
+  "id": "PBI-051",
+  "title": "Additional channels",
+  "priority": "C",
+  "phase": "OpenClaw Recommendations",
+  "status": "ready",
+  "detailed_design": {
+    "module": "adapters",
+    "description": "Parent/tracking item for adding more messaging channels (Discord, WhatsApp, etc.) beyond the second channel (PBI-045). Each new channel is a substantial integration; prioritise by user need and maintenance cost. Prefer adapter abstraction so intent-based routing and security stay central.",
+    "affected_files": ["adapters/"],
+    "solution": "Create per-channel PBIs when a specific channel is prioritised; use PBI-045 as the pattern."
+  },
+  "acceptance_criteria": ["N/A — tracking item for future per-channel PBIs"],
+  "user_stories": [{"story": "As a user, I may want to use my-agent from additional channels (e.g. Discord, WhatsApp) beyond the first two."}],
+  "technical_notes": {
+    "current_issue": "None",
+    "risk": "LOW",
+    "estimated_effort": "Large per channel",
+    "dependencies": ["PBI-045 Second channel adapter"]
+  }
+}

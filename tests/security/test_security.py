@@ -104,3 +104,32 @@ async def test_pii_redactor_returns_original_on_failure():
     original = "Sensitive: 555-1234"
     result = await redactor.redact(original)
     assert result == original
+
+
+@pytest.mark.asyncio
+async def test_judge_validation_exception_keeps_heuristic():
+    """When judge adapter raises, security keeps heuristic result (fail-safe)."""
+    async def raiser(*args, **kwargs):
+        raise RuntimeError("Judge API down")
+    bad_judge = MockAdapter()
+    bad_judge.generate = raiser
+    validator = SecurityValidator(judge_adapter=bad_judge)
+    result = await validator.check_output("Hello", "Safe response here.")
+    assert "is_safe" in result
+    assert "reason" in result
+
+
+def test_pii_extract_redacted_output():
+    """_extract_redacted_output strips markers and returns only redacted content."""
+    redactor = PIIRedactor(redactor_adapter=None)
+    raw = "Some preamble REDACTED TEXT:\n  John became [REDACTED_NAME].\nTEXT TO REDACT: ignore"
+    out = redactor._extract_redacted_output(raw)
+    assert "[REDACTED_NAME]" in out
+    assert "ignore" not in out
+    assert "Some preamble" not in out
+
+
+def test_pii_extract_redacted_output_empty():
+    """_extract_redacted_output returns empty string when raw is empty."""
+    redactor = PIIRedactor(redactor_adapter=None)
+    assert redactor._extract_redacted_output("") == ""

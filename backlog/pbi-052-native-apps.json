@@ -1,0 +1,21 @@
+{
+  "id": "PBI-052",
+  "title": "Native apps",
+  "priority": "W",
+  "phase": "OpenClaw Recommendations",
+  "status": "ready",
+  "detailed_design": {
+    "module": "future",
+    "description": "Placeholder: native macOS/iOS/Android apps for always-on, device-local actions (camera, screen, notifications). Won't for current roadmap. Only pursue if this becomes a stated goal and aligns with Local-First and Least Privilege.",
+    "affected_files": [],
+    "solution": "Deferred. Re-evaluate when roadmap and capacity support it."
+  },
+  "acceptance_criteria": ["N/A — placeholder"],
+  "user_stories": [{"story": "As a user, I may want a native app for always-on or device-local features."}],
+  "technical_notes": {
+    "current_issue": "None",
+    "risk": "LOW",
+    "estimated_effort": "Large",
+    "dependencies": []
+  }
+}

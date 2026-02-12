@@ -1,0 +1,21 @@
+{
+  "id": "PBI-050",
+  "title": "Voice and TTS",
+  "priority": "C",
+  "phase": "OpenClaw Recommendations",
+  "status": "ready",
+  "detailed_design": {
+    "module": "future",
+    "description": "Long-term placeholder: voice input (wake word or PTT) and TTS for neuro-supportive or accessibility use cases. Likely requires native or bridge components; keep core routing and security in the existing backend. Reference only for now.",
+    "affected_files": [],
+    "solution": "Deferred. Re-evaluate when roadmap and capacity support it."
+  },
+  "acceptance_criteria": ["N/A — placeholder"],
+  "user_stories": [{"story": "As a user, I may want voice input and spoken responses for accessibility or hands-free use."}],
+  "technical_notes": {
+    "current_issue": "None",
+    "risk": "LOW",
+    "estimated_effort": "Large",
+    "dependencies": []
+  }
+}

@@ -30,6 +30,7 @@
     "current_issue": "Sidebar has Agents/Cron/Automations but backend returns empty; no scripts/logs/reports view",
     "risk": "LOW",
     "estimated_effort": "Medium (3-4 days)",
-    "dependencies": ["Automation Hub APIs (agent-processes, cron-jobs, automations)", "UI scaffold integration (PBI-010)"]
+    "dependencies": ["Automation Hub APIs (agent-processes, cron-jobs, automations)", "UI scaffold integration (PBI-010)"],
+    "follow_up": "ScriptsList, StatusLogs, ErrorReports detail view and GET /api/scripts, /api/automation-logs, /api/error-reports (config-driven from data/*.json) completed in follow-up; detail view at /automation with tabs."
   }
 }

@@ -88,9 +88,32 @@ export const api = {
       body: JSON.stringify(body),
     }),
   getConversations: () => fetchApi<ConversationInfo[]>('/api/conversations'),
+
+  /** List first-class sessions (main + project-scoped) (PBI-046). */
+  getSessions: () => fetchApi<{ id: string; label: string }[]>('/api/sessions'),
   getAgentProcesses: () => fetchApi<AgentProcessInfo[]>('/api/agent-processes'),
   getCronJobs: () => fetchApi<CronJobInfo[]>('/api/cron-jobs'),
   getAutomations: () => fetchApi<AutomationInfo[]>('/api/automations'),
+  getScripts: () =>
+    fetchApi<import('@/types/api').ScriptInfo[]>('/api/scripts'),
+  getAutomationLogs: (options?: { limit?: number; scriptId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.limit != null) params.set('limit', String(options.limit));
+    if (options?.scriptId) params.set('scriptId', options.scriptId);
+    const qs = params.toString();
+    return fetchApi<import('@/types/api').ExecutionLogEntry[]>(
+      `/api/automation-logs${qs ? `?${qs}` : ''}`
+    );
+  },
+  getErrorReports: (options?: { limit?: number; scriptId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.limit != null) params.set('limit', String(options.limit));
+    if (options?.scriptId) params.set('scriptId', options.scriptId);
+    const qs = params.toString();
+    return fetchApi<import('@/types/api').ErrorReportEntry[]>(
+      `/api/error-reports${qs ? `?${qs}` : ''}`
+    );
+  },
 
   registerAgent: (code: string) =>
     fetchApi<AgentProcessInfo>('/api/agents/register', {
@@ -134,7 +157,11 @@ export const api = {
       sessionId?: string;
     }
   ): Promise<{
-    routing?: { intent: string; adapter: string; agent_generated?: AgentGeneratedMeta };
+    routing?: {
+      intent: string;
+      adapter: string;
+      agent_generated?: AgentGeneratedMeta;
+    };
   }> => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -162,7 +189,11 @@ export const api = {
     const decoder = new TextDecoder();
     let buffer = '';
     let routing:
-      | { intent: string; adapter: string; agent_generated?: AgentGeneratedMeta }
+      | {
+          intent: string;
+          adapter: string;
+          agent_generated?: AgentGeneratedMeta;
+        }
       | undefined;
 
     while (true) {
@@ -211,6 +242,7 @@ export const api = {
     title?: string;
     projectId?: string;
     modeId?: string;
+    sessionId?: string;
   }): Promise<ConversationInfo> => {
     return fetchApi<ConversationInfo>('/api/conversations', {
       method: 'POST',
@@ -266,9 +298,9 @@ export const api = {
     }),
 
   getAIServices: () =>
-    fetchApi<
-      import('@/types/api').AIServiceStatus[]
-    >('/api/integrations/ai-services'),
+    fetchApi<import('@/types/api').AIServiceStatus[]>(
+      '/api/integrations/ai-services'
+    ),
 
   connectAIService: async (
     provider: string,

@@ -60,3 +60,34 @@ def test_syntax_error_fails():
     valid, errors = validate_agent_code(code)
     assert valid is False
     assert any("Syntax" in e for e in errors)
+
+
+def test_agent_missing_get_info_fails():
+    """Agent with run but no get_info fails."""
+    code = """
+from core.agent_template import AgentTemplate
+
+class Incomplete(AgentTemplate):
+    async def run(self, ctx):
+        return 1
+"""
+    valid, errors = validate_agent_code(code)
+    assert valid is False
+    assert any("get_info" in e for e in errors)
+
+
+def test_agent_forbidden_import_fails():
+    """Agent with disallowed import fails."""
+    code = """
+import os
+from core.agent_template import AgentTemplate
+
+class Bad(AgentTemplate):
+    async def run(self, ctx):
+        return 1
+    def get_info(self):
+        return {}
+"""
+    valid, errors = validate_agent_code(code)
+    assert valid is False
+    assert any("Import" in e or "not allowed" in e for e in errors)

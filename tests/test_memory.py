@@ -38,8 +38,10 @@ async def test_get_context_respects_limit(memory_system):
         await memory_system.save_chat_turn("session-1", {"role": "assistant", "content": f"Reply {i}"})
     ctx = await memory_system.get_context("session-1", limit=3)
     assert len(ctx) == 3
-    assert ctx[0]["content"] == "Reply 2"
-    assert ctx[-1]["content"] == "Reply 4"
+    # get_context returns history[-limit:] (last 3 items: asst3, user4, asst4)
+    assert ctx[0]["content"] == "Reply 3"
+    assert ctx[1]["content"] == "Msg 4"
+    assert ctx[2]["content"] == "Reply 4"
 
 
 @pytest.mark.asyncio

@@ -20,7 +20,7 @@ setup_logging()
 from fastapi import FastAPI, Header, HTTPException, Security, Depends, Request
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import json
@@ -68,6 +68,8 @@ from core.memory import MemorySystem
 from core import credentials
 from core.model_discovery import discover_models
 from core.model_registry import get_models_for_provider
+from core.doctor import get_doctor_report
+from core.commands import get_commands_list
 
 logger = logging.getLogger(__name__)
 
@@ -181,12 +183,14 @@ class UserQuery(BaseModel):
 async def handle_query(
     query: UserQuery,
 ):
+    # Default to 'main' session when omitted (PBI-046)
+    session_id = query.session_id if query.session_id else "main"
     try:
         routing_info = await router.route_request(
             query.text,
             model_id=query.model_id,
             mode_id=query.mode_id,
-            session_id=query.session_id,
+            session_id=session_id,
         )
     except Exception as e:
         logger.exception("Query failed: %s", e)
@@ -433,6 +437,18 @@ async def list_mcps():
     return result
 
 
+@app.get("/api/system/doctor", summary="Doctor: health and config check", dependencies=[Depends(get_api_key)])
+async def doctor():
+    """Read-only checks: API key, CORS, routing config, MCP config, Ollama reachability. No side effects."""
+    return await get_doctor_report()
+
+
+@app.get("/api/commands", summary="List chat commands", dependencies=[Depends(get_api_key)])
+async def list_commands():
+    """Return structured list of slash-style chat commands (PBI-049) for UI and channel implementers."""
+    return get_commands_list()
+
+
 @app.get("/api/system/status", summary="Get system status", dependencies=[Depends(get_api_key)])
 async def get_system_status():
     """Check status of Ollama, Backend, and other components."""
@@ -556,6 +572,29 @@ async def send_telegram_to_primary(body: schemas.TelegramSendBody):
     if not ok:
         raise HTTPException(status_code=502, detail="Failed to send Telegram message")
     return {"status": "sent", "chat_id": chat_id}
+
+
+@app.post("/api/channels/slack/events", summary="Slack Events API (PBI-045)")
+async def slack_events(request: Request):
+    """
+    Receive Slack Events API payloads. No API key; verified via X-Slack-Signature.
+    Inbound messages are routed through the same Router and security stack.
+    """
+    from core.adapters_slack import verify_slack_signature, handle_slack_event
+
+    body = await request.body()
+    signature = request.headers.get("x-slack-signature")
+    timestamp = request.headers.get("x-slack-request-timestamp")
+    if not verify_slack_signature(body, signature, timestamp):
+        raise HTTPException(status_code=401, detail="Invalid Slack signature")
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    result = await handle_slack_event(payload, router)
+    if result is not None:
+        return JSONResponse(content=result)
+    return Response(status_code=200)
 
 
 # --- AI Services: connect, discover, disconnect ---
@@ -740,11 +779,21 @@ class ConversationCreate(BaseModel):
     title: str = "New conversation"
     projectId: str | None = None
     modeId: str | None = None
+    sessionId: str | None = None  # Default 'main' when omitted (PBI-046)
+
+
+@app.get("/api/sessions", summary="List sessions", dependencies=[Depends(get_api_key)])
+async def list_sessions():
+    """Return first-class sessions: main plus project-scoped (PBI-046)."""
+    sessions = [{"id": "main", "label": "Main"}]
+    for p in _projects_store:
+        sessions.append({"id": p["id"], "label": p.get("name", p["id"])})
+    return sessions
 
 
 @app.post("/api/conversations", summary="Create conversation", dependencies=[Depends(get_api_key)])
 async def create_conversation(body: ConversationCreate):
-    """Create a new conversation and optionally attach to project."""
+    """Create a new conversation and optionally attach to project and session."""
     cid = _next_conv_id()
     proj_id = body.projectId or (_projects_store[0]["id"] if _projects_store else "proj-1")
     conv = {
@@ -752,6 +801,7 @@ async def create_conversation(body: ConversationCreate):
         "title": body.title,
         "projectId": proj_id,
         "modeId": body.modeId,
+        "sessionId": body.sessionId or "main",
         "messages": [],
         "createdAt": datetime.utcnow().isoformat() + "Z",
         "updatedAt": datetime.utcnow().isoformat() + "Z",
@@ -872,6 +922,84 @@ def _load_automations() -> list:
         return []
 
 
+def _load_scripts() -> list:
+    """Load scripts from data/scripts.json."""
+    path = settings.scripts_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        scripts = data.get("scripts", [])
+        return [
+            {
+                "id": s.get("id", "unknown"),
+                "name": s.get("name", "Unnamed"),
+                "type": s.get("type", "script"),
+                "status": s.get("status", "idle"),
+                "lastRun": s.get("lastRun"),
+                "source": s.get("source"),
+            }
+            for s in scripts
+        ]
+    except Exception as e:
+        logger.warning("Failed to load scripts from %s: %s", path, e)
+        return []
+
+
+def _load_execution_logs(limit: int = 100, script_id: str | None = None) -> list:
+    """Load execution logs from data/execution_logs.json."""
+    path = settings.execution_logs_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        logs = data.get("logs", [])
+        if script_id:
+            logs = [l for l in logs if l.get("scriptId") == script_id]
+        return [
+            {
+                "id": l.get("id", "unknown"),
+                "scriptId": l.get("scriptId", ""),
+                "timestamp": l.get("timestamp", ""),
+                "status": l.get("status", "unknown"),
+                "message": l.get("message"),
+                "durationMs": l.get("durationMs"),
+            }
+            for l in logs[-limit:]
+        ][::-1]
+    except Exception as e:
+        logger.warning("Failed to load execution logs from %s: %s", path, e)
+        return []
+
+
+def _load_error_reports(limit: int = 100, script_id: str | None = None) -> list:
+    """Load error reports from data/error_reports.json."""
+    path = settings.error_reports_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        reports = data.get("reports", [])
+        if script_id:
+            reports = [r for r in reports if r.get("scriptId") == script_id]
+        return [
+            {
+                "id": r.get("id", "unknown"),
+                "scriptId": r.get("scriptId", ""),
+                "timestamp": r.get("timestamp", ""),
+                "message": r.get("message", ""),
+                "severity": r.get("severity"),
+            }
+            for r in reports[-limit:]
+        ][::-1]
+    except Exception as e:
+        logger.warning("Failed to load error reports from %s: %s", path, e)
+        return []
+
+
 @app.get("/api/agent-processes", summary="List agent processes", response_model=list[schemas.AgentProcessInfo], dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
     """Return background agent processes from data/agents.json."""
@@ -911,6 +1039,24 @@ async def list_cron_jobs():
 async def list_automations():
     """Return automations from data/automations.json."""
     return _load_automations()
+
+
+@app.get("/api/scripts", summary="List scripts", response_model=list[schemas.ScriptInfo], dependencies=[Depends(get_api_key)])
+async def list_scripts():
+    """Return scripts from data/scripts.json."""
+    return _load_scripts()
+
+
+@app.get("/api/automation-logs", summary="List execution logs", response_model=list[schemas.ExecutionLogEntry], dependencies=[Depends(get_api_key)])
+async def list_automation_logs(limit: int = 100, scriptId: str | None = None):
+    """Return execution logs from data/execution_logs.json."""
+    return _load_execution_logs(limit=limit, script_id=scriptId)
+
+
+@app.get("/api/error-reports", summary="List error reports", response_model=list[schemas.ErrorReportEntry], dependencies=[Depends(get_api_key)])
+async def list_error_reports(limit: int = 100, scriptId: str | None = None):
+    """Return error reports from data/error_reports.json."""
+    return _load_error_reports(limit=limit, script_id=scriptId)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,8 @@ import type { Mode } from "@/lib/api-client"
 
 interface ChatInterfaceProps {
   conversation: Conversation | null
+  /** Current session label for display (e.g. "Main", project name) (PBI-046). */
+  sessionLabel?: string
   onSendMessage: (content: string) => void
   onEditAndResend?: (messageId: string, newContent: string) => void
   onReviewAgent?: (meta: AgentGeneratedMeta) => void
@@ -48,6 +50,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({
   conversation,
+  sessionLabel = "Main",
   onSendMessage,
   onEditAndResend,
   onReviewAgent,
@@ -113,6 +116,11 @@ export function ChatInterface({
                 <p className="text-xs text-muted-foreground mt-1">
                   Select a conversation or create a new one from the sidebar
                 </p>
+                {sessionLabel && (
+                  <p className="text-xs text-muted-foreground mt-2" data-testid="session-label">
+                    Session: {sessionLabel}
+                  </p>
+                )}
               </div>
             </div>
           ) : (

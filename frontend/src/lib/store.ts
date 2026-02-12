@@ -76,6 +76,8 @@ export interface Conversation {
   id: string;
   title: string;
   projectId: string;
+  /** Session ID (default 'main'); first-class for continuity (PBI-046). */
+  sessionId?: string;
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;

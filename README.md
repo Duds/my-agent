@@ -16,6 +16,7 @@ This platform is purpose-built to act as a secure extension of the user. It take
 - **Peer-Review Security**: A local "Judge" model inspects outputs for threats or leaks.
 - **Dual-Interface**: Concise Telegram bot for mobility + Rich Web Dashboard for deep work.
 - **Workspace Integration**: Read-optimized access to Google GMail, Calendar, and Drive.
+- **Automation Hub**: Sidebar section for agents, cron jobs, and automations; detail view at `/automation` for scripts, status logs, and error reports.
 
 ## 🛠 Tech Stack
 - **Backend**: Python (FastAPI / Uvicorn)
@@ -57,11 +58,25 @@ PYTHONPATH=. python3 -m core.main
 # Frontend (Next.js on port 3000) – in another terminal
 cd frontend && npm run dev
 ```
-API at `http://localhost:8001` · Docs at `/docs` · Dashboard at `http://localhost:3000`
+API at `http://localhost:8001` · Docs at `/docs` · Dashboard at `http://localhost:3000` · Automation Hub detail at `http://localhost:3000/automation`
 
 ### Optional
 - Pull Ollama models: `ollama pull llama3` and `ollama pull mistral`
 - Copy `.env.example` to `.env` and add API keys for Anthropic, Mistral, and Moonshot
+
+### CLI (power users)
+Run queries and send messages from the terminal:
+```bash
+# Query the agent
+PYTHONPATH=. python3 -m scripts query "What's the weather like?"
+
+# Send a message to your primary Telegram chat
+PYTHONPATH=. python3 -m scripts send "Reminder: meeting at 3pm"
+
+# Health and config check
+PYTHONPATH=. python3 -m scripts doctor
+```
+Set `MYAGENT_API_URL` (default: http://localhost:8001) and `MYAGENT_API_KEY` if the backend requires auth. Use `--url <base_url>` to override the API URL per run.
 
 ### Testing
 Ensure `./setup.sh` has been run first (venv and dependencies).

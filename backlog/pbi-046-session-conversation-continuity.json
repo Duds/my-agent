@@ -1,0 +1,29 @@
+{
+  "id": "PBI-046",
+  "title": "Session and conversation continuity",
+  "priority": "S",
+  "phase": "OpenClaw Recommendations",
+  "status": "done",
+  "detailed_design": {
+    "module": "core",
+    "description": "Strengthen conversation and session semantics in the API and UI: explicit session IDs, optional summary/compaction, and first-class 'main' vs project-scoped sessions. Reduces cognitive load (Neuro-Affirmative) and prepares for multi-client or agent-to-agent use later.",
+    "affected_files": ["core/main.py", "core/memory.py", "core/api_schemas.py", "frontend/src/", "data/"],
+    "solution": "1. Ensure /query and /api/conversations accept and persist session_id; default to a 'main' session when omitted. 2. Optional: session summary or compaction (e.g. periodic summarisation of long threads) stored in memory. 3. API: list conversations with session_id; create conversation with optional project_id and session_id. 4. UI: show active session, allow switching or creating sessions; indicate 'main' vs project sessions. 5. Persist session/conversation association in memory or data layer."
+  },
+  "acceptance_criteria": [
+    "Session ID is explicit in query and conversation APIs; default 'main' when omitted",
+    "Conversations can be associated with a session and optionally a project",
+    "UI shows current session and allows switching or creating sessions",
+    "Long-running context is supported (optional summary/compaction if implemented)"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to resume a previous conversation by session so I don't lose context."},
+    {"story": "As a user, I want separate 'main' and project-specific sessions so I can keep work and personal context distinct."}
+  ],
+  "technical_notes": {
+    "current_issue": "Conversations exist but session semantics are not first-class",
+    "risk": "LOW",
+    "estimated_effort": "Medium (3–5 days)",
+    "dependencies": ["Existing /api/conversations, /api/projects (PBI-029)"]
+  }
+}

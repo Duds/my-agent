@@ -199,6 +199,7 @@ async def test_route_request_quality_mocked_remote():
         available_models=[],
         security_validator=None,
     )
+    router.pii_redactor = None  # avoid second generate call for PII redaction
     with patch.object(router, "classify_intent", new_callable=AsyncMock, return_value=Intent.QUALITY):
         result = await router.route_request(long_prompt)
     assert result["intent"] == "quality"

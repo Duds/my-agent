@@ -1,0 +1,29 @@
+{
+  "id": "PBI-044",
+  "title": "Doctor / health and config check",
+  "priority": "M",
+  "phase": "OpenClaw Recommendations",
+  "status": "done",
+  "detailed_design": {
+    "module": "core",
+    "description": "Add an endpoint (e.g. GET /api/doctor) or CLI subcommand that checks: API key usage (set vs unset), CORS origins, routing config presence and validity, MCP connectivity (probe configured servers), Ollama reachability, and surfaces risky or misconfigured settings. Complements /health and /ready; supports Trust but Verify operations.",
+    "affected_files": ["core/main.py", "core/config.py", "core/doctor.py or equivalent", "scripts/cli.py if CLI exists"],
+    "solution": "1. Add GET /api/doctor (or /api/system/doctor) that runs read-only checks. 2. Checks: settings.api_key set or not; CORS origins list; routing_config_path exists and valid JSON; MCP config exists, optionally probe stdio/HTTP endpoints; Ollama base URL reachable (e.g. GET /api/tags or health). 3. Return structured report: { checks: [ { name, status, message } ], overall: ok|warn|error }. 4. Optionally add 'myagent doctor' CLI subcommand that calls this endpoint or replicates logic."
+  },
+  "acceptance_criteria": [
+    "Doctor endpoint or CLI returns a structured report of config and connectivity checks",
+    "At least: API key, CORS, routing config, MCP config, Ollama reachability",
+    "Risky or misconfigured settings are clearly indicated",
+    "No side effects (read-only)"
+  ],
+  "user_stories": [
+    {"story": "As an operator, I want to quickly verify my deployment and config so I can troubleshoot."},
+    {"story": "As a user, I want to see if my Ollama and MCP servers are reachable before sending queries."}
+  ],
+  "technical_notes": {
+    "current_issue": "Only /health and /ready; no config or connectivity diagnostics",
+    "risk": "LOW",
+    "estimated_effort": "Small (1–2 days)",
+    "dependencies": []
+  }
+}

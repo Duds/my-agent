@@ -9,10 +9,22 @@ The Telegram bot is your primary mobile interface. It is designed for quick task
 - **Command Routing**: Just talk naturally. The agent automatically routes sensitive topics to your local hardware and complex questions to professional models.
 - **Key Commands**:
   - `/start`: Initialize connectivity.
+  - `/help`: List available commands and usage.
   - `/status`: Check if local models (Ollama) are active.
+  - `/reset`: Clear conversation context and start fresh.
+  - `/think [brief|deep]`: Set thinking level (brief for quick responses, deep for thorough reasoning when supported).
+  - `/setmychat`: Designate this chat for proactive messages.
   - `private: [text]`: Force local-only routing for a specific message.
 
-### 2. Web Dashboard (Deep Work)
+### 2. CLI (Terminal & Scripting)
+Run queries and send messages from the command line:
+- `python -m scripts query "Your question"` – Submit a query and print the answer.
+- `python -m scripts send "Your message"` – Send a message to your primary Telegram chat.
+- `python -m scripts doctor` – Run health and config checks.
+
+Set `MYAGENT_API_URL` (default: http://localhost:8001) and `MYAGENT_API_KEY` if the backend requires authentication. Use `--url` to override the base URL.
+
+### 3. Web Dashboard (Deep Work)
 Accessible via `http://localhost:3000` when running locally.
 - **Task Management**: Visual interface for complex task breakdowns.
 - **Settings**: Configure your API keys for Anthropic/Moonshot and select your preferred local models.

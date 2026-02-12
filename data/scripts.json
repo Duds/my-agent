@@ -1,0 +1,12 @@
+{
+  "scripts": [
+    {
+      "id": "script-1",
+      "name": "Daily summary",
+      "type": "cron",
+      "status": "active",
+      "lastRun": "2026-02-09T09:00:00Z",
+      "source": "cron-1"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "logs": [
+    {
+      "id": "log-1",
+      "scriptId": "script-1",
+      "timestamp": "2026-02-09T09:00:00Z",
+      "status": "success",
+      "message": "Completed",
+      "durationMs": 1200
+    }
+  ]
+}

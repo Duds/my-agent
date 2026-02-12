@@ -1,0 +1,29 @@
+{
+  "id": "PBI-049",
+  "title": "Structured chat commands",
+  "priority": "S",
+  "phase": "OpenClaw Recommendations",
+  "status": "done",
+  "detailed_design": {
+    "module": "core",
+    "description": "Define a small set of slash-style commands (e.g. /status, /reset, /think) and document them. Enables consistent behaviour across Telegram and any future channel adapters. Commands are handled before routing to the model where appropriate.",
+    "affected_files": ["core/adapters_telegram.py or channel layer", "core/commands.py or equivalent", "docs/", "USER_GUIDE.md"],
+    "solution": "1. Define command set: e.g. /status (return session/model status), /reset (clear session or start new conversation), /think (set thinking level if supported). 2. In Telegram adapter (and future channel adapters): detect leading slash, parse command, execute or forward to backend. 3. Backend: optional GET /api/commands or handle command semantics in existing endpoints. 4. Document commands and behaviour in USER_GUIDE and channel-specific docs."
+  },
+  "acceptance_criteria": [
+    "At least /status, /reset, /think (or equivalent) defined and documented",
+    "Telegram adapter recognises and handles these commands",
+    "Behaviour is consistent (e.g. /status returns compact status)",
+    "Documentation updated for users and for future channel implementers"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to type /status in Telegram to see my session status without opening the dashboard."},
+    {"story": "As a user, I want to type /reset to start a fresh conversation."}
+  ],
+  "technical_notes": {
+    "current_issue": "No standardised chat commands across channels",
+    "risk": "LOW",
+    "estimated_effort": "Small (1–2 days)",
+    "dependencies": ["Telegram adapter; PBI-045 if second channel adds commands"]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "PBI-045",
+  "title": "Second channel adapter",
+  "priority": "S",
+  "phase": "OpenClaw Recommendations",
+  "status": "done",
+  "detailed_design": {
+    "module": "adapters",
+    "description": "Introduce one additional messaging channel (e.g. Slack or WhatsApp) via an adapter pattern similar to Telegram. Validates a generic 'channel adapter' design and reduces single-channel dependency while staying within current architecture. Inbound messages are routed through the same Router and security stack.",
+    "affected_files": ["adapters/", "core/adapters_telegram.py as reference", "core/config.py", "core/main.py or router wiring", "docs/"],
+    "solution": "1. Define a minimal ChannelAdapter interface (receive events, send message, config). 2. Implement one new adapter (e.g. Slack via Bolt, or WhatsApp via Baileys or a library). 3. Config: channel-specific settings (tokens, webhook path). 4. Wire inbound messages to existing router.route_request or equivalent; outbound via adapter.send. 5. Document setup and config. Reuse intent-based routing and security validator for all channels."
+  },
+  "acceptance_criteria": [
+    "One new channel (Slack or WhatsApp) implemented as an adapter",
+    "Inbound messages from that channel are routed through the same Router and security stack",
+    "Outbound replies can be sent on that channel",
+    "Config and setup documented"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to use my-agent from Slack (or WhatsApp) so I can choose my preferred channel."},
+    {"story": "As a developer, I want a clear adapter pattern so adding more channels later is straightforward."}
+  ],
+  "technical_notes": {
+    "current_issue": "Telegram only; single-channel dependency",
+    "risk": "MEDIUM (new integration surface)",
+    "estimated_effort": "Medium (5–7 days per channel)",
+    "dependencies": ["Existing Router and SecurityValidator", "Adapter pattern (Telegram as reference)"]
+  }
+}

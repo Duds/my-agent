@@ -3,7 +3,7 @@
   "title": "Agent Creation Review UI",
   "priority": "C",
   "phase": "Advanced Features",
-  "status": "ready",
+  "status": "done",
   "detailed_design": {
     "module": "frontend",
     "description": "Optional UI for reviewing and editing LLM-generated agent code before registration. When agent generation produces code, user can open a review dialog to inspect, edit, and approve before the agent is added to the Automation Hub. Complements the chat-based flow in PBI-036.",
@@ -22,16 +22,18 @@
     "Reject returns to chat for refinement"
   ],
   "user_stories": [
-    {"story": "As a user, I want to review generated agent code before it is registered."},
-    {"story": "As a user, I want to make small edits to generated code before approving."}
+    {
+      "story": "As a user, I want to review generated agent code before it is registered."
+    },
+    {
+      "story": "As a user, I want to make small edits to generated code before approving."
+    }
   ],
   "technical_notes": {
     "current_issue": "No UI to review generated code; registration could be automatic",
     "risk": "LOW",
     "estimated_effort": "Small (1-2 days)",
-    "dependencies": [
-      "PBI-036 Agent Code Generation & Registration"
-    ],
+    "dependencies": ["PBI-036 Agent Code Generation & Registration"],
     "note": "Could Have; PBI-036 can ship with auto-register on valid code; this adds optional review step"
   }
 }

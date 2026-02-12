@@ -12,6 +12,7 @@ Development is prioritized by "Jobs to Be Done"—building foundational engines 
 
 | Date       | Item                                        | Notes                                                                                                                                                                                                                                                                                                                             |
 | :--------- | :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 10/02/2026 | **Automation Hub detail view** (PBI-032 follow-up) | ScriptsList, StatusLogs, ErrorReports wired to GET /api/scripts, /api/automation-logs, /api/error-reports; detail page at /automation with tabs; config-driven data from data/scripts.json, execution_logs.json, error_reports.json. |
 | 09/02/2026 | **Roadmap Plan Implementation**             | PBI-016, 039, 040, 036: Complete. PBI-014: E2E tests (projects CRUD, agent-processes, conversations); frontend Jest + RTL setup; Button and utils component tests.                                                                                                                                 |
 | 08/02/2026 | **UX/UI Review & Gap Analysis**             | Identified model selector broken (missing type/status), Automation Hub empty state, dead components. See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md).                                                                                                                                           |
 | 08/02/2026 | **Model Metadata in API** (PBI-033)         | Added type, status, contextWindow to /api/models. Chat model selector and Settings panel now work for manual model override.                                                                                                                                                                                                      |
@@ -175,7 +176,7 @@ _Priority: LOW - Advanced features_
 | **S**    | ~~**Agent Code Generation**~~       | ~~LLM generates code; validate, register.~~ **Done** — /query with create_agent intent. | PBI-036 ✅ |
 | **S**    | **Privacy Vault UI**                | Indicator and basic management.                                            | PBI-030    |
 | **C**    | **Approval UX design system**       | Shared approve/reject/undo for Sentinel + HITL.                             | PBI-031    |
-| **C**    | **Agent Creation Review UI**        | Review/edit generated code before registering.                            | PBI-037    |
+| **C**    | ~~**Agent Creation Review UI**~~        | **Done** — review dialog, approve/register from chat. | PBI-037 ✅ |
 
 ---
 
@@ -187,7 +188,7 @@ _The solution generates custom agent code from natural language. Rules/framework
 | :------- | :---------------------------------- | :-------------------------------------------------------------------------- | :--------- |
 | **S**    | **Agent Template & Conformance**   | Template, rules (agent_rules.json), validator; generated code must conform. | PBI-035    |
 | **S**    | **Agent Code Generation**          | LLM generates agent code; validate → register → add to Automation Hub.      | PBI-036    |
-| **C**    | **Agent Creation Review UI**       | Optional UI to review/edit generated code before approving registration.    | PBI-037    |
+| **C**    | ~~**Agent Creation Review UI**~~       | **Done** — review/edit generated code before registering. | PBI-037 ✅ |
 
 ---
 
@@ -213,7 +214,35 @@ See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.m
 | **Agent Code Generation** | PBI-036 | LLM generates code; validate, register, add to Automation Hub. |
 | **Privacy Vault UI** | PBI-030 | After vault API exists. |
 | **Sentinel Review Queue** | PBI-022 | Use ApprovalCard; depends on File Watchdog + Content Classifier. |
-| **ScriptsList, StatusLogs, ErrorReports** | PBI-032 | Add Automation Hub detail view; wire components. |
+| ~~**ScriptsList, StatusLogs, ErrorReports**~~ | PBI-032 | **Done** — detail view at /automation; scripts, logs, error reports APIs and tables. |
+
+---
+
+## Recommendations from OpenClaw comparison
+
+From [docs/FEATURE_COMPARISON_MY-AGENT_OPENCLAW.md](docs/FEATURE_COMPARISON_MY-AGENT_OPENCLAW.md) (section 15). Prioritised for implementation: Doctor (044) → CLI (043) → Session continuity (046) → Second channel (045) → Chat commands (049) → WebSocket/SSE (047) → Skills discovery (048).
+
+| Rec | Item | MoSCoW | Backlog ID | Effort |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | CLI for power users and scripting | S | PBI-043 | M |
+| 2 | Second channel adapter | S | PBI-045 | M |
+| 3 | Doctor / health and config check | M | PBI-044 | S |
+| 4 | Session and conversation continuity | S | PBI-046 | M |
+| 5 | WebSocket or SSE for real-time status | C | PBI-047 | M |
+| 6 | Skills discovery and install gating | C | PBI-048 | M |
+| 7 | Structured chat commands | S | PBI-049 | S |
+| 8 | Voice and TTS | W (C long-term) | PBI-050 | L |
+| 9 | Additional channels | C | PBI-051 | L per channel |
+| 10 | Native apps | W | PBI-052 | L |
+
+### Quick Wins (OpenClaw recommendations)
+
+| Priority | Feature | Description | Backlog ID |
+| :------- | :---------------------------- | :------------------------------------------------------------------- | :--------- |
+| **M** | **Doctor / health and config check** | Endpoint or CLI: API key usage, CORS, routing config, MCP connectivity, Ollama reachability, risky settings. | PBI-044 |
+| **S** | **CLI for power users** | Thin CLI (`myagent query "…"`, `myagent send "…"`) calling existing REST API; scripting and cron without web UI. | PBI-043 |
+| **S** | **Session and conversation continuity** | Explicit session IDs, optional summary/compaction, "main" vs project sessions first-class in API and UI. | PBI-046 |
+| **S** | **Second channel adapter** | One extra channel (e.g. Slack or WhatsApp) via adapter pattern; validate generic channel adapter. | PBI-045 |
 
 ---
 

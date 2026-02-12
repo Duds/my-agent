@@ -1,0 +1,29 @@
+{
+  "id": "PBI-048",
+  "title": "Skills discovery and install gating",
+  "priority": "C",
+  "phase": "OpenClaw Recommendations",
+  "status": "ready",
+  "detailed_design": {
+    "module": "core",
+    "description": "Extend the skills registry with optional discovery (e.g. a minimal 'skill hub' or curated list) and install/enable gating so users can safely add skills. Keeps skills local-first and avoids unnecessary vendor lock-in.",
+    "affected_files": ["core/main.py", "core/api_schemas.py", "frontend/src/", "data/ or config for skill definitions", "docs/"],
+    "solution": "1. Define a minimal discovery source: e.g. curated list in config or a static JSON, or optional ClawHub-style registry (self-hosted or read-only). 2. API: GET /api/skills/available or similar returning discoverable skills with metadata; POST /api/skills/install or PATCH to add/enable a skill (with validation and gating). 3. Install gating: validate skill manifest, check dependencies, require explicit user confirmation in UI. 4. Persist enabled skills in existing skills config; document how to add local skills."
+  },
+  "acceptance_criteria": [
+    "Users can discover available skills (curated list or optional registry)",
+    "Install or enable a skill is gated (validation, optional confirmation)",
+    "Enabled skills are persisted and reflected in /api/skills",
+    "Local-first: local skill definitions supported; no mandatory external registry"
+  ],
+  "user_stories": [
+    {"story": "As a user, I want to browse and add new skills safely so I can extend my agent."},
+    {"story": "As a developer, I want to add a local skill without depending on a central registry."}
+  ],
+  "technical_notes": {
+    "current_issue": "Skills registry exists (PBI-026) but no discovery or install flow",
+    "risk": "LOW",
+    "estimated_effort": "Medium (3–5 days)",
+    "dependencies": ["PBI-026 Skills Registry"]
+  }
+}

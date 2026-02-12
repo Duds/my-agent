@@ -3,7 +3,7 @@
     "title": "Comprehensive Testing",
     "priority": "S",
     "phase": "Feature Completion",
-    "status": "ready",
+    "status": "done",
     "detailed_design": {
         "module": "tests",
         "description": "Add comprehensive test coverage including adapter tests, integration tests, E2E tests, and frontend tests. Currently only router and security have minimal tests. Achieve >80% coverage across all modules.",

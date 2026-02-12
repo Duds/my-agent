@@ -75,6 +75,8 @@ export interface ConversationInfo {
   id: string;
   title: string;
   projectId: string;
+  /** Session ID (default 'main'); first-class for continuity (PBI-046). */
+  sessionId?: string;
   messages: MessageInfo[];
   createdAt: string;
   updatedAt: string;
@@ -115,6 +117,32 @@ export interface AutomationInfo {
   projectId?: string;
   description: string;
   type: 'webhook' | 'event' | 'schedule' | 'watch';
+}
+
+export interface ScriptInfo {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  lastRun?: string | null;
+  source?: string | null;
+}
+
+export interface ExecutionLogEntry {
+  id: string;
+  scriptId: string;
+  timestamp: string;
+  status: string;
+  message?: string | null;
+  durationMs?: number | null;
+}
+
+export interface ErrorReportEntry {
+  id: string;
+  scriptId: string;
+  timestamp: string;
+  message: string;
+  severity?: string | null;
 }
 
 export interface QueryRequest {
