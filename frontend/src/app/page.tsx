@@ -1,25 +1,29 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+  MessageSquare,
+  Plus,
+  FolderOpen,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
-} from "@/components/ui/tooltip";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ChatInterface } from "@/components/chat-interface";
-import { AgentCodeReviewDialog } from "@/components/automation/agent-code-review-dialog";
-import { StatusBar } from "@/components/status-bar";
-import { SettingsPanel } from "@/components/settings-panel";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { api } from "@/lib/api-client";
+} from '@/components/ui/tooltip';
+import { AppSidebar } from '@/components/app-sidebar';
+import { ChatInterface } from '@/components/chat-interface';
+import { AgentCodeReviewDialog } from '@/components/automation/agent-code-review-dialog';
+import { StatusBar } from '@/components/status-bar';
+import { SettingsPanel } from '@/components/settings-panel';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { ProjectPage } from '@/components/project-page';
+import { api } from '@/lib/api-client';
 import type {
   Conversation,
   Message,
@@ -32,13 +36,20 @@ import type {
   MCP,
   Integration,
   AgentGeneratedMeta,
-} from "@/lib/store";
+} from '@/lib/store';
 
 function parseConversation(c: {
   id: string;
   title: string;
   projectId: string;
-  messages?: { id: string; role: string; content: string; timestamp: string; model?: string; toolCalls?: { name: string; status: string }[] }[];
+  messages?: {
+    id: string;
+    role: string;
+    content: string;
+    timestamp: string;
+    model?: string;
+    toolCalls?: { name: string; status: string }[];
+  }[];
   createdAt: string;
   updatedAt: string;
   persona?: string;
@@ -48,9 +59,11 @@ function parseConversation(c: {
     ...c,
     messages: (c.messages ?? []).map((m) => ({
       ...m,
-      role: m.role as "user" | "assistant" | "system",
+      role: m.role as 'user' | 'assistant' | 'system',
       timestamp: new Date(m.timestamp),
-      toolCalls: m.toolCalls as { name: string; status: "running" | "complete" | "error" }[] | undefined,
+      toolCalls: m.toolCalls as
+        | { name: string; status: 'running' | 'complete' | 'error' }[]
+        | undefined,
     })),
     createdAt: new Date(c.createdAt),
     updatedAt: new Date(c.updatedAt),
@@ -60,16 +73,21 @@ function parseConversation(c: {
 export default function Page() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState<string>("");
-  const [selectedModeId, setSelectedModeId] = useState("general");
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [selectedModeId, setSelectedModeId] = useState('general');
   const [agenticMode, setAgenticMode] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [models, setModels] = useState<Model[]>([]);
-  const [modes, setModes] = useState<{ id: string; name: string; description: string; routing: string }[]>([]);
+  const [modes, setModes] = useState<
+    { id: string; name: string; description: string; routing: string }[]
+  >([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -80,19 +98,35 @@ export default function Page() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [sessions, setSessions] = useState<{ id: string; label: string }[]>([]);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [reviewDialogMeta, setReviewDialogMeta] = useState<AgentGeneratedMeta | null>(null);
+  const [reviewDialogMeta, setReviewDialogMeta] =
+    useState<AgentGeneratedMeta | null>(null);
 
-  const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? null;
-  const sessionLabel = sessions.find((s) => s.id === (activeConversation?.sessionId ?? "main"))?.label ?? "Main";
+  const activeConversation =
+    conversations.find((c) => c.id === activeConversationId) ?? null;
+  const sessionLabel =
+    sessions.find((s) => s.id === (activeConversation?.sessionId ?? 'main'))
+      ?.label ?? 'Main';
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? null;
-  const isModelOverridden = !!selectedModelId && selectedModelId !== "auto";
+  const isModelOverridden = !!selectedModelId && selectedModelId !== 'auto';
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const [m, mo, s, proj, conv, ap, cj, auto, mcpsRes, intRes, sessionsRes] = await Promise.all([
+        const [
+          m,
+          mo,
+          s,
+          proj,
+          conv,
+          ap,
+          cj,
+          auto,
+          mcpsRes,
+          intRes,
+          sessionsRes,
+        ] = await Promise.all([
           api.getModels(),
           api.getModes(),
           api.getSkills(),
@@ -110,14 +144,30 @@ export default function Page() {
         setSkills(s);
         setProjects(proj);
         setConversations(conv.map(parseConversation));
-        setAgentProcesses(ap.map((a) => ({ ...a, startedAt: a.startedAt ? new Date(a.startedAt) : undefined })));
-        setCronJobs(cj.map((c) => ({ ...c, lastRun: c.lastRun ? new Date(c.lastRun) : null, nextRun: new Date(c.nextRun) })));
-        setAutomations(auto.map((a) => ({ ...a, lastTriggered: a.lastTriggered ? new Date(a.lastTriggered) : null })));
+        setAgentProcesses(
+          ap.map((a) => ({
+            ...a,
+            startedAt: a.startedAt ? new Date(a.startedAt) : undefined,
+          }))
+        );
+        setCronJobs(
+          cj.map((c) => ({
+            ...c,
+            lastRun: c.lastRun ? new Date(c.lastRun) : null,
+            nextRun: new Date(c.nextRun),
+          }))
+        );
+        setAutomations(
+          auto.map((a) => ({
+            ...a,
+            lastTriggered: a.lastTriggered ? new Date(a.lastTriggered) : null,
+          }))
+        );
         setMcps(mcpsRes);
         setIntegrations(intRes);
         setSessions(sessionsRes);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load data");
+      } catch (_err) {
+        setError(_err instanceof Error ? _err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -130,8 +180,8 @@ export default function Page() {
     try {
       const m = await api.getModels();
       setModels(m);
-    } catch (err) {
-      console.error("Failed to refetch models:", err);
+    } catch (_err) {
+      console.error('Failed to refetch models:', _err);
     }
   }, []);
 
@@ -139,6 +189,49 @@ export default function Page() {
     setReviewDialogMeta(meta);
     setReviewDialogOpen(true);
   }, []);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    setActiveConversationId(id);
+    setActiveProjectId(null);
+  }, []);
+
+  const handleSelectProject = useCallback((id: string) => {
+    setActiveProjectId(id);
+    setActiveConversationId(null);
+  }, []);
+
+  const handleMoveConversation = useCallback(
+    async (convId: string, targetProjId: string) => {
+      try {
+        await api.patchConversation(convId, { projectId: targetProjId });
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === convId ? { ...c, projectId: targetProjId } : c
+          )
+        );
+        setProjects((prev) =>
+          prev.map((p) => {
+            if (p.id === targetProjId) {
+              return {
+                ...p,
+                conversationIds: Array.from(
+                  new Set([...(p.conversationIds ?? []), convId])
+                ),
+              };
+            }
+            return {
+              ...p,
+              conversationIds:
+                p.conversationIds?.filter((id) => id !== convId) ?? [],
+            };
+          })
+        );
+      } catch (_err) {
+        console.error('Failed to move conversation:', _err);
+      }
+    },
+    []
+  );
 
   const handleAgentApprove = useCallback(async (editedCode: string) => {
     await api.registerAgent(editedCode);
@@ -157,7 +250,7 @@ export default function Page() {
 
       const userMessage: Message = {
         id: `m-${Date.now()}`,
-        role: "user",
+        role: 'user',
         content,
         timestamp: new Date(),
       };
@@ -167,7 +260,11 @@ export default function Page() {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeConversationId
-            ? { ...c, messages: [...c.messages, userMessage], updatedAt: new Date() }
+            ? {
+                ...c,
+                messages: [...c.messages, userMessage],
+                updatedAt: new Date(),
+              }
             : c
         )
       );
@@ -175,7 +272,10 @@ export default function Page() {
 
       try {
         const opts = {
-          modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
+          modelId:
+            selectedModelId && selectedModelId !== 'auto'
+              ? selectedModelId
+              : undefined,
           modeId: selectedModeId || undefined,
           sessionId: activeConversationId || 'main',
         };
@@ -190,7 +290,10 @@ export default function Page() {
                   if (c.id !== activeConversationId) return c;
                   const messages = [...c.messages];
                   const last = messages[messages.length - 1];
-                  if (last?.role === "assistant" && last.id === assistantMsgId) {
+                  if (
+                    last?.role === 'assistant' &&
+                    last.id === assistantMsgId
+                  ) {
                     messages[messages.length - 1] = {
                       ...last,
                       content: last.content + chunk,
@@ -198,7 +301,7 @@ export default function Page() {
                   } else {
                     messages.push({
                       id: assistantMsgId,
-                      role: "assistant",
+                      role: 'assistant',
                       content: chunk,
                       timestamp: new Date(),
                     });
@@ -210,7 +313,10 @@ export default function Page() {
             opts
           );
         } catch (streamErr) {
-          if (streamErr instanceof Error && streamErr.message.includes("Not Found")) {
+          if (
+            streamErr instanceof Error &&
+            streamErr.message.includes('Not Found')
+          ) {
             const fallback = await api.postQuery(content, opts);
             setConversations((prev) => {
               const updated = prev.map((c) =>
@@ -221,11 +327,11 @@ export default function Page() {
                         ...c.messages,
                         {
                           id: assistantMsgId,
-                          role: "assistant" as const,
+                          role: 'assistant' as const,
                           content: fallback.answer,
                           timestamp: new Date(),
                           model: fallback.routing?.adapter,
-                          agentGenerated: fallback.agent_generated,
+                          agentGenerated: fallback.agent_generated as any,
                         },
                       ],
                       updatedAt: new Date(),
@@ -234,16 +340,18 @@ export default function Page() {
               );
               const conv = updated.find((c) => c.id === activeConversationId);
               if (conv) {
-                api.patchConversation(activeConversationId, {
-                  messages: conv.messages.map((m) => ({
-                    id: m.id,
-                    role: m.role,
-                    content: m.content,
-                    timestamp: m.timestamp.toISOString(),
-                    model: m.model,
-                    toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
-                  })),
-                }).catch(() => {});
+                api
+                  .patchConversation(activeConversationId, {
+                    messages: conv.messages.map((m) => ({
+                      id: m.id,
+                      role: m.role,
+                      content: m.content,
+                      timestamp: m.timestamp.toISOString(),
+                      model: m.model,
+                      toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+                    })),
+                  })
+                  .catch(() => {});
               }
               return updated;
             });
@@ -272,31 +380,37 @@ export default function Page() {
           );
           const conv = updated.find((c) => c.id === activeConversationId);
           if (conv) {
-            api.patchConversation(activeConversationId, {
-              messages: conv.messages.map((m) => ({
-                id: m.id,
-                role: m.role,
-                content: m.content,
-                timestamp: m.timestamp.toISOString(),
-                model: m.model,
-                toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
-              })),
-            }).catch(() => {});
+            api
+              .patchConversation(activeConversationId, {
+                messages: conv.messages.map((m) => ({
+                  id: m.id,
+                  role: m.role,
+                  content: m.content,
+                  timestamp: m.timestamp.toISOString(),
+                  model: m.model,
+                  toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+                })),
+              })
+              .catch(() => {});
           }
           return updated;
         });
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : "Request failed";
+      } catch (_err) {
+        const errMsg = _err instanceof Error ? _err.message : 'Request failed';
         const errorMessage: Message = {
           id: assistantMsgId,
-          role: "assistant",
+          role: 'assistant',
           content: `Error: ${errMsg}`,
           timestamp: new Date(),
         };
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConversationId
-              ? { ...c, messages: [...c.messages, errorMessage], updatedAt: new Date() }
+              ? {
+                  ...c,
+                  messages: [...c.messages, errorMessage],
+                  updatedAt: new Date(),
+                }
               : c
           )
         );
@@ -311,7 +425,9 @@ export default function Page() {
     async (messageId: string, newContent: string) => {
       if (!activeConversationId) return;
 
-      const idx = activeConversation?.messages.findIndex((m) => m.id === messageId);
+      const idx = activeConversation?.messages.findIndex(
+        (m) => m.id === messageId
+      );
       if (idx === undefined || idx < 0) return;
 
       const trimmed = newContent.trim();
@@ -322,9 +438,13 @@ export default function Page() {
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
-          const messages = c.messages.slice(0, idx + 1).map((m) =>
-            m.id === messageId ? { ...m, content: trimmed, timestamp: new Date() } : m
-          );
+          const messages = c.messages
+            .slice(0, idx + 1)
+            .map((m) =>
+              m.id === messageId
+                ? { ...m, content: trimmed, timestamp: new Date() }
+                : m
+            );
           return { ...c, messages, updatedAt: new Date() };
         })
       );
@@ -342,9 +462,12 @@ export default function Page() {
               id: m.id,
               role: m.role,
               content: m.content,
-              timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+              timestamp:
+                m.timestamp instanceof Date
+                  ? m.timestamp.toISOString()
+                  : String(m.timestamp),
               model: m.model,
-              toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
+              toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
             })),
         })
         .catch(() => {});
@@ -353,7 +476,10 @@ export default function Page() {
 
       try {
         const opts = {
-          modelId: selectedModelId && selectedModelId !== "auto" ? selectedModelId : undefined,
+          modelId:
+            selectedModelId && selectedModelId !== 'auto'
+              ? selectedModelId
+              : undefined,
           modeId: selectedModeId || undefined,
           sessionId: activeConversationId || 'main',
         };
@@ -368,7 +494,10 @@ export default function Page() {
                   if (c.id !== activeConversationId) return c;
                   const messages = [...c.messages];
                   const last = messages[messages.length - 1];
-                  if (last?.role === "assistant" && last.id === assistantMsgId) {
+                  if (
+                    last?.role === 'assistant' &&
+                    last.id === assistantMsgId
+                  ) {
                     messages[messages.length - 1] = {
                       ...last,
                       content: last.content + chunk,
@@ -376,7 +505,7 @@ export default function Page() {
                   } else {
                     messages.push({
                       id: assistantMsgId,
-                      role: "assistant",
+                      role: 'assistant',
                       content: chunk,
                       timestamp: new Date(),
                     });
@@ -388,7 +517,10 @@ export default function Page() {
             opts
           );
         } catch (streamErr) {
-          if (streamErr instanceof Error && streamErr.message.includes("Not Found")) {
+          if (
+            streamErr instanceof Error &&
+            streamErr.message.includes('Not Found')
+          ) {
             const fallback = await api.postQuery(trimmed, opts);
             setConversations((prev) => {
               const updated = prev.map((c) =>
@@ -399,7 +531,7 @@ export default function Page() {
                         ...c.messages,
                         {
                           id: assistantMsgId,
-                          role: "assistant" as const,
+                          role: 'assistant' as const,
                           content: fallback.answer,
                           timestamp: new Date(),
                           model: fallback.routing?.adapter,
@@ -409,18 +541,22 @@ export default function Page() {
                     }
                   : c
               );
-              const finalConv = updated.find((c) => c.id === activeConversationId);
+              const finalConv = updated.find(
+                (c) => c.id === activeConversationId
+              );
               if (finalConv) {
-                api.patchConversation(activeConversationId, {
-                  messages: finalConv.messages.map((m) => ({
-                    id: m.id,
-                    role: m.role,
-                    content: m.content,
-                    timestamp: m.timestamp.toISOString(),
-                    model: m.model,
-                    toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
-                  })),
-                }).catch(() => {});
+                api
+                  .patchConversation(activeConversationId, {
+                    messages: finalConv.messages.map((m) => ({
+                      id: m.id,
+                      role: m.role,
+                      content: m.content,
+                      timestamp: m.timestamp.toISOString(),
+                      model: m.model,
+                      toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+                    })),
+                  })
+                  .catch(() => {});
               }
               return updated;
             });
@@ -449,24 +585,26 @@ export default function Page() {
           );
           const conv = updated.find((c) => c.id === activeConversationId);
           if (conv) {
-            api.patchConversation(activeConversationId, {
-              messages: conv.messages.map((m) => ({
-                id: m.id,
-                role: m.role,
-                content: m.content,
-                timestamp: m.timestamp.toISOString(),
-                model: m.model,
-                toolCalls: "toolCalls" in m ? m.toolCalls : undefined,
-              })),
-            }).catch(() => {});
+            api
+              .patchConversation(activeConversationId, {
+                messages: conv.messages.map((m) => ({
+                  id: m.id,
+                  role: m.role,
+                  content: m.content,
+                  timestamp: m.timestamp.toISOString(),
+                  model: m.model,
+                  toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+                })),
+              })
+              .catch(() => {});
           }
           return updated;
         });
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : "Request failed";
+      } catch (_err) {
+        const errMsg = _err instanceof Error ? _err.message : 'Request failed';
         const errorMessage: Message = {
           id: assistantMsgId,
-          role: "assistant",
+          role: 'assistant',
           content: `Error: ${errMsg}`,
           timestamp: new Date(),
         };
@@ -495,10 +633,10 @@ export default function Page() {
   );
 
   const handleNewConversation = useCallback(async () => {
-    const projectId = projects[0]?.id ?? "proj-1";
+    const projectId = projects[0]?.id ?? 'proj-1';
     try {
       const res = await api.postConversation({
-        title: "New conversation",
+        title: 'New conversation',
         projectId,
         modeId: selectedModeId || undefined,
       });
@@ -507,15 +645,18 @@ export default function Page() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === projectId
-            ? { ...p, conversationIds: [...(p.conversationIds ?? []), newConv.id] }
+            ? {
+                ...p,
+                conversationIds: [...(p.conversationIds ?? []), newConv.id],
+              }
             : p
         )
       );
       setActiveConversationId(newConv.id);
-    } catch (err) {
+    } catch (_err) {
       const newConv: Conversation = {
         id: `conv-${Date.now()}`,
-        title: "New conversation",
+        title: 'New conversation',
         projectId,
         messages: [],
         createdAt: new Date(),
@@ -525,7 +666,10 @@ export default function Page() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === projectId
-            ? { ...p, conversationIds: [...(p.conversationIds ?? []), newConv.id] }
+            ? {
+                ...p,
+                conversationIds: [...(p.conversationIds ?? []), newConv.id],
+              }
             : p
         )
       );
@@ -533,26 +677,32 @@ export default function Page() {
     }
   }, [selectedModeId, projects]);
 
-  const handleToggleSkill = useCallback(async (id: string) => {
-    const skill = skills.find((s) => s.id === id);
-    if (!skill) return;
-    const newEnabled = !skill.enabled;
-    setSkills((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: newEnabled } : s))
-    );
-    try {
-      await api.patchSkill(id, newEnabled);
-    } catch (err) {
+  const handleToggleSkill = useCallback(
+    async (id: string) => {
+      const skill = skills.find((s) => s.id === id);
+      if (!skill) return;
+      const newEnabled = !skill.enabled;
       setSkills((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, enabled: skill.enabled } : s))
+        prev.map((s) => (s.id === id ? { ...s, enabled: newEnabled } : s))
       );
-    }
-  }, [skills]);
+      try {
+        await api.patchSkill(id, newEnabled);
+      } catch (_err) {
+        setSkills((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, enabled: skill.enabled } : s))
+        );
+      }
+    },
+    [skills]
+  );
 
-  const handleCreateProject = useCallback(async (name: string, color?: string) => {
-    const p = await api.createProject({ name, color });
-    setProjects((prev) => [...prev, p]);
-  }, []);
+  const handleCreateProject = useCallback(
+    async (name: string, color?: string) => {
+      const p = await api.createProject({ name, color });
+      setProjects((prev) => [...prev, p]);
+    },
+    []
+  );
 
   const handlePatchProject = useCallback(
     async (id: string, updates: { name?: string; color?: string }) => {
@@ -566,7 +716,7 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="bg-background flex h-screen items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
@@ -574,10 +724,11 @@ export default function Page() {
 
   if (error) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background p-8">
+      <div className="bg-background flex h-screen flex-col items-center justify-center gap-4 p-8">
         <p className="text-destructive">{error}</p>
-        <p className="text-sm text-muted-foreground">
-          Ensure the backend is running on port 8001 (or set NEXT_PUBLIC_API_URL).
+        <p className="text-muted-foreground text-sm">
+          Ensure the backend is running on port 8001 (or set
+          NEXT_PUBLIC_API_URL).
         </p>
       </div>
     );
@@ -585,13 +736,16 @@ export default function Page() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen flex-col bg-background">
+      <div className="bg-background flex h-screen flex-col">
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar
             projects={projects}
             conversations={conversations}
             activeConversationId={activeConversationId}
-            onSelectConversation={setActiveConversationId}
+            activeProjectId={activeProjectId}
+            onSelectConversation={handleSelectConversation}
+            onSelectProject={handleSelectProject}
+            onMoveConversation={handleMoveConversation}
             onNewConversation={handleNewConversation}
             onCreateProject={handleCreateProject}
             onPatchProject={handlePatchProject}
@@ -602,7 +756,7 @@ export default function Page() {
           />
 
           <div className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-12 items-center justify-between border-b border-border bg-card px-3">
+            <header className="border-border bg-card flex h-12 items-center justify-between border-b px-3">
               <div className="flex items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -620,16 +774,25 @@ export default function Page() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    {sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   </TooltipContent>
                 </Tooltip>
 
-                {activeConversation && (
+                {activeConversation ? (
                   <div className="ml-1 flex items-center gap-2">
-                    <h1 className="max-w-48 truncate text-sm font-medium text-foreground">
+                    <h1 className="text-foreground max-w-48 truncate text-sm font-medium">
                       {activeConversation.title}
                     </h1>
                   </div>
+                ) : (
+                  activeProjectId && (
+                    <div className="ml-1 flex items-center gap-2">
+                      <FolderOpen className="text-muted-foreground h-4 w-4" />
+                      <h1 className="text-foreground max-w-48 truncate text-sm font-medium">
+                        {projects.find((p) => p.id === activeProjectId)?.name}
+                      </h1>
+                    </div>
+                  )
                 )}
               </div>
 
@@ -653,22 +816,52 @@ export default function Page() {
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-              <ChatInterface
-                conversation={activeConversation}
-                sessionLabel={sessionLabel}
-                onSendMessage={handleSendMessage}
-                onEditAndResend={handleEditAndResend}
-                onReviewAgent={handleReviewAgent}
-                isStreaming={isStreaming}
-                modes={modes}
-                models={models}
-                selectedModeId={selectedModeId}
-                selectedModelId={selectedModelId}
-                onSelectMode={setSelectedModeId}
-                onSelectModel={setSelectedModelId}
-                agenticMode={agenticMode}
-                onToggleAgenticMode={() => setAgenticMode((prev) => !prev)}
-              />
+              {activeConversation ? (
+                <ChatInterface
+                  conversation={activeConversation}
+                  sessionLabel={sessionLabel}
+                  onSendMessage={handleSendMessage}
+                  onEditAndResend={handleEditAndResend}
+                  onReviewAgent={handleReviewAgent}
+                  isStreaming={isStreaming}
+                  modes={modes}
+                  models={models}
+                  selectedModeId={selectedModeId}
+                  selectedModelId={selectedModelId}
+                  onSelectMode={setSelectedModeId}
+                  onSelectModel={setSelectedModelId}
+                  agenticMode={agenticMode}
+                  onToggleAgenticMode={() => setAgenticMode((prev) => !prev)}
+                />
+              ) : activeProjectId &&
+                projects.find((p) => p.id === activeProjectId) ? (
+                <ProjectPage
+                  project={projects.find((p) => p.id === activeProjectId)!}
+                  conversations={conversations}
+                  agentProcesses={agentProcesses}
+                  cronJobs={cronJobs}
+                  automations={automations}
+                  onSelectConversation={handleSelectConversation}
+                  onNewConversation={handleNewConversation}
+                />
+              ) : (
+                <div className="bg-background flex flex-1 flex-col items-center justify-center p-8 text-center">
+                  <div className="bg-primary/10 mb-6 flex h-16 w-16 items-center justify-center rounded-2xl">
+                    <MessageSquare className="text-primary h-8 w-8" />
+                  </div>
+                  <h2 className="mb-2 text-xl font-semibold">
+                    Welcome to MyAgent
+                  </h2>
+                  <p className="text-muted-foreground mb-8 max-w-sm">
+                    Select a conversation from the sidebar or choose a project
+                    to view its assets.
+                  </p>
+                  <Button onClick={handleNewConversation} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Start a new conversation
+                  </Button>
+                </div>
+              )}
 
               <SettingsPanel
                 open={settingsOpen}
@@ -685,7 +878,9 @@ export default function Page() {
         </div>
 
         <StatusBar
-          activeModel={isModelOverridden ? selectedModel ?? undefined : undefined}
+          activeModel={
+            isModelOverridden ? (selectedModel ?? undefined) : undefined
+          }
           agentProcesses={agentProcesses}
           agenticMode={agenticMode}
         />

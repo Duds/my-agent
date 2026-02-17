@@ -149,6 +149,17 @@ class ModelRouter:
     ) -> Dict[str, Any]:
         intent = await self.classify_intent(user_input)
         
+        # Semantic Memory injection (RAG)
+        if self.memory_system:
+            try:
+                memories = await self.memory_system.search_long_term_memory(user_input, limit=3)
+                if memories:
+                    context_str = "\n".join([f"- {m['content']}" for m in memories])
+                    user_input = f"[PAST KNOWLEDGE]\n{context_str}\n\n[USER QUERY]\n{user_input}"
+                    logger.info("Injected %d memories into prompt context", len(memories))
+            except Exception as e:
+                logger.warning("Failed to inject semantic memory: %s", e)
+        
         # Load context if session_id is provided
         context = []
         if session_id and self.memory_system:
@@ -184,27 +195,55 @@ class ModelRouter:
         if intent == Intent.CREATE_AGENT:
             from .agent_generator import generate_and_register_agent
 
-            gen_adapter = self.adapter_factory.get_remote_adapter("anthropic")
-            if not gen_adapter:
-                gen_adapter = self.adapter_factory.get_remote_adapter("mistral")
-            if not gen_adapter:
-                gen_adapter = self.local_client
+            # Sequence of adapters to try for generation
+            adapters_to_try = [
+                ("anthropic", self.adapter_factory.get_remote_adapter("anthropic")),
+                ("mistral", self.adapter_factory.get_remote_adapter("mistral")),
+                ("local", self.local_client)
+            ]
 
-            success, message, metadata = await generate_and_register_agent(
-                user_request=user_input,
-                adapter=gen_adapter,
-                model_override=None,
-                dry_run=True,
-            )
+            success = False
+            message = "No suitable model found for agent generation."
+            metadata = None
+            gen_adapter = None
+
+            for name, adapter in adapters_to_try:
+                if not adapter:
+                    continue
+                
+                try:
+                    logger.info(f"Attempting agent generation with {name} adapter")
+                    success, message, metadata = await generate_and_register_agent(
+                        user_request=user_input,
+                        adapter=adapter,
+                        model_override=None,
+                        dry_run=True,
+                    )
+                    if success or "Anthropic Error" not in message: # Basic success or non-auth error check
+                         gen_adapter = adapter
+                         break
+                except Exception as e:
+                    logger.warning(f"Agent generation failed with {name}: {e}")
+                    message = f"Failed with {name}: {e}"
+
             adapter_name = "agent-generator"
             if session_id and self.memory_system:
                 await self.memory_system.save_chat_turn(session_id, {"role": "user", "content": user_input})
                 await self.memory_system.save_chat_turn(session_id, {"role": "assistant", "content": message})
+            
+            # If all failed, provide a nicer error
+            if not success and "x-api-key" in message.lower():
+                 message = (
+                     f"Failed to generate agent: Authentication error with {name}. "
+                     "Please check your API keys in the settings or .env file. "
+                     "Standard Anthropic keys should start with 'sk-ant-api03'."
+                 )
+
             result = {
                 "intent": intent.value,
                 "adapter": adapter_name,
                 "answer": message,
-                "model_info": gen_adapter.get_model_info(),
+                "model_info": gen_adapter.get_model_info() if gen_adapter else {"model": "none"},
                 "requires_privacy": False,
                 "security": {"is_safe": True},
             }
@@ -313,6 +352,17 @@ class ModelRouter:
 
         intent = await self.classify_intent(user_input)
 
+        # Semantic Memory injection (RAG)
+        if self.memory_system:
+            try:
+                memories = await self.memory_system.search_long_term_memory(user_input, limit=3)
+                if memories:
+                    context_str = "\n".join([f"- {m['content']}" for m in memories])
+                    user_input = f"[PAST KNOWLEDGE]\n{context_str}\n\n[USER QUERY]\n{user_input}"
+                    logger.info("Injected %d memories into prompt context (stream)", len(memories))
+            except Exception as e:
+                logger.warning("Failed to inject semantic memory (stream): %s", e)
+
         # NSFW/PRIVATE always route to local uncensored models—ignore model_id override
         if intent in [Intent.PRIVATE, Intent.NSFW] or mode_id == "private":
             model_name = self._find_best_local_model(
@@ -328,18 +378,44 @@ class ModelRouter:
         elif intent == Intent.CREATE_AGENT:
             from .agent_generator import generate_and_register_agent
 
-            gen_adapter = self.adapter_factory.get_remote_adapter("anthropic")
-            if not gen_adapter:
-                gen_adapter = self.adapter_factory.get_remote_adapter("mistral")
-            if not gen_adapter:
-                gen_adapter = self.local_client
+            # Sequence of adapters to try for generation (streaming)
+            adapters_to_try = [
+                ("anthropic", self.adapter_factory.get_remote_adapter("anthropic")),
+                ("mistral", self.adapter_factory.get_remote_adapter("mistral")),
+                ("local", self.local_client)
+            ]
 
-            success, message, metadata = await generate_and_register_agent(
-                user_request=user_input,
-                adapter=gen_adapter,
-                model_override=None,
-                dry_run=True,
-            )
+            success = False
+            message = "No suitable model found for agent generation."
+            metadata = None
+            gen_adapter = None
+
+            for name, adapter in adapters_to_try:
+                if not adapter:
+                    continue
+                
+                try:
+                    logger.info(f"Attempting agent generation (stream) with {name} adapter")
+                    success, message, metadata = await generate_and_register_agent(
+                        user_request=user_input,
+                        adapter=adapter,
+                        model_override=None,
+                        dry_run=True,
+                    )
+                    if success or "Anthropic Error" not in message:
+                        gen_adapter = adapter
+                        break
+                except Exception as e:
+                    logger.warning(f"Agent generation failed with {name}: {e}")
+                    message = f"Failed with {name}: {e}"
+
+            if not success and "x-api-key" in message.lower():
+                 message = (
+                     f"Failed to generate agent: Authentication error with {name}. "
+                     "Please check your API keys in the settings or .env file. "
+                     "Standard Anthropic keys should start with 'sk-ant-api03'."
+                 )
+
             routing_meta = {
                 "intent": intent.value,
                 "adapter": "agent-generator",

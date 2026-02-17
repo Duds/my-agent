@@ -1,0 +1,22 @@
+{
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "Default",
+      "color": "hsl(217, 92%, 60%)",
+      "conversationIds": [
+        "conv-1771321929",
+        "conv-1771323690",
+        "conv-1771324191"
+      ],
+      "is_vault": false
+    },
+    {
+      "id": "proj-2",
+      "name": "Special Chat Testing",
+      "color": "hsl(280, 67%, 47%)",
+      "conversationIds": [],
+      "is_vault": false
+    }
+  ]
+}

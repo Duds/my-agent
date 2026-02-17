@@ -7,6 +7,14 @@
       "status": "success",
       "message": "Completed",
       "durationMs": 1200
+    },
+    {
+      "id": "log_1771322965525",
+      "scriptId": "auto-1",
+      "timestamp": "2026-02-17T21:09:25.525621Z",
+      "status": "success",
+      "message": "Completed: New file watcher",
+      "durationMs": 500
     }
   ]
 }

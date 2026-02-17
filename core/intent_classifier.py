@@ -10,7 +10,8 @@ class IntentClassifier:
     """Classifies user intent using semantic similarity with sentence-transformers."""
 
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        self.model = SentenceTransformer(model_name)
+        self.model_name = model_name
+        self._model: SentenceTransformer | None = None
         self.classification_adapter = None
         self.model_override = None
         # Predefined exemplars for each intent
@@ -73,12 +74,25 @@ class IntentClassifier:
             ],
         }
         
-        # Pre-compute embeddings for exemplars
-        self.exemplar_embeddings = {}
-        for intent, texts in self.exemplars.items():
-            self.exemplar_embeddings[intent] = self.model.encode(texts, convert_to_tensor=True)
-            
-        logger.info("IntentClassifier initialized with model: %s", model_name)
+        # Pre-compute embeddings for exemplars (LAZY)
+        self.exemplar_embeddings: Dict[Intent, torch.Tensor] = {}
+        logger.info("IntentClassifier initialized (lazy) with model: %s", model_name)
+
+    @property
+    def model(self) -> SentenceTransformer:
+        """Lazy-load the model on first access."""
+        if self._model is None:
+            logger.info("Loading SentenceTransformer model for IntentClassifier: %s...", self.model_name)
+            self._model = SentenceTransformer(self.model_name)
+            self._precompute_embeddings()
+            logger.info("IntentClassifier model loaded and exemplars indexed.")
+        return self._model
+
+    def _precompute_embeddings(self):
+        """Pre-compute embeddings for exemplars using the lazy-loaded model."""
+        if not self.exemplar_embeddings:
+            for intent, texts in self.exemplars.items():
+                self.exemplar_embeddings[intent] = self._model.encode(texts, convert_to_tensor=True)
 
     def set_adapter(self, adapter, model_override: str | None = None):
         """Sets the LLM adapter for classification. model_override for commercial APIs."""

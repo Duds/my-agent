@@ -1,0 +1,18 @@
+{
+  "id": "PBI-055",
+  "title": "Integration Connection Flows",
+  "status": "ready",
+  "priority": "S",
+  "phase": "Feature Completion",
+  "description": "Implement connect/disconnect flows for external integrations (Google Workspace, Pinterest, deployment, database). Currently only status display is available.",
+  "acceptance_criteria": [
+    "OAuth flow for Google Workspace integration",
+    "API key management for other integrations (Pinterest, deployment, database)",
+    "Connect/disconnect functionality in settings UI",
+    "Remove 'Status only — connect flows coming soon' message from Connected Services section",
+    "Credential storage in data/credentials.json",
+    "Success/error feedback for connection attempts"
+  ],
+  "dependencies": ["PBI-028"],
+  "notes": "Backend /api/integrations endpoint exists and returns status. This PBI adds the connection/disconnection flows and credential management."
+}

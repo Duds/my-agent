@@ -106,6 +106,7 @@ class ProjectInfo(BaseModel):
     name: str
     color: str
     conversationIds: List[str]
+    is_vault: Optional[bool] = False
 
 class MessageInfo(BaseModel):
     id: str
@@ -182,3 +183,17 @@ class ErrorReportEntry(BaseModel):
     timestamp: str
     message: str
     severity: Optional[str] = None
+
+
+class VaultUnlockBody(BaseModel):
+    """Body for POST /api/vault/unlock."""
+
+    password: str
+
+
+class VaultStatusResponse(BaseModel):
+    """Status of the Privacy Vault."""
+
+    initialized: bool
+    locked: bool
+    last_unlock: Optional[str] = None

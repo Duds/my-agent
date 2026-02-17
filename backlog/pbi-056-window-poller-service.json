@@ -1,0 +1,18 @@
+{
+  "id": "PBI-056",
+  "title": "Window Poller Service",
+  "status": "ready",
+  "priority": "M",
+  "phase": "Context Awareness Foundation",
+  "description": "Background daemon to detect active window/process contexts and feed ContextDisplay component. Part of capability.context_awareness.",
+  "acceptance_criteria": [
+    "Window poller service detects active window on macOS",
+    "Service exposes API endpoint /api/context for current context",
+    "ContextDisplay component receives real data from backend",
+    "Status bar shows active context when available",
+    "Service runs as background daemon",
+    "Configurable polling interval (default: 5 seconds)"
+  ],
+  "dependencies": [],
+  "notes": "ContextDisplay component exists at frontend/src/components/context-display.tsx but has no data source. This service will provide the activeWindow and currentActivity props."
+}

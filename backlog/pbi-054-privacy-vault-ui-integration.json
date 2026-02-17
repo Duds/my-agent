@@ -1,0 +1,17 @@
+{
+  "id": "PBI-054",
+  "title": "Privacy Vault UI Integration",
+  "status": "ready",
+  "priority": "S",
+  "phase": "Feature Completion",
+  "description": "Integrate VaultOverlay component into settings panel with status indicator and management UI. VaultOverlay component and backend API already exist but are not connected to the settings UI.",
+  "acceptance_criteria": [
+    "VaultOverlay integrated into settings panel",
+    "Vault status indicator shows locked/unlocked state",
+    "Settings UI allows vault initialization and unlock",
+    "Remove 'Coming soon' badge from Privacy Vault section",
+    "Wire vault status to backend /api/vault/status endpoint"
+  ],
+  "dependencies": ["PBI-030"],
+  "notes": "VaultOverlay component exists at frontend/src/components/vault/VaultOverlay.tsx. Backend vault API is functional. This PBI is for UI integration only."
+}
