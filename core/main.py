@@ -70,6 +70,7 @@ from core.model_discovery import discover_models
 from core.model_registry import get_models_for_provider
 from core.doctor import get_doctor_report
 from core.commands import get_commands_list
+from core.automation_engine import AutomationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,11 @@ router = ModelRouter(
     adapter_factory=adapter_factory,
     security_validator=security_validator,
     memory_system=memory_system,
+)
+
+# Initialize Automation Engine
+automation_engine = AutomationEngine(
+    data_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 )
 
 
@@ -128,7 +134,14 @@ async def lifespan(app: FastAPI):
     logger.info("Startup: Discovered local models: %s", models)
     router.available_models = models
     router._load_routing_config()  # Reload after models discovered
+
+    # Start Automation Engine
+    await automation_engine.start()
+    
     yield
+    
+    # Shutdown Automation Engine
+    await automation_engine.stop()
 
 
 app = FastAPI(
@@ -285,10 +298,16 @@ async def list_models(
 
     all_remote_adapters = adapter_factory.get_all_remote_adapters()
     remote_models = []
-    for provider in ("anthropic", "mistral", "moonshot"):
+    for provider in ("anthropic", "mistral", "moonshot", "openai", "google"):
         if provider not in all_remote_adapters:
             continue
-        provider_display = {"anthropic": "Anthropic", "mistral": "Mistral", "moonshot": "Moonshot"}[provider]
+        provider_display = {
+            "anthropic": "Anthropic", 
+            "mistral": "Mistral", 
+            "moonshot": "Moonshot",
+            "openai": "OpenAI",
+            "google": "Google"
+        }[provider]
         for m in get_models_for_provider(provider):
             model = {
                 "id": m["id"],
@@ -599,8 +618,14 @@ async def slack_events(request: Request):
 
 # --- AI Services: connect, discover, disconnect ---
 
-AI_PROVIDERS = ("anthropic", "mistral", "moonshot")
-AI_PROVIDER_DISPLAY = {"anthropic": "Anthropic", "mistral": "Mistral", "moonshot": "Moonshot"}
+AI_PROVIDERS = ("anthropic", "mistral", "moonshot", "openai", "google")
+AI_PROVIDER_DISPLAY = {
+    "anthropic": "Anthropic", 
+    "mistral": "Mistral", 
+    "moonshot": "Moonshot",
+    "openai": "OpenAI",
+    "google": "Google"
+}
 
 
 class ConnectBody(BaseModel):
@@ -711,24 +736,68 @@ async def list_ai_services():
     return result
 
 
-# In-memory stores for projects and conversations (file-backed in PBI-029, PBI-012)
-_projects_store: list[dict] = [
-    {"id": "proj-1", "name": "Default", "color": "hsl(217, 92%, 60%)", "conversationIds": []},
-]
-_conversations_store: list[dict] = []
-_conversation_counter = 0
+# In-memory stores for projects and conversations (pattern from agents.json, cron_jobs.json)
+
+def _load_projects() -> list[dict]:
+    """Load projects from data/projects.json."""
+    path = settings.projects_config_path
+    if not os.path.exists(path):
+        # Default project
+        default_proj = {"id": "proj-1", "name": "Default", "color": "hsl(217, 92%, 60%)", "conversationIds": []}
+        return [default_proj]
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        projects = data.get("projects", [])
+        for p in projects:
+            if "is_vault" not in p:
+                p["is_vault"] = p.get("name", "").lower() == "privacy vault"
+        return projects
+    except Exception as e:
+        logger.warning("Failed to load projects from %s: %s", path, e)
+        return [{"id": "proj-1", "name": "Default", "color": "hsl(217, 92%, 60%)", "conversationIds": []}]
 
 
-def _next_conv_id() -> str:
-    global _conversation_counter
-    _conversation_counter += 1
-    return f"conv-{_conversation_counter}"
+def _save_projects(projects: list[dict]):
+    """Save projects to data/projects.json."""
+    path = settings.projects_config_path
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"projects": projects}, f, indent=2)
+    except Exception as e:
+        logger.error("Failed to save projects to %s: %s", path, e)
+
+
+def _load_conversations() -> list[dict]:
+    """Load conversations from data/conversations.json."""
+    path = settings.conversations_config_path
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data.get("conversations", [])
+    except Exception as e:
+        logger.warning("Failed to load conversations from %s: %s", path, e)
+        return []
+
+
+def _save_conversations(conversations: list[dict]):
+    """Save conversations to data/conversations.json."""
+    path = settings.conversations_config_path
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"conversations": conversations}, f, indent=2)
+    except Exception as e:
+        logger.error("Failed to save conversations to %s: %s", path, e)
 
 
 @app.get("/api/projects", summary="List projects", response_model=list[schemas.ProjectInfo], dependencies=[Depends(get_api_key)])
 async def list_projects():
-    """Return projects from in-memory store."""
-    return [dict(p) for p in _projects_store]
+    """Return projects from shared JSON store."""
+    return _load_projects()
 
 
 class ProjectCreate(BaseModel):
@@ -747,30 +816,40 @@ class ProjectPatch(BaseModel):
 
 @app.post("/api/projects", summary="Create project", dependencies=[Depends(get_api_key)])
 async def create_project(body: ProjectCreate):
-    """Create a new project."""
-    pid = f"proj-{len(_projects_store) + 1}"
-    proj = {"id": pid, "name": body.name, "color": body.color, "conversationIds": []}
-    _projects_store.append(proj)
+    """Create a new project and persist it."""
+    projects = _load_projects()
+    pid = f"proj-{len(projects) + 1}"
+    proj = {
+        "id": pid,
+        "name": body.name,
+        "color": body.color,
+        "conversationIds": [],
+        "is_vault": body.name.lower() == "privacy vault"
+    }
+    projects.append(proj)
+    _save_projects(projects)
     return proj
 
 
 @app.patch("/api/projects/{project_id}", summary="Update project", dependencies=[Depends(get_api_key)])
 async def patch_project(project_id: str, body: ProjectPatch):
-    """Update a project."""
-    for p in _projects_store:
+    """Update a project and persist changes."""
+    projects = _load_projects()
+    for p in projects:
         if p["id"] == project_id:
             if body.name is not None:
                 p["name"] = body.name
             if body.color is not None:
                 p["color"] = body.color
+            _save_projects(projects)
             return p
     raise HTTPException(status_code=404, detail="Project not found")
 
 
 @app.get("/api/conversations", summary="List conversations", response_model=list[schemas.ConversationInfo], dependencies=[Depends(get_api_key)])
 async def list_conversations():
-    """Return conversations from in-memory store."""
-    return [dict(c) for c in _conversations_store]
+    """Return conversations from shared JSON store."""
+    return _load_conversations()
 
 
 class ConversationCreate(BaseModel):
@@ -785,17 +864,22 @@ class ConversationCreate(BaseModel):
 @app.get("/api/sessions", summary="List sessions", dependencies=[Depends(get_api_key)])
 async def list_sessions():
     """Return first-class sessions: main plus project-scoped (PBI-046)."""
+    projects = _load_projects()
     sessions = [{"id": "main", "label": "Main"}]
-    for p in _projects_store:
+    for p in projects:
         sessions.append({"id": p["id"], "label": p.get("name", p["id"])})
     return sessions
 
 
 @app.post("/api/conversations", summary="Create conversation", dependencies=[Depends(get_api_key)])
 async def create_conversation(body: ConversationCreate):
-    """Create a new conversation and optionally attach to project and session."""
-    cid = _next_conv_id()
-    proj_id = body.projectId or (_projects_store[0]["id"] if _projects_store else "proj-1")
+    """Create a new conversation, attach to project/session, and persist."""
+    conversations = _load_conversations()
+    projects = _load_projects()
+    
+    cid = f"conv-{int(time.time())}" # Use timestamp for unique but reasonably sequential ID
+    proj_id = body.projectId or (projects[0]["id"] if projects else "proj-1")
+    
     conv = {
         "id": cid,
         "title": body.title,
@@ -806,11 +890,17 @@ async def create_conversation(body: ConversationCreate):
         "createdAt": datetime.utcnow().isoformat() + "Z",
         "updatedAt": datetime.utcnow().isoformat() + "Z",
     }
-    _conversations_store.append(conv)
-    for p in _projects_store:
+    
+    conversations.append(conv)
+    _save_conversations(conversations)
+
+    # Update project's reference
+    for p in projects:
         if p["id"] == proj_id:
             p["conversationIds"] = list(p.get("conversationIds", [])) + [cid]
+            _save_projects(projects)
             break
+            
     return conv
 
 
@@ -818,21 +908,58 @@ class ConversationPatch(BaseModel):
     """PATCH body for /api/conversations/:id."""
 
     title: str | None = None
+    projectId: str | None = None
     messages: list | None = None
 
 
 @app.patch("/api/conversations/{conversation_id}", summary="Update conversation", dependencies=[Depends(get_api_key)])
 async def patch_conversation(conversation_id: str, body: ConversationPatch):
-    """Update conversation (e.g. append messages)."""
-    for c in _conversations_store:
+    """Update conversation (renaming, messages, or moving projects)."""
+    conversations = _load_conversations()
+    projects = _load_projects()
+    
+    target_conv = None
+    for c in conversations:
         if c["id"] == conversation_id:
-            if body.title is not None:
-                c["title"] = body.title
-            if body.messages is not None:
-                c["messages"] = body.messages
-            c["updatedAt"] = datetime.utcnow().isoformat() + "Z"
-            return c
-    raise HTTPException(status_code=404, detail="Conversation not found")
+            target_conv = c
+            break
+            
+    if not target_conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Handle project move
+    if body.projectId and body.projectId != target_conv["projectId"]:
+        old_pid = target_conv["projectId"]
+        new_pid = body.projectId
+        
+        # Remove from old project
+        for p in projects:
+            if p["id"] == old_pid:
+                p["conversationIds"] = [cid for cid in p.get("conversationIds", []) if cid != conversation_id]
+                break
+        
+        # Add to new project
+        found_new = False
+        for p in projects:
+            if p["id"] == new_pid:
+                p["conversationIds"] = list(p.get("conversationIds", [])) + [conversation_id]
+                found_new = True
+                break
+        
+        if not found_new:
+             raise HTTPException(status_code=400, detail=f"Target project {new_pid} not found")
+        
+        target_conv["projectId"] = new_pid
+        _save_projects(projects)
+
+    if body.title is not None:
+        target_conv["title"] = body.title
+    if body.messages is not None:
+        target_conv["messages"] = body.messages
+        
+    target_conv["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+    _save_conversations(conversations)
+    return target_conv
 
 
 def _load_agents() -> list:
@@ -1000,6 +1127,39 @@ def _load_error_reports(limit: int = 100, script_id: str | None = None) -> list:
         return []
 
 
+@app.get("/api/vault/status", summary="Get Vault status", response_model=schemas.VaultStatusResponse, dependencies=[Depends(get_api_key)])
+async def get_vault_status():
+    """Return whether the vault is initialized and if it's currently locked."""
+    return {
+        "initialized": memory_system.is_vault_initialized(),
+        "locked": memory_system.is_vault_locked(),
+        "last_unlock": memory_system.last_unlock_time.isoformat() + "Z" if memory_system.last_unlock_time else None
+    }
+
+
+@app.post("/api/vault/unlock", summary="Unlock Vault", dependencies=[Depends(get_api_key)])
+async def unlock_vault(body: schemas.VaultUnlockBody):
+    """Unlock the vault using a master password."""
+    success = await memory_system.unlock_vault(body.password)
+    if not success:
+        raise HTTPException(status_code=401, detail="Invalid password or failed to derive key")
+    return {"status": "unlocked"}
+
+
+@app.post("/api/vault/lock", summary="Lock Vault", dependencies=[Depends(get_api_key)])
+async def lock_vault():
+    """Immediately purge the vault key from memory."""
+    memory_system.lock_vault()
+    return {"status": "locked"}
+
+
+@app.post("/api/vault/reset", summary="Destroy and Reset Vault", dependencies=[Depends(get_api_key)])
+async def reset_vault():
+    """Wipe all vault data and resets the salt. High risk!"""
+    await memory_system.destroy_vault()
+    return {"status": "reset", "message": "Vault data has been wiped."}
+
+
 @app.get("/api/agent-processes", summary="List agent processes", response_model=list[schemas.AgentProcessInfo], dependencies=[Depends(get_api_key)])
 async def list_agent_processes():
     """Return background agent processes from data/agents.json."""
@@ -1057,6 +1217,30 @@ async def list_automation_logs(limit: int = 100, scriptId: str | None = None):
 async def list_error_reports(limit: int = 100, scriptId: str | None = None):
     """Return error reports from data/error_reports.json."""
     return _load_error_reports(limit=limit, script_id=scriptId)
+
+
+@app.post("/api/automations/trigger/{automation_id}", summary="Manually trigger an automation", dependencies=[Depends(get_api_key)])
+async def trigger_automation(automation_id: str):
+    """Triggers a background automation task."""
+    autos = _load_automations()
+    target_auto = next((a for a in autos if a["id"] == automation_id), None)
+    if not target_auto:
+        raise HTTPException(status_code=404, detail="Automation not found")
+    
+    await automation_engine.dispatch_task(target_auto)
+    return {"status": "triggered", "automation_id": automation_id}
+
+
+@app.post("/api/scripts/run/{script_id}", summary="Run a script manually", dependencies=[Depends(get_api_key)])
+async def run_script(script_id: str):
+    """Dispatches a script to the subagent worker queue."""
+    scripts = _load_scripts()
+    target_script = next((s for s in scripts if s["id"] == script_id), None)
+    if not target_script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    await automation_engine.dispatch_task(target_script)
+    return {"status": "dispatched", "script_id": script_id}
 
 
 if __name__ == "__main__":

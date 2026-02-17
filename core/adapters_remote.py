@@ -14,6 +14,11 @@ try:
 except ImportError:
     openai = None # type: ignore
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None # type: ignore
+
 from .config import settings
 from .utils import retry
 from .exceptions import AdapterError
@@ -33,6 +38,10 @@ def _get_key(provider: str) -> str | None:
         return settings.mistral_api_key
     if provider == "moonshot":
         return settings.moonshot_api_key
+    if provider == "openai":
+        return settings.openai_api_key
+    if provider == "google":
+        return settings.google_api_key
     return None
 
 
@@ -171,3 +180,99 @@ class MistralAdapter(ModelAdapter):
 
     def get_model_info(self) -> Dict[str, Any]:
         return {"model": self.model, "type": "remote", "provider": "mistral"}
+
+
+class OpenAIAdapter(ModelAdapter):
+    """OpenAI API adapter."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
+        self.api_key = api_key or _get_key("openai")
+        self.base_url = base_url or settings.openai_base_url
+        self.model = model or settings.openai_model
+        
+        if not self.api_key:
+            logger.warning("OpenAI API key not found. OpenAI adapter disabled.")
+            self.client = None
+        else:
+            if openai is None:
+                logger.error("openai package not installed.")
+                self.client = None
+            else:
+                self.client = openai.AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url,
+                )
+        self.name = "OpenAI"
+
+    @retry((Exception,), tries=3, delay=1, backoff=2)
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
+        if not self.client:
+            raise AdapterError("OpenAI API not configured.")
+        model = model_override or self.model
+        try:
+            messages = [{"role": "user", "content": prompt}]
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=settings.openai_temperature,
+            )
+            return response.choices[0].message.content or ""
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise AdapterError(f"OpenAI Error: {str(e)}") from e
+
+    def get_model_info(self) -> Dict[str, Any]:
+        return {"model": self.model, "type": "remote", "provider": "openai"}
+
+
+class GeminiAdapter(ModelAdapter):
+    """Google Gemini API adapter."""
+
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key or _get_key("google")
+        self.model = model or settings.google_model
+        
+        if not self.api_key:
+            logger.warning("Google API key not found. Gemini adapter disabled.")
+            self.client = None
+        else:
+            if genai is None:
+                logger.error("google-generativeai package not installed.")
+                self.client = None
+            else:
+                genai.configure(api_key=self.api_key)
+                self.client = genai.GenerativeModel(self.model)
+        self.name = "Gemini"
+
+    @retry((Exception,), tries=3, delay=1, backoff=2)
+    async def generate(
+        self,
+        prompt: str,
+        context: List[Dict[str, str]] | None = None,
+        model_override: str | None = None,
+    ) -> str:
+        if not self.api_key or genai is None:
+            raise AdapterError("Gemini API not configured.")
+        
+        model_name = model_override or self.model
+        try:
+            # Use specific model if override provided
+            model = genai.GenerativeModel(model_name) if model_override else self.client
+            response = await model.generate_content_async(prompt)
+            return response.text
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}")
+            raise AdapterError(f"Gemini Error: {str(e)}") from e
+
+    def get_model_info(self) -> Dict[str, Any]:
+        return {"model": self.model, "type": "remote", "provider": "google"}

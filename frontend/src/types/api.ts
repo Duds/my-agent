@@ -205,3 +205,9 @@ export interface ConnectServiceResponse {
   models: { id: string; name: string; contextWindow?: string }[];
   error?: string;
 }
+
+export interface VaultStatus {
+  initialized: boolean;
+  locked: boolean;
+  last_unlock?: string;
+}

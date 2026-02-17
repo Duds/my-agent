@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     mistral_model: str = "mistral-small-latest"
     mistral_temperature: float = 0.3
 
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    openai_temperature: float = 0.3
+
+    google_api_key: str | None = None
+    google_model: str = "gemini-1.5-flash"
+    google_temperature: float = 0.3
+
     # Local Model Role Mappings
     local_judge_model: str = "llama3"
     local_privacy_model: str = "hermes-roleplay"
@@ -77,6 +86,7 @@ class Settings(BaseSettings):
 
     google_credentials_path: str | None = None
     vault_path: str = "memory/vault.json"
+    vault_salt_path: str = "memory/vault.salt"
     encryption_key: str | None = None
 
     # Routing Configuration
@@ -95,6 +105,10 @@ class Settings(BaseSettings):
     scripts_config_path: str = "data/scripts.json"
     execution_logs_config_path: str = "data/execution_logs.json"
     error_reports_config_path: str = "data/error_reports.json"
+
+    # Persistence
+    projects_config_path: str = "data/projects.json"
+    conversations_config_path: str = "data/conversations.json"
 
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""

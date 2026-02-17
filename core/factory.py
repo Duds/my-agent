@@ -3,7 +3,7 @@ from typing import Dict, Optional, List
 
 from .adapters_base import ModelAdapter
 from .adapters_local import OllamaAdapter
-from .adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter
+from .adapters_remote import AnthropicAdapter, MistralAdapter, MoonshotAdapter, OpenAIAdapter, GeminiAdapter
 from .config import settings
 from . import credentials
 
@@ -21,6 +21,10 @@ def _get_provider_key(provider: str) -> str | None:
         return settings.mistral_api_key
     if provider == "moonshot":
         return settings.moonshot_api_key
+    if provider == "openai":
+        return settings.openai_api_key
+    if provider == "google":
+        return settings.google_api_key
     return None
 
 
@@ -57,6 +61,18 @@ class AdapterFactory:
             if adapter.client:
                 self._remote_instances["moonshot"] = adapter
                 logger.debug("Moonshot adapter initialized in factory")
+
+        if _get_provider_key("openai"):
+            adapter = OpenAIAdapter()
+            if adapter.client:
+                self._remote_instances["openai"] = adapter
+                logger.debug("OpenAI adapter initialized in factory")
+
+        if _get_provider_key("google"):
+            adapter = GeminiAdapter()
+            if adapter.client:
+                self._remote_instances["google"] = adapter
+                logger.debug("Gemini adapter initialized in factory")
 
         self._initialized = True
 

@@ -1,0 +1,20 @@
+{
+  "id": "PBI-053",
+  "title": "AI Services Enhancement: OpenAI and Google Gemini Support",
+  "status": "done",
+  "priority": "S",
+  "phase": "Feature Completion",
+  "description": "Add support for OpenAI and Google Gemini as commercial AI providers, including backend adapters, model registry, discovery logic, and frontend settings UI enhancements.",
+  "acceptance_criteria": [
+    "OpenAIAdapter and GeminiAdapter implemented in core/adapters_remote.py",
+    "Model registry includes GPT-4o, GPT-4o-mini, GPT-4 Turbo, Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro",
+    "Model discovery implemented for OpenAI and Google APIs",
+    "AdapterFactory supports initialization of new providers",
+    "Settings UI displays all 5 providers (Anthropic, Mistral, Moonshot, OpenAI, Google)",
+    "Provider-specific icons in settings panel",
+    "Invalid Anthropic API key removed from .env",
+    "google-generativeai package added to requirements.txt"
+  ],
+  "completed_date": "2026-02-17",
+  "notes": "This enhancement allows users to connect OpenAI and Google Gemini services, use their models for routing and meta-tasks, and provides clear connection status visibility in the settings panel."
+}

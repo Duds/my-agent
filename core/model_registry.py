@@ -33,6 +33,14 @@ COMMERCIAL_MODELS: Dict[str, Tuple[str, str, str, str]] = {
     "kimi-k2-0711": ("moonshot", "kimi-k2-0711-preview", "Kimi K2 0711", "128k"),
     "kimi-k2-thinking": ("moonshot", "kimi-k2-thinking", "Kimi K2 Thinking", "262k"),
     "kimi-k2.5": ("moonshot", "kimi-k2.5", "Kimi K2.5 Multimodal", "262k"),
+    # OpenAI
+    "gpt-4o": ("openai", "gpt-4o", "GPT-4o", "128k"),
+    "gpt-4o-mini": ("openai", "gpt-4o-mini", "GPT-4o mini", "128k"),
+    "gpt-4-turbo": ("openai", "gpt-4-turbo", "GPT-4 Turbo", "128k"),
+    # Google
+    "gemini-1.5-pro": ("google", "gemini-1.5-pro", "Gemini 1.5 Pro", "1M"),
+    "gemini-1.5-flash": ("google", "gemini-1.5-flash", "Gemini 1.5 Flash", "1M"),
+    "gemini-1.0-pro": ("google", "gemini-1.0-pro", "Gemini 1.0 Pro", "32k"),
 }
 
 

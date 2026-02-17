@@ -118,7 +118,12 @@ export function SettingsPanel({
   const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const [mcpAddDialogOpen, setMcpAddDialogOpen] = useState(false);
   const [aiServices, setAiServices] = useState<
-    { provider: string; display_name: string; connected: boolean; model_count: number }[]
+    {
+      provider: string;
+      display_name: string;
+      connected: boolean;
+      model_count: number;
+    }[]
   >([]);
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   const [connectDialogProvider, setConnectDialogProvider] = useState<{
@@ -126,12 +131,18 @@ export function SettingsPanel({
     name: string;
   } | null>(null);
   const [connectDialogApiKey, setConnectDialogApiKey] = useState('');
-  const [connectDialogError, setConnectDialogError] = useState<string | null>(null);
+  const [connectDialogError, setConnectDialogError] = useState<string | null>(
+    null
+  );
   const [connectDialogLoading, setConnectDialogLoading] = useState(false);
   const [telegramTestMessage, setTelegramTestMessage] = useState('');
   const [telegramSending, setTelegramSending] = useState(false);
-  const [telegramSendResult, setTelegramSendResult] = useState<string | null>(null);
-  const [telegramPrimaryChatId, setTelegramPrimaryChatId] = useState<string | null>(null);
+  const [telegramSendResult, setTelegramSendResult] = useState<string | null>(
+    null
+  );
+  const [telegramPrimaryChatId, setTelegramPrimaryChatId] = useState<
+    string | null
+  >(null);
 
   const fetchStatus = async () => {
     try {
@@ -346,19 +357,52 @@ export function SettingsPanel({
             {aiServices.map((svc) => (
               <Card key={svc.provider} className="bg-background">
                 <CardContent className="flex items-center justify-between gap-3 p-3">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={cn(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-                        svc.connected ? 'bg-success/15 text-success' : 'bg-muted'
+                        svc.connected
+                          ? 'bg-success/15 text-success'
+                          : 'bg-muted'
                       )}
                     >
-                      <Globe
-                        className={cn(
-                          'h-4 w-4',
-                          svc.connected ? 'text-success' : 'text-muted-foreground'
-                        )}
-                      />
+                      {svc.provider === 'openai' ? (
+                        <Zap
+                          className={cn(
+                            'h-4 w-4',
+                            svc.connected
+                              ? 'text-success'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                      ) : svc.provider === 'anthropic' ? (
+                        <Globe
+                          className={cn(
+                            'h-4 w-4',
+                            svc.connected
+                              ? 'text-success'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                      ) : svc.provider === 'google' ? (
+                        <Plug
+                          className={cn(
+                            'h-4 w-4',
+                            svc.connected
+                              ? 'text-success'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                      ) : (
+                        <Globe
+                          className={cn(
+                            'h-4 w-4',
+                            svc.connected
+                              ? 'text-success'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -368,7 +412,9 @@ export function SettingsPanel({
                         <span
                           className={cn(
                             'h-2 w-2 shrink-0 rounded-full',
-                            svc.connected ? 'bg-success' : 'bg-muted-foreground/40'
+                            svc.connected
+                              ? 'bg-success'
+                              : 'bg-muted-foreground/40'
                           )}
                         />
                       </div>
@@ -406,14 +452,22 @@ export function SettingsPanel({
               </Card>
             ))}
 
-            <Dialog open={connectDialogOpen} onOpenChange={(o) => !o && closeConnectDialog()}>
+            <Dialog
+              open={connectDialogOpen}
+              onOpenChange={(o) => !o && closeConnectDialog()}
+            >
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Connect {connectDialogProvider?.name}</DialogTitle>
+                  <DialogTitle>
+                    Connect {connectDialogProvider?.name}
+                  </DialogTitle>
                   <DialogDescription>
                     Enter your API key. It will be validated and models will be
                     discovered automatically. Keys are stored locally in{' '}
-                    <code className="rounded bg-muted px-1">data/credentials.json</code>.
+                    <code className="bg-muted rounded px-1">
+                      data/credentials.json
+                    </code>
+                    .
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-2">
@@ -438,7 +492,9 @@ export function SettingsPanel({
                     />
                   </div>
                   {connectDialogError && (
-                    <p className="text-destructive text-sm">{connectDialogError}</p>
+                    <p className="text-destructive text-sm">
+                      {connectDialogError}
+                    </p>
                   )}
                 </div>
                 <DialogFooter>
@@ -519,7 +575,11 @@ export function SettingsPanel({
                         {models
                           .filter((m) => m.provider !== 'Ollama (Local)')
                           .map((m) => (
-                            <HoverCard key={m.id} openDelay={200} closeDelay={100}>
+                            <HoverCard
+                              key={m.id}
+                              openDelay={200}
+                              closeDelay={100}
+                            >
                               <HoverCardTrigger asChild>
                                 <SelectItem
                                   value={m.id}
@@ -533,7 +593,7 @@ export function SettingsPanel({
                                           <Badge
                                             key={t}
                                             variant="outline"
-                                            className="text-[8px] px-1 py-0 font-normal"
+                                            className="px-1 py-0 text-[8px] font-normal"
                                           >
                                             {t}
                                           </Badge>
@@ -543,7 +603,10 @@ export function SettingsPanel({
                                   </div>
                                 </SelectItem>
                               </HoverCardTrigger>
-                              <HoverCardContent side="right" className="max-w-xs p-0">
+                              <HoverCardContent
+                                side="right"
+                                className="max-w-xs p-0"
+                              >
                                 <ModelInfoCard model={m} variant="compact" />
                               </HoverCardContent>
                             </HoverCard>
@@ -557,7 +620,11 @@ export function SettingsPanel({
                         {models
                           .filter((m) => m.provider === 'Ollama (Local)')
                           .map((m) => (
-                            <HoverCard key={m.id} openDelay={200} closeDelay={100}>
+                            <HoverCard
+                              key={m.id}
+                              openDelay={200}
+                              closeDelay={100}
+                            >
                               <HoverCardTrigger asChild>
                                 <SelectItem
                                   value={m.id}
@@ -571,7 +638,7 @@ export function SettingsPanel({
                                           <Badge
                                             key={t}
                                             variant="outline"
-                                            className="text-[8px] px-1 py-0 font-normal"
+                                            className="px-1 py-0 text-[8px] font-normal"
                                           >
                                             {t}
                                           </Badge>
@@ -581,7 +648,10 @@ export function SettingsPanel({
                                   </div>
                                 </SelectItem>
                               </HoverCardTrigger>
-                              <HoverCardContent side="right" className="max-w-xs p-0">
+                              <HoverCardContent
+                                side="right"
+                                className="max-w-xs p-0"
+                              >
                                 <ModelInfoCard model={m} variant="compact" />
                               </HoverCardContent>
                             </HoverCard>
@@ -663,7 +733,9 @@ export function SettingsPanel({
                               size="sm"
                               className="h-6 px-2 text-[10px]"
                               onClick={() =>
-                                setModelTagFilter(modelTagFilter === tag ? null : tag)
+                                setModelTagFilter(
+                                  modelTagFilter === tag ? null : tag
+                                )
                               }
                             >
                               {tag}
@@ -676,85 +748,101 @@ export function SettingsPanel({
                           No models match the selected tag. Try another filter.
                         </p>
                       ) : (
-                      <div className="mt-2 space-y-2">
-                  {filteredModels.map((model) => (
-                    <HoverCard key={model.id} openDelay={200} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <Card className="bg-background cursor-help transition-shadow hover:shadow-sm">
-                          <CardContent className="flex items-center gap-3 p-3">
-                            <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
-                              {model.type === 'commercial' && (
-                                <Globe className="text-primary h-4 w-4" />
-                              )}
-                              {model.type === 'ollama' && (
-                                <Server className="text-success h-4 w-4" />
-                              )}
-                              {model.type === 'local' && (
-                                <Cpu className="text-warning h-4 w-4" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-foreground truncate text-xs font-medium">
-                                  {model.name}
-                                </span>
-                                <span
-                                  className={cn(
-                                    'h-1.5 w-1.5 shrink-0 rounded-full',
-                                    model.status === 'online'
-                                      ? 'bg-success'
-                                      : model.status === 'loading'
-                                        ? 'bg-warning animate-pulse-dot'
-                                        : 'bg-muted-foreground/40'
-                                  )}
-                                />
-                              </div>
-                              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="text-muted-foreground text-[10px]">
-                                  {model.provider}
-                                </span>
-                                <Separator orientation="vertical" className="h-2.5" />
-                                <span className="text-muted-foreground text-[10px]">
-                                  {model.contextWindow}
-                                </span>
-                                {(model.tags ?? []).length > 0 && (
-                                  <>
-                                    <Separator orientation="vertical" className="h-2.5" />
-                                    <span className="flex flex-wrap gap-1">
-                                      {(model.tags ?? []).slice(0, 3).map((tag) => (
-                                        <Badge
-                                          key={tag}
-                                          variant="outline"
-                                          className="text-[9px] px-1 py-0 font-normal"
-                                        >
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              {model.benefits && (
-                                <p className="text-muted-foreground mt-1 line-clamp-2 text-[10px] leading-relaxed">
-                                  {model.benefits}
-                                </p>
-                              )}
-                            </div>
-                            <Badge
-                              variant="secondary"
-                              className="shrink-0 px-1.5 py-0 text-[9px]"
+                        <div className="mt-2 space-y-2">
+                          {filteredModels.map((model) => (
+                            <HoverCard
+                              key={model.id}
+                              openDelay={200}
+                              closeDelay={100}
                             >
-                              {model.type}
-                            </Badge>
-                          </CardContent>
-                        </Card>
-                      </HoverCardTrigger>
-                      <HoverCardContent side="right" align="start" className="w-80 p-0">
-                        <ModelInfoCard model={model} variant="full" />
-                      </HoverCardContent>
-                    </HoverCard>
-                  ))}
-                      </div>
+                              <HoverCardTrigger asChild>
+                                <Card className="bg-background cursor-help transition-shadow hover:shadow-sm">
+                                  <CardContent className="flex items-center gap-3 p-3">
+                                    <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
+                                      {model.type === 'commercial' && (
+                                        <Globe className="text-primary h-4 w-4" />
+                                      )}
+                                      {model.type === 'ollama' && (
+                                        <Server className="text-success h-4 w-4" />
+                                      )}
+                                      {model.type === 'local' && (
+                                        <Cpu className="text-warning h-4 w-4" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-foreground truncate text-xs font-medium">
+                                          {model.name}
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            'h-1.5 w-1.5 shrink-0 rounded-full',
+                                            model.status === 'online'
+                                              ? 'bg-success'
+                                              : model.status === 'loading'
+                                                ? 'bg-warning animate-pulse-dot'
+                                                : 'bg-muted-foreground/40'
+                                          )}
+                                        />
+                                      </div>
+                                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <span className="text-muted-foreground text-[10px]">
+                                          {model.provider}
+                                        </span>
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-2.5"
+                                        />
+                                        <span className="text-muted-foreground text-[10px]">
+                                          {model.contextWindow}
+                                        </span>
+                                        {(model.tags ?? []).length > 0 && (
+                                          <>
+                                            <Separator
+                                              orientation="vertical"
+                                              className="h-2.5"
+                                            />
+                                            <span className="flex flex-wrap gap-1">
+                                              {(model.tags ?? [])
+                                                .slice(0, 3)
+                                                .map((tag) => (
+                                                  <Badge
+                                                    key={tag}
+                                                    variant="outline"
+                                                    className="px-1 py-0 text-[9px] font-normal"
+                                                  >
+                                                    {tag}
+                                                  </Badge>
+                                                ))}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {model.benefits && (
+                                        <p className="text-muted-foreground mt-1 line-clamp-2 text-[10px] leading-relaxed">
+                                          {model.benefits}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <Badge
+                                      variant="secondary"
+                                      className="shrink-0 px-1.5 py-0 text-[9px]"
+                                    >
+                                      {model.type}
+                                    </Badge>
+                                  </CardContent>
+                                </Card>
+                              </HoverCardTrigger>
+                              <HoverCardContent
+                                side="right"
+                                align="start"
+                                className="w-80 p-0"
+                              >
+                                <ModelInfoCard model={model} variant="full" />
+                              </HoverCardContent>
+                            </HoverCard>
+                          ))}
+                        </div>
                       )}
                     </>
                   );
@@ -800,7 +888,11 @@ export function SettingsPanel({
                       {models
                         .filter((m) => m.provider !== 'Ollama (Local)')
                         .map((m) => (
-                          <HoverCard key={m.id} openDelay={200} closeDelay={100}>
+                          <HoverCard
+                            key={m.id}
+                            openDelay={200}
+                            closeDelay={100}
+                          >
                             <HoverCardTrigger asChild>
                               <SelectItem value={m.id} className="text-[11px]">
                                 <div className="flex items-center gap-2">
@@ -811,7 +903,7 @@ export function SettingsPanel({
                                         <Badge
                                           key={t}
                                           variant="outline"
-                                          className="text-[8px] px-1 py-0 font-normal"
+                                          className="px-1 py-0 text-[8px] font-normal"
                                         >
                                           {t}
                                         </Badge>
@@ -821,7 +913,10 @@ export function SettingsPanel({
                                 </div>
                               </SelectItem>
                             </HoverCardTrigger>
-                            <HoverCardContent side="right" className="max-w-xs p-0">
+                            <HoverCardContent
+                              side="right"
+                              className="max-w-xs p-0"
+                            >
                               <ModelInfoCard model={m} variant="compact" />
                             </HoverCardContent>
                           </HoverCard>
@@ -835,7 +930,11 @@ export function SettingsPanel({
                       {models
                         .filter((m) => m.provider === 'Ollama (Local)')
                         .map((m) => (
-                          <HoverCard key={m.id} openDelay={200} closeDelay={100}>
+                          <HoverCard
+                            key={m.id}
+                            openDelay={200}
+                            closeDelay={100}
+                          >
                             <HoverCardTrigger asChild>
                               <SelectItem value={m.id} className="text-[11px]">
                                 <div className="flex items-center gap-2">
@@ -846,7 +945,7 @@ export function SettingsPanel({
                                         <Badge
                                           key={t}
                                           variant="outline"
-                                          className="text-[8px] px-1 py-0 font-normal"
+                                          className="px-1 py-0 text-[8px] font-normal"
                                         >
                                           {t}
                                         </Badge>
@@ -856,7 +955,10 @@ export function SettingsPanel({
                                 </div>
                               </SelectItem>
                             </HoverCardTrigger>
-                            <HoverCardContent side="right" className="max-w-xs p-0">
+                            <HoverCardContent
+                              side="right"
+                              className="max-w-xs p-0"
+                            >
                               <ModelInfoCard model={m} variant="compact" />
                             </HoverCardContent>
                           </HoverCard>
@@ -872,7 +974,7 @@ export function SettingsPanel({
                 <span className="text-[10px] font-semibold tracking-tight uppercase">
                   Privacy Vault
                 </span>
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                <Badge variant="outline" className="px-1.5 py-0 text-[9px]">
                   Coming soon
                 </Badge>
               </div>
@@ -921,7 +1023,10 @@ export function SettingsPanel({
               <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
                 MCP Servers
               </p>
-              <AlertDialog open={mcpAddDialogOpen} onOpenChange={setMcpAddDialogOpen}>
+              <AlertDialog
+                open={mcpAddDialogOpen}
+                onOpenChange={setMcpAddDialogOpen}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -947,26 +1052,35 @@ export function SettingsPanel({
                     <AlertDialogDescription asChild>
                       <div className="space-y-2 text-left">
                         <p>
-                          Add MCP (Model Context Protocol) servers by editing the
-                          config file:
+                          Add MCP (Model Context Protocol) servers by editing
+                          the config file:
                         </p>
-                        <code className="block rounded bg-muted px-2 py-1.5 text-xs font-mono">
+                        <code className="bg-muted block rounded px-2 py-1.5 font-mono text-xs">
                           data/mcp_servers.json
                         </code>
                         <p>
-                          Add entries to the <code className="rounded bg-muted px-1">servers</code> array
-                          with <code className="rounded bg-muted px-1">id</code>,{' '}
-                          <code className="rounded bg-muted px-1">name</code>,{' '}
-                          <code className="rounded bg-muted px-1">endpoint</code>, and{' '}
-                          <code className="rounded bg-muted px-1">description</code>.
-                          Restart the backend to load changes. See docs/MCP_CONFIG.md
-                          for the full format.
+                          Add entries to the{' '}
+                          <code className="bg-muted rounded px-1">servers</code>{' '}
+                          array with{' '}
+                          <code className="bg-muted rounded px-1">id</code>,{' '}
+                          <code className="bg-muted rounded px-1">name</code>,{' '}
+                          <code className="bg-muted rounded px-1">
+                            endpoint
+                          </code>
+                          , and{' '}
+                          <code className="bg-muted rounded px-1">
+                            description
+                          </code>
+                          . Restart the backend to load changes. See
+                          docs/MCP_CONFIG.md for the full format.
                         </p>
                       </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setMcpAddDialogOpen(false)}>
+                    <AlertDialogAction
+                      onClick={() => setMcpAddDialogOpen(false)}
+                    >
                       Got it
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -1093,71 +1207,75 @@ export function SettingsPanel({
                       )}
                     />
                   </div>
-                  {integration.id === 'telegram' && integration.status === 'active' && (
-                    <div className="border-border flex flex-col gap-2 rounded border p-2">
-                      <p className="text-muted-foreground text-[10px]">
-                        Send a message to your primary Telegram chat. Run /setmychat in
-                        the bot first.
-                      </p>
-                      {telegramPrimaryChatId ? (
-                        <p className="text-muted-foreground text-[10px] font-mono">
-                          Connected chat: {telegramPrimaryChatId}
+                  {integration.id === 'telegram' &&
+                    integration.status === 'active' && (
+                      <div className="border-border flex flex-col gap-2 rounded border p-2">
+                        <p className="text-muted-foreground text-[10px]">
+                          Send a message to your primary Telegram chat. Run
+                          /setmychat in the bot first.
                         </p>
-                      ) : (
-                        <p className="text-muted-foreground text-[10px] italic">
-                          No primary chat set — run /setmychat in Telegram.
-                        </p>
-                      )}
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Test message..."
-                          value={telegramTestMessage}
-                          onChange={(e) => {
-                            setTelegramTestMessage(e.target.value);
-                            setTelegramSendResult(null);
-                          }}
-                          className="h-7 text-[10px]"
-                        />
-                        <Button
-                          size="sm"
-                          className="h-7 shrink-0 px-2 text-[10px]"
-                          disabled={!telegramTestMessage.trim() || telegramSending}
-                          onClick={async () => {
-                            const msg = telegramTestMessage.trim();
-                            if (!msg) return;
-                            setTelegramSending(true);
-                            setTelegramSendResult(null);
-                            try {
-                              const res = await api.sendToTelegram(msg);
-                              setTelegramSendResult('Sent!');
-                              setTelegramTestMessage('');
-                              if (res.chat_id) setTelegramPrimaryChatId(res.chat_id);
-                            } catch (err) {
-                              setTelegramSendResult(
-                                err instanceof Error ? err.message : 'Failed'
-                              );
-                            } finally {
-                              setTelegramSending(false);
+                        {telegramPrimaryChatId ? (
+                          <p className="text-muted-foreground font-mono text-[10px]">
+                            Connected chat: {telegramPrimaryChatId}
+                          </p>
+                        ) : (
+                          <p className="text-muted-foreground text-[10px] italic">
+                            No primary chat set — run /setmychat in Telegram.
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Test message..."
+                            value={telegramTestMessage}
+                            onChange={(e) => {
+                              setTelegramTestMessage(e.target.value);
+                              setTelegramSendResult(null);
+                            }}
+                            className="h-7 text-[10px]"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 shrink-0 px-2 text-[10px]"
+                            disabled={
+                              !telegramTestMessage.trim() || telegramSending
                             }
-                          }}
-                        >
-                          {telegramSending ? 'Sending...' : 'Send'}
-                        </Button>
+                            onClick={async () => {
+                              const msg = telegramTestMessage.trim();
+                              if (!msg) return;
+                              setTelegramSending(true);
+                              setTelegramSendResult(null);
+                              try {
+                                const res = await api.sendToTelegram(msg);
+                                setTelegramSendResult('Sent!');
+                                setTelegramTestMessage('');
+                                if (res.chat_id)
+                                  setTelegramPrimaryChatId(res.chat_id);
+                              } catch (err) {
+                                setTelegramSendResult(
+                                  err instanceof Error ? err.message : 'Failed'
+                                );
+                              } finally {
+                                setTelegramSending(false);
+                              }
+                            }}
+                          >
+                            {telegramSending ? 'Sending...' : 'Send'}
+                          </Button>
+                        </div>
+                        {telegramSendResult && (
+                          <p
+                            className={cn(
+                              'text-[10px]',
+                              telegramSendResult === 'Sent!'
+                                ? 'text-success'
+                                : 'text-destructive'
+                            )}
+                          >
+                            {telegramSendResult}
+                          </p>
+                        )}
                       </div>
-                      {telegramSendResult && (
-                        <p
-                          className={cn(
-                            'text-[10px]',
-                            telegramSendResult === 'Sent!'
-                              ? 'text-success'
-                              : 'text-destructive'
-                          )}
-                        >
-                          {telegramSendResult}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    )}
                 </CardContent>
               </Card>
             ))}
@@ -1347,7 +1465,7 @@ export function SettingsPanel({
                       <span className="text-foreground text-xs font-medium">
                         Frontend Web
                       </span>
-                      <span className="text-muted-foreground font-normal text-[9px]">
+                      <span className="text-muted-foreground text-[9px] font-normal">
                         (status only)
                       </span>
                       <span
@@ -1401,7 +1519,7 @@ export function SettingsPanel({
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="bg-muted/40 border-border/50 mt-2 rounded-md border p-3 space-y-2">
+                <div className="bg-muted/40 border-border/50 mt-2 space-y-2 rounded-md border p-3">
                   <p className="text-muted-foreground text-[10px] leading-relaxed">
                     Full lifecycle control via{' '}
                     <code className="bg-background px-1">manage.sh</code>:

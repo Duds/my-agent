@@ -235,8 +235,8 @@
     },
     {
       "id": "PBI-030",
-      "title": "Privacy Vault UI",
-      "status": "ready",
+      "title": "Privacy Vault Backend",
+      "status": "done",
       "priority": "S",
       "phase": "Reconciled Scaffold Features",
       "file": "pbi-030-privacy-vault-ui.json"
@@ -416,6 +416,38 @@
       "priority": "W",
       "phase": "OpenClaw Recommendations",
       "file": "pbi-052-native-apps.json"
+    },
+    {
+      "id": "PBI-053",
+      "title": "AI Services Enhancement: OpenAI and Google Gemini Support",
+      "status": "done",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-053-ai-services-enhancement.json"
+    },
+    {
+      "id": "PBI-054",
+      "title": "Privacy Vault UI Integration",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-054-privacy-vault-ui-integration.json"
+    },
+    {
+      "id": "PBI-055",
+      "title": "Integration Connection Flows",
+      "status": "ready",
+      "priority": "S",
+      "phase": "Feature Completion",
+      "file": "pbi-055-integration-connection-flows.json"
+    },
+    {
+      "id": "PBI-056",
+      "title": "Window Poller Service",
+      "status": "ready",
+      "priority": "M",
+      "phase": "Context Awareness Foundation",
+      "file": "pbi-056-window-poller-service.json"
     }
   ]
 }

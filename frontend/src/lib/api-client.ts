@@ -10,7 +10,6 @@ import {
   SkillInfo,
   MCPInfo,
   IntegrationInfo,
-  ProjectInfo,
   MessageInfo,
   ConversationInfo,
   QueryRequest,
@@ -53,6 +52,13 @@ export type Mode = ModeInfo;
 export type Skill = SkillInfo;
 export type MCP = MCPInfo;
 export type Integration = IntegrationInfo;
+export interface ProjectInfo {
+  id: string;
+  name: string;
+  color: string;
+  conversationIds: string[];
+  is_vault?: boolean;
+}
 export type Project = ProjectInfo;
 export type Persona = ModeInfo; // Deprecated, but used in some places
 
@@ -253,7 +259,7 @@ export const api = {
 
   patchConversation: async (
     conversationId: string,
-    body: { title?: string; messages?: MessageInfo[] }
+    body: { title?: string; messages?: MessageInfo[]; projectId?: string }
   ): Promise<ConversationInfo> => {
     return fetchApi<ConversationInfo>(`/api/conversations/${conversationId}`, {
       method: 'PATCH',
@@ -330,5 +336,20 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
+    }),
+
+  getVaultStatus: () =>
+    fetchApi<import('@/types/api').VaultStatus>('/api/vault/status'),
+  unlockVault: (password: string) =>
+    fetchApi<{ status: string }>('/api/vault/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    }),
+  lockVault: () =>
+    fetchApi<{ status: string }>('/api/vault/lock', { method: 'POST' }),
+  resetVault: () =>
+    fetchApi<{ status: string; message: string }>('/api/vault/reset', {
+      method: 'POST',
     }),
 };
