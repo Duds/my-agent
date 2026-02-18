@@ -1,5 +1,5 @@
 ---
-description: Standard development commands for the Between project
+description: Standard development commands for the MyAgent (Secure Personal Agentic Platform) project
 ---
 
 # Development Commands
@@ -7,70 +7,55 @@ description: Standard development commands for the Between project
 ## Starting Development
 
 ```bash
-# Install dependencies
-npm install
+# One-time setup (create venv, install deps)
+./setup.sh
 
-# Start Docker services (PostgreSQL, Redis)
-npm run docker:up
+# Start all services (Ollama, Backend, Frontend)
+./manage.sh start
 
-# Start API server in development mode
-npm run dev:api
-
-# Start Next.js frontend
-npm run dev:web
-
-# Start all services concurrently
-npm run dev
+# Start specific service
+./manage.sh start backend
+./manage.sh start frontend
+./manage.sh start ollama
 ```
 
-## Database
+## Manual Run (alternative to manage.sh)
 
 ```bash
-# Run migrations (ensure I002 is resolved in RAIDD.md)
-npm run db:migrate
+# Backend (FastAPI on port 8001)
+source venv/bin/activate
+PYTHONPATH=. python3 -m core.main
 
-# Seed database
-npm run db:seed
+# Frontend (Next.js on port 3000) - in another terminal
+cd frontend && npm run dev
 ```
 
 ## Testing
 
-// turbo
 ```bash
-# Run all tests
-npm run test
+# Backend tests
+source venv/bin/activate && PYTHONPATH=. python3 -m pytest tests/ -v
 
-# Run API tests only
-npm run test:api
+# Backend tests with coverage
+PYTHONPATH=. python3 -m pytest tests/ --cov=core --cov-report=term-missing
 
-# Run Frontend tests only
-npm run test:web
+# Frontend tests
+cd frontend && npm test
 ```
 
-## Code Quality
-
-// turbo
-```bash
-# Lint code
-npm run lint
-
-# Type check
-npm run typecheck
-```
-
-## Docker Management
+## CLI (power users)
 
 ```bash
-# Start services
-npm run docker:up
+# Query the agent
+PYTHONPATH=. python3 -m scripts query "What's the weather like?"
 
-# Stop services
-npm run docker:down
+# Send message to primary Telegram chat
+PYTHONPATH=. python3 -m scripts send "Reminder: meeting at 3pm"
 
-# View logs
-docker-compose logs -f
+# Health and config check
+PYTHONPATH=. python3 -m scripts doctor
 ```
 
-## Critical Dependencies (Reference RAIDD.md)
+## Critical Dependencies
 
-Always check [RAIDD.md](file:///home/dale-rogers/Projects/active/personal/between/RAIDD.md) before starting major development tasks to ensure blocking issues (like I002) are addressed.
+Before major development tasks, check ARCHITECTURE.md, TODO.md, and backlog/ for design constraints and dependencies.

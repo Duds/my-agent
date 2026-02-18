@@ -97,6 +97,10 @@ export default function Page() {
   const [mcps, setMcps] = useState<MCP[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [sessions, setSessions] = useState<{ id: string; label: string }[]>([]);
+  const [context, setContext] = useState<{
+    activeWindow: string | null;
+    currentActivity: string | null;
+  }>({ activeWindow: null, currentActivity: null });
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewDialogMeta, setReviewDialogMeta] =
     useState<AgentGeneratedMeta | null>(null);
@@ -166,6 +170,12 @@ export default function Page() {
         setMcps(mcpsRes);
         setIntegrations(intRes);
         setSessions(sessionsRes);
+        try {
+          const ctx = await api.getContext();
+          setContext({ activeWindow: ctx.activeWindow, currentActivity: ctx.currentActivity });
+        } catch {
+          setContext({ activeWindow: null, currentActivity: null });
+        }
       } catch (_err) {
         setError(_err instanceof Error ? _err.message : 'Failed to load data');
       } finally {
@@ -174,6 +184,19 @@ export default function Page() {
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load once on mount
+  }, []);
+
+  // Poll context every 8s (backend poller runs at 5s)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const ctx = await api.getContext();
+        setContext({ activeWindow: ctx.activeWindow, currentActivity: ctx.currentActivity });
+      } catch {
+        // Silently ignore; context is optional
+      }
+    }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   const refetchModels = useCallback(async () => {
@@ -883,6 +906,8 @@ export default function Page() {
           }
           agentProcesses={agentProcesses}
           agenticMode={agenticMode}
+          activeWindow={context.activeWindow}
+          currentActivity={context.currentActivity}
         />
 
         {reviewDialogMeta && (

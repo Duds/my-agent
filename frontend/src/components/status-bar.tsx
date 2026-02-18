@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from '@/components/ui/tooltip';
+import { ContextDisplay } from '@/components/context-display';
 import type { AgentProcess, Model } from '@/lib/store';
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
@@ -22,12 +23,16 @@ interface StatusBarProps {
   activeModel: Model | undefined;
   agentProcesses: AgentProcess[];
   agenticMode: boolean;
+  activeWindow?: string | null;
+  currentActivity?: string | null;
 }
 
 export function StatusBar({
   activeModel,
   agentProcesses,
   agenticMode,
+  activeWindow,
+  currentActivity,
 }: StatusBarProps) {
   const runningProcesses = agentProcesses.filter((p) => p.status === 'running');
   const internalCount = runningProcesses.filter(
@@ -59,6 +64,15 @@ export function StatusBar({
       <footer className="border-border bg-card text-muted-foreground flex h-7 items-center justify-between border-t px-3 text-[11px]">
         {/* Left side */}
         <div className="flex items-center gap-3">
+          {(activeWindow || currentActivity) && (
+            <>
+              <ContextDisplay
+                activeWindow={activeWindow ?? undefined}
+                currentActivity={currentActivity ?? undefined}
+              />
+              <Separator orientation="vertical" className="h-3" />
+            </>
+          )}
           {activeModel && (
             <Tooltip>
               <TooltipTrigger asChild>

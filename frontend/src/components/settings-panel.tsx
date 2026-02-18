@@ -75,6 +75,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api-client';
 import { useEffect } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { VaultOverlay } from '@/components/vault/VaultOverlay';
 import type { Model, Skill, MCP, Integration } from '@/lib/store';
 
 interface SettingsPanelProps {
@@ -117,6 +119,12 @@ export function SettingsPanel({
   const [isBackendAction, setIsBackendAction] = useState(false);
   const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const [mcpAddDialogOpen, setMcpAddDialogOpen] = useState(false);
+  const [vaultStatus, setVaultStatus] = useState<{
+    initialized: boolean;
+    locked: boolean;
+  } | null>(null);
+  const [vaultDialogOpen, setVaultDialogOpen] = useState(false);
+  const { toast } = useToast();
   const [aiServices, setAiServices] = useState<
     {
       provider: string;
@@ -226,6 +234,15 @@ export function SettingsPanel({
     }
   }, [open, activeTab]);
 
+  useEffect(() => {
+    if (open && activeTab === 'ai') {
+      api
+        .getVaultStatus()
+        .then((s) => setVaultStatus({ initialized: s.initialized, locked: s.locked }))
+        .catch(() => setVaultStatus(null));
+    }
+  }, [open, activeTab, vaultDialogOpen]);
+
   const openConnectDialog = (provider: string, name: string) => {
     setConnectDialogProvider({ id: provider, name });
     setConnectDialogApiKey('');
@@ -261,13 +278,15 @@ export function SettingsPanel({
           )
         );
         onServiceChanged?.();
+        toast({ title: `${connectDialogProvider.name} connected` });
       } else {
         setConnectDialogError(res.error || 'Connection failed');
+        toast({ title: res.error || 'Connection failed', variant: 'destructive' });
       }
     } catch (err) {
-      setConnectDialogError(
-        err instanceof Error ? err.message : 'Connection failed'
-      );
+      const msg = err instanceof Error ? err.message : 'Connection failed';
+      setConnectDialogError(msg);
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setConnectDialogLoading(false);
     }
@@ -284,7 +303,10 @@ export function SettingsPanel({
         )
       );
       onServiceChanged?.();
+      toast({ title: `${provider} disconnected` });
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Disconnect failed';
+      toast({ title: msg, variant: 'destructive' });
       console.error('Disconnect failed:', err);
     }
   };
@@ -969,18 +991,62 @@ export function SettingsPanel({
               </div>
             </div>
             <div className="bg-muted/40 border-border/50 mt-4 rounded-md border p-3">
-              <div className="mb-1.5 flex items-center gap-2">
-                <Lock className="text-primary h-3.5 w-3.5" />
-                <span className="text-[10px] font-semibold tracking-tight uppercase">
-                  Privacy Vault
-                </span>
-                <Badge variant="outline" className="px-1.5 py-0 text-[9px]">
-                  Coming soon
-                </Badge>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Lock className="text-primary h-3.5 w-3.5" />
+                  <span className="text-[10px] font-semibold tracking-tight uppercase">
+                    Privacy Vault
+                  </span>
+                  {vaultStatus && (
+                    <Badge
+                      variant={vaultStatus.locked ? 'secondary' : 'default'}
+                      className="px-1.5 py-0 text-[9px]"
+                    >
+                      {vaultStatus.locked ? 'Locked' : 'Unlocked'}
+                    </Badge>
+                  )}
+                </div>
+                {vaultStatus && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-[10px]"
+                    onClick={async () => {
+                      if (vaultStatus.locked) {
+                        setVaultDialogOpen(true);
+                      } else {
+                        try {
+                          await api.lockVault();
+                          const s = await api.getVaultStatus();
+                          setVaultStatus({ initialized: s.initialized, locked: s.locked });
+                          toast({ title: 'Vault locked' });
+                        } catch (e) {
+                          toast({
+                            title: 'Failed to lock vault',
+                            variant: 'destructive',
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    {vaultStatus.locked ? 'Unlock' : 'Lock'}
+                  </Button>
+                )}
               </div>
               <p className="text-muted-foreground text-[10px] leading-relaxed">
-                Local-only storage for sensitive data (PBI-030).
+                Local-only storage for sensitive data. Initialize or unlock to
+                access.
               </p>
+              {!vaultStatus && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 h-7 text-[10px]"
+                  onClick={() => setVaultDialogOpen(true)}
+                >
+                  Initialize / Unlock
+                </Button>
+              )}
             </div>
           </TabsContent>
 
@@ -1150,7 +1216,7 @@ export function SettingsPanel({
               Connected Services
             </p>
             <p className="text-muted-foreground mb-2 text-[10px]">
-              Status only — connect flows coming soon
+              AI providers: connect in the AI tab. Telegram &amp; Google Workspace: configure via .env (see README).
             </p>
             {integrations.map((integration) => (
               <Card
@@ -1537,6 +1603,23 @@ export function SettingsPanel({
           </TabsContent>
         </ScrollArea>
       </Tabs>
+      <Dialog open={vaultDialogOpen} onOpenChange={setVaultDialogOpen}>
+        <DialogContent className="p-0 max-w-md overflow-hidden">
+          <VaultOverlay
+            embedded
+            isInitialized={vaultStatus?.initialized ?? false}
+            onUnlock={() => {
+              setVaultDialogOpen(false);
+              api
+                .getVaultStatus()
+                .then((s) =>
+                  setVaultStatus({ initialized: s.initialized, locked: s.locked })
+                )
+                .catch(() => setVaultStatus(null));
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

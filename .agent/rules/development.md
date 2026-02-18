@@ -35,4 +35,4 @@
 
 - All schema changes must be done via migrations.
 - Use parameterized queries or ORM/Query Builder to prevent SQL injection.
-- Ensure [RAIDD.md](file:///home/dale-rogers/Projects/active/personal/between/RAIDD.md) Issue I002 is resolved before major schema work.
+- For major schema or migration work, check [ARCHITECTURE.md](../../ARCHITECTURE.md) and [backlog/](../../backlog/) for dependencies and design constraints.

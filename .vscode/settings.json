@@ -64,5 +64,10 @@
     },
     "cursorpyright.analysis.extraPaths": [
         "./core"
+    ],
+    "cursorpyright.analysis.exclude": [
+        "**/my-agent-venv/**",
+        "**/venv/**",
+        "**/node_modules/**"
     ]
 }

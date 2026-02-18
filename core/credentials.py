@@ -19,6 +19,8 @@ _PROVIDER_ENV_MAP = {
     "anthropic": "ANTHROPIC_API_KEY",
     "mistral": "MISTRAL_API_KEY",
     "moonshot": "MOONSHOT_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "google": "GOOGLE_API_KEY",
 }
 
 
@@ -59,13 +61,19 @@ def get_api_key(provider: str) -> str | None:
         return settings.mistral_api_key
     if provider == "moonshot":
         return settings.moonshot_api_key
+    if provider == "openai":
+        return settings.openai_api_key
+    if provider == "google":
+        return settings.google_api_key
     return None
 
 
 def save_api_key(provider: str, api_key: str) -> None:
     """Save API key for provider to credentials file."""
     provider = provider.lower()
-    if provider not in _PROVIDER_ENV_MAP:
+    # Allow AI providers; _PROVIDER_ENV_MAP defines known ones
+    allowed = {"anthropic", "mistral", "moonshot", "openai", "google"}
+    if provider not in allowed:
         raise ValueError(f"Unknown provider: {provider}")
     creds = _load_credentials_file()
     if provider not in creds or not isinstance(creds[provider], dict):

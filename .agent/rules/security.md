@@ -8,7 +8,7 @@
 
 ## Encryption Standard
 
-- **End-to-End Encryption (E2EE)**: All private messages must be E2EE (DEC009). See I004 in [RAIDD.md](file:///home/dale-rogers/Projects/active/personal/between/RAIDD.md) for ongoing key management design.
+- **End-to-End Encryption (E2EE)**: All private messages must be E2EE (DEC009). Key management design is documented in [operating_principles.md](../../operating_principles.md) and [docs/](../).
 - **Data at Rest**: Sensitive database fields must be encrypted using AES-256.
 - **Data in Transit**: All communications must use TLS 1.3/HTTPS.
 
@@ -23,4 +23,4 @@
 
 - **Secrets Management**: Never commit secrets. Use environment variables.
 - **Logging**: Never log PII (Personally Identifiable Information) or sensitive tokens.
-- **Audits**: Refer to D004 in [RAIDD.md](file:///home/dale-rogers/Projects/active/personal/between/RAIDD.md) for required security audits.
+- **Audits**: Security audits are governed by [.agent/rules/governance.md](governance.md) and [operating_principles.md](../../operating_principles.md).

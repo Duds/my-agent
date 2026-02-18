@@ -191,9 +191,30 @@ class VaultUnlockBody(BaseModel):
     password: str
 
 
+class ContextResponse(BaseModel):
+    """Response for GET /api/context (PBI-056)."""
+
+    activeWindow: Optional[str] = None
+    currentActivity: Optional[str] = None
+
+
 class VaultStatusResponse(BaseModel):
     """Status of the Privacy Vault."""
 
     initialized: bool
     locked: bool
     last_unlock: Optional[str] = None
+
+
+class ClassifyBody(BaseModel):
+    """Body for POST /api/sentinel/classify (PBI-042)."""
+
+    path: str
+    content_snippet: Optional[str] = None
+
+
+class ClassifyResponse(BaseModel):
+    """Response from POST /api/sentinel/classify."""
+
+    category: str
+    suggested_destination: Optional[str] = None

@@ -71,6 +71,9 @@ from core.model_registry import get_models_for_provider
 from core.doctor import get_doctor_report
 from core.commands import get_commands_list
 from core.automation_engine import AutomationEngine
+from core.context_poller import context_poller, get_context, poll_once
+from core.file_watchdog import start_watchdog, stop_watchdog, get_events
+from core.content_classifier import classify as content_classify
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +140,28 @@ async def lifespan(app: FastAPI):
 
     # Start Automation Engine
     await automation_engine.start()
-    
+
+    # Start File Watchdog (PBI-041)
+    start_watchdog()
+
+    # Start Context Poller (PBI-056)
+    poll_once()  # Initial poll so cache has data immediately
+    poller_task = asyncio.create_task(
+        context_poller(settings.context_poller_interval, settings.context_poller_enabled)
+    )
+
     yield
-    
+
+    # Shutdown: cancel context poller
+    poller_task.cancel()
+    try:
+        await poller_task
+    except asyncio.CancelledError:
+        pass
+
+    # Shutdown File Watchdog (PBI-041)
+    stop_watchdog()
+
     # Shutdown Automation Engine
     await automation_engine.stop()
 
@@ -466,6 +488,17 @@ async def doctor():
 async def list_commands():
     """Return structured list of slash-style chat commands (PBI-049) for UI and channel implementers."""
     return get_commands_list()
+
+
+@app.get(
+    "/api/context",
+    summary="Get active context (PBI-056)",
+    response_model=schemas.ContextResponse,
+    dependencies=[Depends(get_api_key)],
+)
+async def api_get_context():
+    """Return current active window/context from the poller. Cached, non-blocking."""
+    return get_context()
 
 
 @app.get("/api/system/status", summary="Get system status", dependencies=[Depends(get_api_key)])
@@ -1217,6 +1250,23 @@ async def list_automation_logs(limit: int = 100, scriptId: str | None = None):
 async def list_error_reports(limit: int = 100, scriptId: str | None = None):
     """Return error reports from data/error_reports.json."""
     return _load_error_reports(limit=limit, script_id=scriptId)
+
+
+@app.get("/api/sentinel/events", summary="List file watchdog events (PBI-041)", dependencies=[Depends(get_api_key)])
+async def list_sentinel_events(limit: int = 100):
+    """Return recent file create/modify events from the watchdog."""
+    return get_events(limit=limit)
+
+
+@app.post(
+    "/api/sentinel/classify",
+    summary="Classify file (PBI-042)",
+    response_model=schemas.ClassifyResponse,
+    dependencies=[Depends(get_api_key)],
+)
+async def classify_file(body: schemas.ClassifyBody):
+    """Classify a file path and return suggested category and destination."""
+    return content_classify(body.path, body.content_snippet)
 
 
 @app.post("/api/automations/trigger/{automation_id}", summary="Manually trigger an automation", dependencies=[Depends(get_api_key)])

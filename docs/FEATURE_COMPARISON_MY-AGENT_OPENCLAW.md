@@ -1,8 +1,8 @@
 # Full Codebase Feature Comparison: my-agent vs OpenClaw
 
 **Compared codebases:**
-- **my-agent**: `~/Projects/active/agents/my-agent/` (this repo — Secure Personal Agentic Platform)
-- **OpenClaw**: `~/Projects/active/agents/openclaw/` (sibling directory; [openclaw/openclaw](https://github.com/openclaw/openclaw))
+- **my-agent**: `~/Projects/ai-agents/my-agent/` (this repo — Secure Personal Agentic Platform)
+- **OpenClaw**: `~/Projects/ai-agents/openclaw/` (sibling directory; [openclaw/openclaw](https://github.com/openclaw/openclaw))
 
 *Note: OpenClaw does not live under `my-agent/openclaw/`; it is a separate project in the same parent folder.*
 

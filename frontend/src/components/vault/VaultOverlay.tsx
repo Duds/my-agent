@@ -18,9 +18,15 @@ import { useToast } from '@/components/ui/use-toast';
 interface VaultOverlayProps {
   onUnlock: () => void;
   isInitialized: boolean;
+  /** When true, render only the card (for use inside Dialog). */
+  embedded?: boolean;
 }
 
-export function VaultOverlay({ onUnlock, isInitialized }: VaultOverlayProps) {
+export function VaultOverlay({
+  onUnlock,
+  isInitialized,
+  embedded = false,
+}: VaultOverlayProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +54,8 @@ export function VaultOverlay({ onUnlock, isInitialized }: VaultOverlayProps) {
     }
   };
 
-  return (
-    <div className="bg-background/80 absolute inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <Card className="border-primary/20 w-full max-w-sm shadow-2xl">
+  const card = (
+    <Card className="border-primary/20 w-full max-w-sm shadow-2xl">
         <CardHeader className="text-center">
           <div className="bg-primary/10 text-primary mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             {isInitialized ? (
@@ -104,6 +109,14 @@ export function VaultOverlay({ onUnlock, isInitialized }: VaultOverlayProps) {
           </CardFooter>
         </form>
       </Card>
+  );
+
+  if (embedded) {
+    return card;
+  }
+  return (
+    <div className="bg-background/80 absolute inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      {card}
     </div>
   );
 }

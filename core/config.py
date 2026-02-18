@@ -110,6 +110,19 @@ class Settings(BaseSettings):
     projects_config_path: str = "data/projects.json"
     conversations_config_path: str = "data/conversations.json"
 
+    # Context Poller (PBI-056)
+    context_poller_interval: float = 5.0
+    context_poller_enabled: bool = True
+
+    # File Watchdog (PBI-041)
+    watch_paths: List[str] = ["~/Downloads", "~/Projects"]
+    watch_patterns: List[str] | None = None
+    watch_config_path: str = "data/watch_config.json"
+
+    # Content Classifier (PBI-042)
+    content_classifier_enabled: bool = True
+    content_classifier_model: str | None = None
+
     def get_cors_origins_list(self) -> List[str]:
         """Return CORS origins as list."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -1,8 +1,7 @@
 ---
 description: Checks suggested features against roadmap and backlog; performs impact analysis for new features
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Feature Suggestion & Roadmap Check
 
 When the user suggests a feature, enhancement, or capability, **before** implementing or drafting a PBI:

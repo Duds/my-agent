@@ -128,14 +128,14 @@ _Priority: HIGH - Make system production-ready_
 | ✅       | **Frontend Type Safety**      | Define TypeScript interfaces for API, fix `any` types, add error handling. | PBI-011    |
 | ✅       | **Memory System Integration** | Connect memory to router, add vault encryption, implement sessions.        | PBI-012    |
 
-### 🎯 Phase 3: Feature Completion (Week 4-6) - **IN PROGRESS**
+### 🎯 Phase 3: Feature Completion (Week 4-6) - **Largely Complete**
 
 _Priority: MEDIUM - Complete MVP features_
 
 | Priority | Feature                                      | Description                                                      | Backlog ID |
 | :------- | :------------------------------------------- | :--------------------------------------------------------------- | :--------- |
 | **S**    | **Enhanced Intent Classification** (PBI-013) | SentenceTransformer-based, confidence scores. **Done**           |
-| **S**    | **Comprehensive Testing** (PBI-014)          | Add adapter tests, integration tests, E2E tests, frontend tests. |
+| **S**    | **Comprehensive Testing** (PBI-014)          | Add adapter tests, integration tests, E2E tests, frontend tests. **Done** |
 | **S**    | **API Documentation** (PBI-015)              | OpenAPI/Swagger. **Done** — /docs, /redoc via FastAPI.           |
 | **S**    | **Monitoring & Observability** (PBI-016)     | /health, /ready, /metrics Prometheus endpoint. **Done**          |
 
@@ -173,7 +173,7 @@ _Priority: LOW - Advanced features_
 | **S**    | **MCP Server discovery** (PBI-027)         | Backend API + Settings UI. **Done** — config-driven, status check, Add dialog.      |
 | **S**    | **Integrations API** (PBI-028)             | Wire Google, Pinterest, etc. **Done** — Google wired when credentials present.      |
 | **S**    | **Projects persistence** (PBI-029)         | CRUD, conversation association. **Done** — in-memory CRUD + conversation link.      |
-| **S**    | **Agent Template & Conformance** (PBI-035) | Framework + rules so generated agents conform to platform standards.                |
+| **S**    | **Agent Template & Conformance** (PBI-035) | Framework + rules so generated agents conform to platform standards. **Done**      |
 | **S**    | **Agent Code Generation** (PBI-036)        | LLM generates code; validate, register. **Done** — /query with create_agent intent. |
 | **S**    | **Privacy Vault Backend** (PBI-030)        | Vault API, encryption, storage. **Done**                                            |
 | **S**    | **Privacy Vault UI Integration** (PBI-054) | Integrate VaultOverlay into settings panel.                                         |
@@ -200,15 +200,23 @@ _The solution generates custom agent code from natural language. Rules/framework
 
 See [docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md](docs/UX_UI_REVIEW_AND_GAP_ANALYSIS.md) for full analysis.
 
-### Short-term (1–2 weeks)
+### Short-term (1–2 weeks) — Current focus
 
-| Item                      | Backlog | Notes                                                         |
-| :------------------------ | :------ | :------------------------------------------------------------ |
-| **Monitoring /metrics**   | PBI-016 | Add Prometheus metrics endpoint to complete observability.    |
-| **Automation Hub APIs**   | PBI-039 | Config-driven cron jobs and automations from JSON.            |
-| **Project management UI** | PBI-040 | Add "New project" and basic CRUD in sidebar.                  |
-| **MCP Server Discovery**  | PBI-027 | Config-driven MCP list; enable Add button or document config. |
-| **ContextDisplay**        | —       | Wire when Window Poller exists; currently blocked.            |
+| Item                         | Backlog   | Notes                                                          |
+| :--------------------------- | :-------- | :------------------------------------------------------------- |
+| **Window Poller Service**    | PBI-056   | Background daemon for context awareness; unblocks ContextDisplay. |
+| **Privacy Vault UI Integration** | PBI-054 | Integrate VaultOverlay into settings; backend done.            |
+| **Integration Connection Flows** | PBI-055 | OAuth and API key management for external integrations.        |
+| **ContextDisplay**           | —         | Wire when Window Poller exists; currently blocked.             |
+
+### Previously completed (from gap analysis)
+
+| Item                      | Backlog | Notes |
+| :------------------------ | :------ | :---- |
+| Monitoring /metrics       | PBI-016 | ✅ Done |
+| Automation Hub APIs       | PBI-039 | ✅ Done |
+| Project management UI     | PBI-040 | ✅ Done |
+| MCP Server Discovery      | PBI-027 | ✅ Done |
 
 ### Medium-term (aligned with roadmap)
 

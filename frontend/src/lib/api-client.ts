@@ -80,6 +80,10 @@ export const api = {
   getSkills: () => fetchApi<SkillInfo[]>('/api/skills'),
   getMcps: () => fetchApi<MCPInfo[]>('/api/mcps'),
   getIntegrations: () => fetchApi<IntegrationInfo[]>('/api/integrations'),
+  getContext: () =>
+    fetchApi<{ activeWindow: string | null; currentActivity: string | null }>(
+      '/api/context'
+    ),
   getProjects: () => fetchApi<ProjectInfo[]>('/api/projects'),
   createProject: (body: { name: string; color?: string }) =>
     fetchApi<ProjectInfo>('/api/projects', {
